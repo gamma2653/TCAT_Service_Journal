@@ -1,1 +1,2 @@
-lib
+lib/*
+!lib/__init__.py
