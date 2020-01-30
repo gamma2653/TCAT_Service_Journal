@@ -7,77 +7,91 @@ from  service_journal.dbt_classifications import dbt_classes
 def init_config():
 	init = {
 	    "Settings": {
-	        "ActualView": "",
 	        "Database": "",
 	        "Driver": "{ODBC Driver 11 for SQL Server}",
 	        "Host": "AVAILDEV",
-	        "Password": "",
-	        "ScheduledView": "",
 	        "Username": "",
+	        "Password": "",
 	        "__comment": "Warning: Stored passwords are unencrypted.",
 	        "dbt_sql_map": {
 	            "blockNumber": {
 					"name" : "BlockNumber",
-					"nullable" : True
+					"table" : "",
+					"nullable" : True,
 					},
 	            "date": {
 					"name": "Service_Date",
+					"table" : "",
 					"nullable" : True
 				},
 	            "distance": {
 					"name": "dist_ft",
+					"table" : "",
 					"nullable" : True
 				},
 	            "end": {
 					"name": "seg_end",
+					"table" : "",
 					"nullable" : True
 				},
 	            "iStopID": {
 					"name": "iStop",
+					"table" : "",
 					"nullable" : True
 				},
 	            "iStopName": {
 					"name": "iName",
+					"table" : "",
 					"nullable" : True
 				},
 	            "mileage": {
 					"name": "trip_mileage",
+					"table" : "",
 					"nullable" : True
 				},
 	            "piece_number": {
 					"name": "PieceNumber",
+					"table" : "",
 					"nullable" : True
 				},
 	            "run_number": {
 					"name": "RunNumber",
+					"table" : "",
 					"nullable" : True
 				},
 	            "segSeq": {
 					"name": "seg_seq",
+					"table" : "",
 					"nullable" : True
 				},
 	            "start": {
 					"name": "seg_start",
+					"table" : "",
 					"nullable" : True
 				},
 	            "tStopID": {
 					"name": "tStop",
+					"table" : "",
 					"nullable" : True
 				},
 	            "tStopName": {
 					"name": "tName",
+					"table" : "",
 					"nullable" : True
 				},
 	            "tripNumber": {
 					"name": "trip",
+					"table" : "",
 					"nullable" : True
 				},
 	            "tripNumber26": {
 					"name": "trip26",
+					"table" : "",
 					"nullable" : True
 				},
 	            "trip_minutes": {
 					"name": "trip_minutes",
+					"table" : "",
 					"nullable" : True
 				},
 	        },
@@ -95,9 +109,9 @@ def init_config():
 
 	f = open('config.json', 'w')
 	f.write(json.dumps(init, sort_keys=True, indent=4))
+	f.close()
 
 def read_config():
-	global config, settings
 	f = open('config.json', 'r')
 	config = json.loads(f.read())
 	f.close()
