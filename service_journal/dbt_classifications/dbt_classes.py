@@ -102,7 +102,7 @@ class Block(BB):
 	def __init__(self, blockNumber):
 		self.__init__()
 		self.blockNumber=blockNumber
-class Day(DBT):
+class Day():
 	def __init__(self, date):
 		self.date=date
 		self.blocks=[]

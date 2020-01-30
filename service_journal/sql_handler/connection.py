@@ -2,6 +2,7 @@
 import pyodbc
 import json
 import os
+from  service_journal.dbt_classifications import dbt_classes
 
 def init_config():
 	init = {
