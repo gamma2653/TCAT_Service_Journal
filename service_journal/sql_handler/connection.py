@@ -14,86 +14,60 @@ def init_config():
 	        "Password": "",
 	        "__comment": "Warning: Stored passwords are unencrypted.",
 	        "dbt_sql_map": {
-	            "blockNumber": {
-					"name" : "BlockNumber",
-					"table" : "",
-					"nullable" : True,
-					},
-	            "date": {
+				"date": {
 					"name": "Service_Date",
-					"table" : "",
-					"nullable" : True
+					"table": "Calendar",
+					"nullable": True
 				},
-	            "distance": {
-					"name": "dist_ft",
-					"table" : "",
-					"nullable" : True
+				"calendar": {
+					"name": "Calendar",
+					"table": "Calendar",
+					"nullable": False
 				},
-	            "end": {
-					"name": "seg_end",
-					"table" : "",
-					"nullable" : True
+				"sl_id": {
+					"name": "SL-ID",
+					"table": "Calendar",
+					"nullable": False
 				},
-	            "iStopID": {
-					"name": "iStop",
-					"table" : "",
-					"nullable" : True
-				},
-	            "iStopName": {
-					"name": "iName",
-					"table" : "",
-					"nullable" : True
-				},
-	            "mileage": {
-					"name": "trip_mileage",
-					"table" : "",
-					"nullable" : True
-				},
-	            "piece_number": {
-					"name": "PieceNumber",
-					"table" : "",
-					"nullable" : True
-				},
-	            "run_number": {
-					"name": "RunNumber",
-					"table" : "",
-					"nullable" : True
-				},
-	            "segSeq": {
-					"name": "seg_seq",
-					"table" : "",
-					"nullable" : True
-				},
-	            "start": {
-					"name": "seg_start",
-					"table" : "",
-					"nullable" : True
-				},
-	            "tStopID": {
-					"name": "tStop",
-					"table" : "",
-					"nullable" : True
-				},
-	            "tStopName": {
-					"name": "tName",
-					"table" : "",
-					"nullable" : True
+	            "blockNumber": {
+					"name": "Block",
+					"table": "Block-Trips",
+					"nullable": True,
 				},
 	            "tripNumber": {
 					"name": "trip",
-					"table" : "",
-					"nullable" : True
+					"table": "Block-Trips",
+					"nullable": True
 				},
-	            "tripNumber26": {
-					"name": "trip26",
-					"table" : "",
-					"nullable" : True
+				"order": {
+					"name": "order",
+					"table": "Block-Trips",
+					"nullable": True
+				},
+				"route": {
+					"name": "Route",
+					"table": "Block-Trips",
+					"nullable": True
+				},
+	            "mileage": {
+					"name": "trip_mileage",
+					"table": "Block-Trips",
+					"nullable": True
+				},
+	            "distance_feet": {
+					"name": "dist_ft",
+					"table": "",
+					"nullable": True
 				},
 	            "trip_minutes": {
 					"name": "trip_minutes",
-					"table" : "",
-					"nullable" : True
+					"table": "",
+					"nullable": True
 				},
+				"stop": {
+					"name": "stop",
+					"table":"Block-Trips"
+				}
 	        },
 	        "optSelectScheduledQuery": [
 	            "SELECT Message_Type_Id, service_date, block, route, dir, trip, vmh_time, bus, Deviation, Onboard, Boards, Alights, Stop_Id, Stop_Name, Departure_Time, Latitude, Longitude FROM dbo.v_actual_block_trip_stop WHERE service_date = ? AND block = ? ORDER BY vmh_time asc",
@@ -171,7 +145,7 @@ class TCATConnection:
 		return cursor
 	def loadData(self, cursor, day=None):
 		cursor = self.cursor
-		retday = day if day else day
+		retday = None
 		if day:
 			pass
 		else:

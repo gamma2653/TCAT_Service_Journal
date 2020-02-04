@@ -28,54 +28,84 @@ from .exceptions import BlockNotFound, TripNotFound, NotActual, NotSchedule
 # 		# getattr to catch situation where entries are None if ever occurs.
 #
 
+# Dunno if gonna keep this, just a thought.
+class Stop():
+	def __init__(self, seq, stopID, stopName, time, distance, seen=False):
+		self.seq = seq
+		self.stopID = stopID
+		self.stopName = stopName
+		self.time = time
+		self.distance = distance
+		self.seen = seen
+
+
 # [stopID] is the id of the stop
 # [stopName] is a string representation of the stop's name
 # [stopTime] is a datetime object representing the time the stop was visited
 # 	or was scheduled for.
-class Segment():
-	def __init__(self, iStopID, tStopID, iStopName, tStopName, iStopTime, tStopTime, seq, start, end):
-		self.iStopID = iStopID
-		self.tStopID = tStopID
-		self.iStopName = iStopName
-		self.tStopName = tStopName
-		self.iStopTime = iStopTime
-		self.tStopTime = tStopTime
-		# self.iMessageTypeID = iMessageTypeID
-		# self.tMessageTypeID = tMessageTypeID
-		self.segSeq=seq
-		self.start=start
-		self.end=end
+# class Segment():
+# 	def __init__(self, iStopID, tStopID, iStopName, tStopName, iStopTime, tStopTime, seq, start, end):
+# 		self.iStopID = iStopID
+# 		self.tStopID = tStopID
+# 		self.iStopName = iStopName
+# 		self.tStopName = tStopName
+# 		self.iStopTime = iStopTime
+# 		self.tStopTime = tStopTime
+# 		# self.iMessageTypeID = iMessageTypeID
+# 		# self.tMessageTypeID = tMessageTypeID
+# 		self.segSeq=seq
+# 		self.start=start
+# 		self.end=end
 # [tripNumber] is an int representing the trip's ID number.
 # [tripSeq] is an int represetning the trip's sequence number.
 # [route] is an int representing the the trip's route.
 # [direction] is a str representing the trip's direction.
 # [stops] is a list of Stop, which is the first stop of the trip.
 class Trip():
-	def __init__(self, tripNumber, tripSeq, route, direction, segment):
-		self.segments=[segment]
+	def __init__(self, tripNumber, tripSeq, route, direction, stops=[]):
+		self.stops = stops
 		self.tripNumber = tripNumber
 		self.tripSeq = tripSeq
 		self.route = route
 		self.direction = direction
-	def addSegment(self, s):
-		self.segments.append(s)
-	def removeSegment(self, s, initial=True):
-		return self.__remove__(s, initial)
-	# Built in method to remove a stop from the trip.
-	# Attempts to use [s] as if it is a Segment to remove from the list.
-	# If this fails, treats [s] as a stopID
-	# Does not perform
-	# 	proper operations for specific types of trip.
-	def __remove__(self, s, initial = True):
+	def addStop(self, s):
+		self.stops.append(s)
+	def get_stopIDs(self):
+		return [stop.stopID for stop in self.stops]
+	def increment_seq(self, index = 0, amount=1):
+		working = self.stops[index:]
+		for stop in working:
+			stop.seq+=amount
+	def removeStop(self, s, correct_distance=False):
 		try:
-			self.segments.remove(s)
-			return True
+			index = self.stops.index(s)
+			if index>0 and correct_distance:
+				self.stops[index-1].distance_feet+= self.stops[index].distance_feet
+				self.stops[index-1].mileage+= self.stops[index].mileage
+			return self.pop(index)
 		except ValueError:
-			for seg in self.segments:
-				if (initial and seg.iStopID==s) or ( (not initial) and seg.tStopID==s):
-					self.segments.remove(seg)
-					return True
-		return False
+			try:
+				index = self.get_stopIDs().index(s)
+				if index>0 and correct_distance:
+					self.stops[index-1].distance_feet+= self.stops[index].distance_feet
+					self.stops[index-1].mileage+= self.stops[index].mileage
+				return self.pop(index)
+
+	# # Built in method to remove a stop from the trip.
+	# # Attempts to use [s] as if it is a Segment to remove from the list.
+	# # If this fails, treats [s] as a stopID
+	# # Does not perform
+	# # 	proper operations for specific types of trip.
+	# def __remove__(self, s, initial = True):
+	# 	try:
+	# 		self.segments.remove(s)
+	# 		return True
+	# 	except ValueError:
+	# 		for seg in self.segments:
+	# 			if (initial and seg.iStopID==s) or ( (not initial) and seg.tStopID==s):
+	# 				self.segments.remove(seg)
+	# 				return True
+	# 	return False
 
 # Abstract Class
 # [blockNumber] is an int that represents the block's number
