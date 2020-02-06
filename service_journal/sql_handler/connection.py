@@ -2,18 +2,20 @@
 import pyodbc
 import json
 import os
+import sys
 from  service_journal.dbt_classifications import dbt_classes
 
 def init_config():
 	init = {
-	    "Settings": {
-	        "Database": "",
-	        "Driver": "{ODBC Driver 11 for SQL Server}",
-	        "Host": "AVAILDEV",
-	        "Username": "",
-	        "Password": "",
-	        "__comment": "Warning: Stored passwords are unencrypted.",
-	        "dbt_sql_map": {
+		"Settings": {
+			"WriteDatabase": "",
+			"ReadDatabase": "",
+			"Driver": "{ODBC Driver 11 for SQL Server}",
+			"Host": "AVAILDEV",
+			"Username": "",
+			"Password": "",
+			"__comment": "Warning: Stored passwords are unencrypted.",
+			"dbt_sql_map": {
 				"date": {
 					"name": "Service_Date",
 					"table": "Calendar",
@@ -29,12 +31,12 @@ def init_config():
 					"table": "Calendar",
 					"nullable": False
 				},
-	            "blockNumber": {
+				"blockNumber": {
 					"name": "Block",
 					"table": "Block-Trips",
 					"nullable": True,
 				},
-	            "tripNumber": {
+				"tripNumber": {
 					"name": "trip",
 					"table": "Block-Trips",
 					"nullable": True
@@ -49,36 +51,37 @@ def init_config():
 					"table": "Block-Trips",
 					"nullable": True
 				},
-	            "mileage": {
+				"mileage": {
 					"name": "trip_mileage",
 					"table": "Block-Trips",
 					"nullable": True
 				},
-	            "distance_feet": {
+				"distance_feet": {
 					"name": "dist_ft",
 					"table": "",
 					"nullable": True
 				},
-	            "trip_minutes": {
+				"trip_minutes": {
 					"name": "trip_minutes",
 					"table": "",
 					"nullable": True
 				},
 				"stop": {
 					"name": "stop",
-					"table":"Block-Trips"
+					"table":"Block-Trips",
+					"nullable": True
 				}
-	        },
-	        "optSelectScheduledQuery": [
-	            "SELECT Message_Type_Id, service_date, block, route, dir, trip, vmh_time, bus, Deviation, Onboard, Boards, Alights, Stop_Id, Stop_Name, Departure_Time, Latitude, Longitude FROM dbo.v_actual_block_trip_stop WHERE service_date = ? AND block = ? ORDER BY vmh_time asc",
-	            "Service_Date",
-	            "BlockNumber"
-	        ],
-	        "selectScheduledQuery": [
-	            "SELECT Message_Type_Id, service_date, block, route, dir, trip, vmh_time, bus, Deviation, Onboard, Boards, Alights, Stop_Id, Stop_Name, Departure_Time, Latitude, Longitude FROM dbo.v_actual_block_trip_stop WHERE service_date = ? ORDER BY vmh_time asc",
-	            "Service_Date"
-	        ]
-	    }
+			},
+			"optSelectScheduledQuery": [
+				"SELECT Message_Type_Id, service_date, block, route, dir, trip, vmh_time, bus, Deviation, Onboard, Boards, Alights, Stop_Id, Stop_Name, Departure_Time, Latitude, Longitude FROM dbo.v_actual_block_trip_stop WHERE service_date = ? AND block = ? ORDER BY vmh_time asc",
+				"Service_Date",
+				"BlockNumber"
+			],
+			"selectScheduledQuery": [
+				"SELECT Message_Type_Id, service_date, block, route, dir, trip, vmh_time, bus, Deviation, Onboard, Boards, Alights, Stop_Id, Stop_Name, Departure_Time, Latitude, Longitude FROM dbo.v_actual_block_trip_stop WHERE service_date = ? ORDER BY vmh_time asc",
+				"Service_Date"
+			]
+		}
 	}
 
 	f = open('config.json', 'w')
@@ -98,15 +101,17 @@ if not os.path.exists('config.json'):
 	init_config()
 
 config = read_config()
-settings = config['Settings']
-writeDatabase = settings['ActualView']
-readDatabase = settings['ScheduledView']
+try:
+	settings = config['Settings']
+except KeyError as e:
+	print(('Error: Key (%s) not found in config.json. If this is your first time '
+	'running this, please setup your config and re-run it.') % (e.args[0]))
+	raise e
 
 dbt_sql_map = settings['dbt_sql_map'] #load in json
-sql_dbt_map = {value['name'] : {'name' : key, 'nullable' : value['nullable']} for (key, value) in dbt_sql_map.items()}
-# test = {value["name"]:{"name" : key, "nullable": value["nullable"]} for key:value in "dbt_sql_map"}
-class TCATConnection:
+sql_dbt_map = {value['name'] : {'name' : key, 'nullable' : value['nullable'], 'table' : value['table']} for (key, value) in dbt_sql_map.items()}
 
+class TCATConnection:
 	def close(self):
 		try:
 			self.db.close()
@@ -114,25 +119,36 @@ class TCATConnection:
 			pass
 	def __del__(self):
 		self.close()
+		self.super().__del__()
 
-	def resetConnection(self, driver=settings['Driver'], user=settings['Username'],
-		  password=settings['Password'], database=settings['Database'],
-		  host=settings['Host']):
-		self.user = user
-		self.password = password
-		self.database = database
-		self.host = host
-		self.db = pyodbc.connect(r'DRIVER=%s;'
+	def resetConnection(self, config):
+		try:
+			self.driver = config['Driver']
+			self.user = config['Username']
+			self.password = config['Password']
+			self.read_database = config['ReadDatabase']
+			self.write_database = config['WriteDatabase']
+			self.host = config['Host']
+		except KeyError as e:
+			print(('Error: Key (%s) not found in config.json. If this is your first time '
+				   'running this, please setup your config and re-run it.') % (e.args[0]))
+			raise e
+		self.read_conn = pyodbc.connect(r'DRIVER=%s;'
 			#The host driver, as list of these can be found on the pyodbc
 			#library readme on github
 			r'SERVER=%s;'
 			r'DATABASE=%s;'
 			r'UID=%s;'
-			r'PWD=%s'% (host, database, user, password))
-	def __init__(self, driver=settings['Driver'], user=settings['Username'],
-		  password=settings['Password'], database=settings['Database'],
-		  host=settings['Host']):
-		self.resetConnection(driver,user,password,database,host)
+			r'PWD=%s'% (self.driver, self.host, self.read_database, self.user, self.password))
+		self.write_conn = pyodbc.connect(r'DRIVER=%s;'
+			#The host driver, as list of these can be found on the pyodbc
+			#library readme on github
+			r'SERVER=%s;'
+			r'DATABASE=%s;'
+			r'UID=%s;'
+			r'PWD=%s'% (self.driver, self.host, self.write_database, self.user, self.password))
+	def __init__(self, config):
+		self.resetConnection(config)
 
 	# Only should be called on
 	def selectActualDate(self, date, block=-1):
@@ -140,7 +156,7 @@ class TCATConnection:
 			query = settings['selectScheduledQuery']
 		else:
 			query = settings['optSelectScheduledQuery']
-		cursor = self.db.cursor()
+		cursor = self.read_conn.cursor()
 		cursor.execute(query, date, block)
 		return cursor
 	def loadData(self, cursor, day=None):
@@ -217,5 +233,5 @@ class TCATConnection:
 					except Exception as e:
 						print('Exception has occurred when trying to write to self.\n%s' % (e))
 						# Debug.debug('Was unable to write the following record to dbo.Segments', record=
-						# 	'VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)'%(day, bus, blockNumber,route, tripNumber,pattern,direction, iStopNumber,iStopName,iStopType, iStopSeen, tStopNumber,tStopName,tStopType, tStopSeen, boards, alights, -1, -1, segseq, iStopTime, tStopTime, segDistance), exception=e)
+						#     'VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)'%(day, bus, blockNumber,route, tripNumber,pattern,direction, iStopNumber,iStopName,iStopType, iStopSeen, tStopNumber,tStopName,tStopType, tStopSeen, boards, alights, -1, -1, segseq, iStopTime, tStopTime, segDistance), exception=e)
 		self.db.commit()

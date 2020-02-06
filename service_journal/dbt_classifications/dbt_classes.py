@@ -90,6 +90,8 @@ class Trip():
 					self.stops[index-1].distance_feet+= self.stops[index].distance_feet
 					self.stops[index-1].mileage+= self.stops[index].mileage
 				return self.pop(index)
+			except ValueError:
+				return None
 
 	# # Built in method to remove a stop from the trip.
 	# # Attempts to use [s] as if it is a Segment to remove from the list.
