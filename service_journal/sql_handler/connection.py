@@ -8,79 +8,168 @@ from  service_journal.dbt_classifications import dbt_classes
 def init_config():
 	init = {
 		"Settings": {
-			"WriteDatabase": "",
-			"ReadDatabase": "",
 			"Driver": "{ODBC Driver 11 for SQL Server}",
 			"Host": "AVAILDEV",
 			"Username": "",
 			"Password": "",
 			"__comment": "Warning: Stored passwords are unencrypted.",
 			"dbt_sql_map": {
-				"date": {
-					"name": "Service_Date",
-					"table": "Calendar",
-					"nullable": True
+				"Actual": {
+					"Database" : "TA_ITHACA_ACTUAL_HISTORY",
+					"date": {
+						"name": "service_day",
+						"view": "v_vehicle_history",
+						"nullable": True
+					},
+					"blockNumber": {
+						"name": "block",
+						"view": "v_vehicle_history",
+						"nullable": True,
+					},
+					"tripNumber": {
+						"name": "trip26",
+						"view": "v_vehicle_history",
+						"nullable": True
+					},
+					"bus": {
+						"name": "bus",
+						"view": "v_vehicle_history",
+						"nullable": True
+					},
+					"time": {
+						"name": "Time",
+						"view": "v_vehicle_history",
+						"nullable": True
+					},
+					# "dep_time": {
+					# 	"name": "Departure_Time",
+					# 	"view": "v_vehicle_history",
+					# 	"nullable": True
+					# },
+					"route": {
+						"name": "Route",
+						"view": "v_vehicle_history",
+						"nullable": True
+					},
+					"dir": {
+						"name": "dir",
+						"view": "v_vehicle_history",
+						"nullable": True
+					},
+					"stop": {
+						"name": "Stop_Id",
+						"view":"v_vehicle_history",
+						"nullable": True
+					},
+					"name": {
+						"name": "Stop_Name",
+						"view": "v_vehicle_history",
+						"nullable": True
+					},
+					"boards": {
+						"name": "Boards",
+						"view": "v_vehicle_history",
+						"nullable": True
+					},
+					"alights": {
+						"name": "Alights",
+						"view": "v_vehicle_history",
+						"nullable": True
+					},
+					"onboard": {
+						"name": "Onboard",
+						"view": "v_vehicle_history",
+						"nullable": True
+					},
+					"opStatus": {
+						"name": "OperationalStatus",
+						"view": "v_vehicle_history",
+						"nullable": True
+					}
 				},
-				"calendar": {
-					"name": "Calendar",
-					"table": "Calendar",
-					"nullable": False
-				},
-				"sl_id": {
-					"name": "SL-ID",
-					"table": "Calendar",
-					"nullable": False
-				},
-				"blockNumber": {
-					"name": "Block",
-					"table": "Block-Trips",
-					"nullable": True,
-				},
-				"tripNumber": {
-					"name": "trip",
-					"table": "Block-Trips",
-					"nullable": True
-				},
-				"order": {
-					"name": "order",
-					"table": "Block-Trips",
-					"nullable": True
-				},
-				"route": {
-					"name": "Route",
-					"table": "Block-Trips",
-					"nullable": True
-				},
-				"mileage": {
-					"name": "trip_mileage",
-					"table": "Block-Trips",
-					"nullable": True
-				},
-				"distance_feet": {
-					"name": "dist_ft",
-					"table": "",
-					"nullable": True
-				},
-				"trip_minutes": {
-					"name": "trip_minutes",
-					"table": "",
-					"nullable": True
-				},
-				"stop": {
-					"name": "stop",
-					"table":"Block-Trips",
-					"nullable": True
+				"Scheduled": {
+					"Database" : "TA_ITHACA_SCHEDULE_HISTORY",
+					"date": {
+						"name": "calendar",
+						"view": "v_sched_trip_stop",
+						"nullable": True
+					},
+					"blockNumber": {
+						"name": "BlockNumber",
+						"view": "v_sched_trip_stop",
+						"nullable": True
+					},
+					"dir": {
+						"name": "Direction",
+						"view": "v_sched_trip_stop",
+						"nullable": True
+					},
+					"tripNumber": {
+						"name": "Trip26",
+						"view": "v_sched_trip_stop",
+						"nullable": True
+					},
+					"i_stop": {
+						"name": "iStop",
+						"view": "v_sched_trip_stop",
+						"nullable": True
+					},
+					"stop": {
+						"name": "tStop",
+						"view": "v_sched_trip_stop",
+						"nullable": True
+					},
+					"i_stop_name": {
+						"name": "iStopName",
+						"view": "v_sched_trip_stop",
+						"nullable": True
+					},
+					"t_stop_name": {
+						"name": "tStopName",
+						"view": "v_sched_trip_stop",
+						"nullable": True
+					},
+					"time": {
+						"name": "DepartureTime",
+						"view": "v_sched_trip_stop",
+						"nullable": True
+					},
+					"layover": {
+						"name": "layover",
+						"view": "v_sched_trip_stop",
+						"nullable": True
+					},
+					"run": {
+						"name": "RunNumber",
+						"view": "v_sched_trip_stop",
+						"nullable": True
+					},
+					"pieceNumber": {
+						"name": "PieceNumber",
+						"view": "v_sched_trip_stop",
+						"nullable": True
+					}
 				}
+
 			},
-			"optSelectScheduledQuery": [
-				"SELECT Message_Type_Id, service_date, block, route, dir, trip, vmh_time, bus, Deviation, Onboard, Boards, Alights, Stop_Id, Stop_Name, Departure_Time, Latitude, Longitude FROM dbo.v_actual_block_trip_stop WHERE service_date = ? AND block = ? ORDER BY vmh_time asc",
-				"Service_Date",
-				"BlockNumber"
-			],
-			"selectScheduledQuery": [
-				"SELECT Message_Type_Id, service_date, block, route, dir, trip, vmh_time, bus, Deviation, Onboard, Boards, Alights, Stop_Id, Stop_Name, Departure_Time, Latitude, Longitude FROM dbo.v_actual_block_trip_stop WHERE service_date = ? ORDER BY vmh_time asc",
-				"Service_Date"
-			]
+			"views": {
+				"v_sched_trip_stop": {
+					"deflt_query": "SELECT TOP 1000 [calendar],[ServiceRecordId],"+
+					"[BlockNumber],[TripRecordId],[RouteRecordId],[PatternRecordId],"+
+					"[Direction],[Trip26],[iStop],[tStop],[iStopName],[tStopName],"+
+					"[DepartureTime],[layover],[timepoint],[RunNumber],[PieceNumber]"+
+  					"FROM [TA_ITHACA_SCHEDULE_HISTORY].[dbo].[v_sched_trip_stop]"
+				}
+			}
+			# "optSelectScheduledQuery": [
+			# 	"SELECT Message_Type_Id, service_date, block, route, dir, trip, vmh_time, bus, Deviation, Onboard, Boards, Alights, Stop_Id, Stop_Name, Departure_Time, Latitude, Longitude FROM dbo.v_actual_block_trip_stop WHERE service_date = ? AND block = ? ORDER BY vmh_time asc",
+			# 	"Service_Date",
+			# 	"BlockNumber"
+			# ],
+			# "selectScheduledQuery": [
+			# 	"SELECT Message_Type_Id, service_date, block, route, dir, trip, vmh_time, bus, Deviation, Onboard, Boards, Alights, Stop_Id, Stop_Name, Departure_Time, Latitude, Longitude FROM dbo.v_actual_block_trip_stop WHERE service_date = ? ORDER BY vmh_time asc",
+			# 	"Service_Date"
+			# ]
 		}
 	}
 
@@ -109,8 +198,14 @@ except KeyError as e:
 	raise e
 
 dbt_sql_map = settings['dbt_sql_map'] #load in json
-sql_dbt_map = {value['name'] : {'name' : key, 'nullable' : value['nullable'], 'table' : value['table']} for (key, value) in dbt_sql_map.items()}
-
+# TEMP:
+# import pprint
+# pprint.pprint(dbt_sql_map)
+# sql_dbt_map = {value['name'] : {'name' : key, 'nullable' : value['nullable'], 'view' : value['view']} for (key, value) in dbt_sql_map.items()}
+# sql_dbt_map = {'Scheduled' : {value['name'] : {'name' : key, 'nullable' : value['nullable'], 'view' : value['view']} for (key, value) in dbt_sql_map['Scheduled'].items()}, 'Actual' : {value['name'] : {'name' : key, 'nullable' : value['nullable'], 'view' : value['view']} for (key, value) in dbt_sql_map['Actual'].items()}}
+# pprint.pprint(sql_dbt_map)
+# Still not working
+# sql_dbt_map = {exist: {value if key=='Database' else value['name'] : {'name' : key, 'nullable' : value['nullable'], 'view' : value['view']} for (key, value) in items.items()} for (exist, items) in dbt_sql_map.items()}
 class TCATConnection:
 	def close(self):
 		try:
