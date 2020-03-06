@@ -154,11 +154,18 @@ def init_config():
 			},
 			"views": {
 				"v_sched_trip_stop": {
-					"deflt_query": "SELECT TOP 1000 [calendar],[ServiceRecordId],"+
-					"[BlockNumber],[TripRecordId],[RouteRecordId],[PatternRecordId],"+
-					"[Direction],[Trip26],[iStop],[tStop],[iStopName],[tStopName],"+
-					"[DepartureTime],[layover],[timepoint],[RunNumber],[PieceNumber]"+
-  					"FROM [TA_ITHACA_SCHEDULE_HISTORY].[dbo].[v_sched_trip_stop]"
+					"deflt_query": "SELECT [%(date)s],[%(blockNumber)s],[%(dir)s],"+
+					"[%(tripNumber)s],[%(i_stop)s],[%(t_stop)s],[%(i_stop_name)s],"+
+					"[%(t_stop_name)s],[%(time)s],[%(layover)s],[%(run)s],[%(pieceNumber)s]"+
+  					"FROM [TA_ITHACA_SCHEDULE_HISTORY].[dbo].[v_sched_trip_stop] "+
+					"WHERE calendar=%(calaendarValue)s"
+				},
+				"v_vehicle_history": {
+					"deflt_query": "SELECT [%(date)s], [%(blockNumber)s], "+
+					"[%(tripNumber)s], [%(bus)s], [%(time)s], [%(route)s], "+
+					"[%(dir)s], [%(stop)s], [%(name)s], [%(boards)s], "+
+					"[%(alights)s], [%(onboard)s], [%(opStatus)s]"+
+					"FROM [TA_ITHACA_ACTUAL_HISTORY].[dbo].[v_actual_block_trip_stop]"
 				}
 			}
 			# "optSelectScheduledQuery": [
