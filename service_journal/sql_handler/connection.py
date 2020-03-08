@@ -7,15 +7,14 @@ from  service_journal.dbt_classifications import dbt_classes
 
 def init_config():
 	init = {
-		"Settings": {
-			"Driver": "{ODBC Driver 11 for SQL Server}",
-			"Host": "AVAILDEV",
-			"Username": "",
-			"Password": "",
+		"settings": {
+			"driver": "{ODBC Driver 11 for SQL Server}",
+			"host": "AVAILDEV",
+			"username": "",
+			"password": "",
 			"__comment": "Warning: Stored passwords are unencrypted.",
 			"dbt_sql_map": {
-				"Actual": {
-					"Database" : "TA_ITHACA_ACTUAL_HISTORY",
+				"actual": {
 					"date": {
 						"name": "service_day",
 						"view": "v_vehicle_history",
@@ -87,8 +86,7 @@ def init_config():
 						"nullable": True
 					}
 				},
-				"Scheduled": {
-					"Database" : "TA_ITHACA_SCHEDULE_HISTORY",
+				"scheduled": {
 					"date": {
 						"name": "calendar",
 						"view": "v_sched_trip_stop",
@@ -149,25 +147,29 @@ def init_config():
 						"view": "v_sched_trip_stop",
 						"nullable": True
 					}
-				}
-
-			},
-			"views": {
-				"v_sched_trip_stop": {
-					"deflt_query": "SELECT [%(date)s],[%(blockNumber)s],[%(dir)s],"+
-					"[%(tripNumber)s],[%(i_stop)s],[%(t_stop)s],[%(i_stop_name)s],"+
-					"[%(t_stop_name)s],[%(time)s],[%(layover)s],[%(run)s],[%(pieceNumber)s]"+
-  					"FROM [TA_ITHACA_SCHEDULE_HISTORY].[dbo].[v_sched_trip_stop] "+
-					"WHERE calendar=%(calaendarValue)s"
 				},
-				"v_vehicle_history": {
-					"deflt_query": "SELECT [%(date)s], [%(blockNumber)s], "+
-					"[%(tripNumber)s], [%(bus)s], [%(time)s], [%(route)s], "+
-					"[%(dir)s], [%(stop)s], [%(name)s], [%(boards)s], "+
-					"[%(alights)s], [%(onboard)s], [%(opStatus)s]"+
-					"FROM [TA_ITHACA_ACTUAL_HISTORY].[dbo].[v_actual_block_trip_stop]"
+				"views": {
+					"v_sched_trip_stop": {
+						"deflt_query": "SELECT [%(date)s],[%(blockNumber)s],[%(dir)s],"+
+						"[%(tripNumber)s],[%(i_stop)s],[%(t_stop)s],[%(i_stop_name)s],"+
+						"[%(t_stop_name)s],[%(time)s],[%(layover)s],[%(run)s],[%(pieceNumber)s]"+
+	  					"FROM [%(table)s] "+
+						"WHERE %(searchParam)s=%(search)s"
+					},
+					"v_vehicle_history": {
+						"deflt_query": "SELECT [%(date)s], [%(blockNumber)s], "+
+						"[%(tripNumber)s], [%(bus)s], [%(time)s], [%(route)s], "+
+						"[%(dir)s], [%(stop)s], [%(name)s], [%(boards)s], "+
+						"[%(alights)s], [%(onboard)s], [%(opStatus)s]"+
+						"FROM [%(table)s] "+
+						"WHERE %(searchParam)s=%(search)s"
+					}
+				},
+				"databases": {
+					"scheduled": "TA_ITHACA_SCHEDULE_HISTORY",
+					"actual": "TA_ITHACA_ACTUAL_HISTORY",
 				}
-			}
+			},
 			# "optSelectScheduledQuery": [
 			# 	"SELECT Message_Type_Id, service_date, block, route, dir, trip, vmh_time, bus, Deviation, Onboard, Boards, Alights, Stop_Id, Stop_Name, Departure_Time, Latitude, Longitude FROM dbo.v_actual_block_trip_stop WHERE service_date = ? AND block = ? ORDER BY vmh_time asc",
 			# 	"Service_Date",
@@ -205,10 +207,19 @@ except KeyError as e:
 	raise e
 
 dbt_sql_map = settings['dbt_sql_map'] #load in json
+sql_dbt_map={}
+for t in dbt_sql_map:
+	if not t in sql_dbt_map:
+		sql_dbt_map[t] = {}
+	if t=='actual' or t=='scheduled':
+		for field in dbt_sql_map[t]:
+			sql_dbt_map[t][dbt_sql_map[t][field]['name']] = {'name':field, 'nullable':dbt_sql_map[t][field]['nullable'], 'view':dbt_sql_map[t][field]['view']}
+	else:
+		sql_dbt_map[t]=dbt_sql_map[t]
 # TEMP:
 # import pprint
 # pprint.pprint(dbt_sql_map)
-# sql_dbt_map = {value['name'] : {'name' : key, 'nullable' : value['nullable'], 'view' : value['view']} for (key, value) in dbt_sql_map.items()}
+
 # sql_dbt_map = {'Scheduled' : {value['name'] : {'name' : key, 'nullable' : value['nullable'], 'view' : value['view']} for (key, value) in dbt_sql_map['Scheduled'].items()}, 'Actual' : {value['name'] : {'name' : key, 'nullable' : value['nullable'], 'view' : value['view']} for (key, value) in dbt_sql_map['Actual'].items()}}
 # pprint.pprint(sql_dbt_map)
 # Still not working
@@ -225,11 +236,10 @@ class TCATConnection:
 
 	def resetConnection(self, config):
 		try:
-			self.driver = config['Driver']
-			self.user = config['Username']
-			self.password = config['Password']
-			self.read_database = config['ReadDatabase']
-			self.write_database = config['WriteDatabase']
+			self.driver = config['driver']
+			self.user = config['username']
+			self.password = config['password']
+			self.databases = config['databases']
 			self.host = config['Host']
 		except KeyError as e:
 			print(('Error: Key (%s) not found in config.json. If this is your first time '
