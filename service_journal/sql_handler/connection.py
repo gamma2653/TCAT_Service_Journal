@@ -3,8 +3,23 @@ import pyodbc
 import json
 import os
 import sys
-from  service_journal.dbt_classifications import dbt_classes
+from service_journal.dbt_classifications import dbt_classes
+from service_journal.gen_utils.debug import Logger
 
+if '-ll' in sys.argv:
+	try:
+		level = sys.argv[sys.argv.index('-ll')+1]
+	except IndexOutOfRangeException:
+		logger = Logger(__name__)
+		logger.error('Logger was not able to be initialized to specified level. -ll Must be followed by Level Code.')
+elif '--log-level' in sys.argv:
+	try:
+		level = sys.argv[sys.argv.index('--log-level')+1]
+	except IndexOutOfRangeException:
+		logger = Logger(__name__)
+		logger.error('Logger was not able to be initialized to specified level. --log-level Must be followed by Level Code.')
+else:
+	logger = Logger()
 INIT = {
 	'settings': {
 		'driver': '{ODBC Driver 11 for SQL Server}',
@@ -196,6 +211,7 @@ class Connection:
 		self.super().__del__()
 
 	def __init__(self, config_path):
+		debug.print_d('', module=__name__, level=debug.INFO)
 		# Open or initialize config into dictionary
 		if not os.path.exists(config_path, 'config.json'):
 			init_config()
@@ -269,7 +285,6 @@ class Connection:
 
 	def loadData(self, cursor, day=None):
 		cursor = self.cursor
-		retday = None
 
 		row = cursor.fetchone()
 		# cursor_description documentation:
@@ -283,9 +298,6 @@ class Connection:
 		col_names = cursor.description[0]
 		nullable = cursor.description[6]
 		dbt_col_names = [sql_dbt_map[col] for col in col_names]
-		print(col_names)
-		print(dbt_col_names)
-		print(nullable)
 		while row:
 			# We zip up our data making a key-value pairing oc col_names and rows
 			data = dict(zip(dbt_col_names, row))
@@ -307,9 +319,13 @@ class Connection:
 				trip = bus.getTrip(data['tripNumber'])
 			except TripNotFound:
 				trip = dbt_classes.Trip(data['tripNumber'], seq, data['route'], data['dir'])
+			trip.addStop(Stop(-1, data['stop'], data['name'], data['time'], -1))
+			# Will replace -1's when I hear back.
+			# -1 Values have to inquire about.
 			# Have to login to avl to do some testing to see if col_names is
 			# a tuple of column names
 			row = cursor.fetchone()
+		return day
 	# [actualDay] is an ActualDay being written to the database
 	def writeToRebuiltSegments(actualDay, connection):
 		cursor = self.db.cursor()

@@ -72,14 +72,17 @@ class Trip():
 		self.stops.append(s)
 	def get_stopIDs(self):
 		return [stop.stopID for stop in self.stops]
+	# Useful for adding a stop before [index:] number of stops.
 	def increment_seq(self, index = 0, amount=1):
 		working = self.stops[index:]
 		for stop in working:
 			stop.seq+=amount
+	# [s] can be either a Stop object or a StopID (int). if [correct_distance],
+	# function will add distance from removed stop to previous stop.
 	def removeStop(self, s, correct_distance=False):
 		try:
 			index = self.stops.index(s)
-			if index>0 and correct_distance:
+			if correct_distance and index>0:
 				self.stops[index-1].distance_feet+= self.stops[index].distance_feet
 				self.stops[index-1].mileage+= self.stops[index].mileage
 			return self.pop(index)
