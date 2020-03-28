@@ -19,7 +19,24 @@ elif '--log-level' in sys.argv:
 		logger = Logger(__name__)
 		logger.error('Logger was not able to be initialized to specified level. --log-level Must be followed by Level Code.')
 else:
-	logger = Logger()
+	level = -1
+	logger = Logger(__name__)
+if level != -1:
+	try:
+		try:
+			l_level = Level(int(level))
+			logger.set_listen_level(l_level)
+		except ValueError:
+			l_level = Level[str(level)]
+			logger.set_listen_level(l_level)
+		except:
+			exc_type, exc_value, exc_traceback = sys.exc_info()
+			print('Ran into an exception while trying to set level:\n %s' % ("".join(tb.format_exception(exc_type, exc_value, exc_traceback, limit = 10))))
+	except:
+		exc_type, exc_value, exc_traceback = sys.exc_info()
+		print('Ran into an exception while trying to set level:\n %s' % ("".join(tb.format_exception(exc_type, exc_value, exc_traceback, limit = 10))))
+else:
+
 INIT = {
 	'settings': {
 		'driver': '{ODBC Driver 11 for SQL Server}',
