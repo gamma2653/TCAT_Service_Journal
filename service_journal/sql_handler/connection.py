@@ -4,6 +4,7 @@ import json
 import os
 import sys
 from service_journal.dbt_classifications import dbt_classes
+from service_journal.dbt_classifications.exceptions import BusNotFound, BlockNotFound, TripNotFound
 from service_journal.gen_utils.debug import Logger
 
 if '-ll' in sys.argv:
