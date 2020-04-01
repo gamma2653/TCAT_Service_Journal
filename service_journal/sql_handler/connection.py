@@ -322,6 +322,8 @@ class Connection:
 		return (aCursor, sCursor)
 
 	def loadData(self, cursors, day=None):
+
+
 		aCursor, sCursor = cursors
 
 		# Start with ActualData
@@ -345,8 +347,9 @@ class Connection:
 			# We zip up our data making a key-value pairing of col_names and rows
 			data = dict(zip(dbt_col_names, row))
 			if not day:
-				day = dbt_classes.Day()
-			day.date = data['date']
+				day = dbt_classes.Day(data['date'])
+			elif day.date != data['date']:
+				logger.warn('Date mismatch, reading %s into a day with %s.' % (data['date'], day.date))	
 			# This would be for scheduled
 			# try:
 			# 	block = day.getBlock(data['blockNumber'])
