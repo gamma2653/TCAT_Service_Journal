@@ -9,33 +9,22 @@ from service_journal.gen_utils.debug import Logger
 if '-ll' in sys.argv:
 	try:
 		level = sys.argv[sys.argv.index('-ll')+1]
-	except IndexOutOfRangeException:
+		logger = Logger(__name__)
+		logger.set_listen_level(level)
+	except IndexError:
 		logger = Logger(__name__)
 		logger.error('Logger was not able to be initialized to specified level. -ll Must be followed by Level Code.')
 elif '--log-level' in sys.argv:
 	try:
 		level = sys.argv[sys.argv.index('--log-level')+1]
-	except IndexOutOfRangeException:
+		logger = Logger(__name__)
+		logger.set_listen_level(level)
+	except IndexError:
 		logger = Logger(__name__)
 		logger.error('Logger was not able to be initialized to specified level. --log-level Must be followed by Level Code.')
 else:
-	level = -1
 	logger = Logger(__name__)
-if level != -1:
-	try:
-		try:
-			l_level = Level(int(level))
-			logger.set_listen_level(l_level)
-		except ValueError:
-			l_level = Level[str(level)]
-			logger.set_listen_level(l_level)
-		except:
-			exc_type, exc_value, exc_traceback = sys.exc_info()
-			print('Ran into an exception while trying to set level:\n %s' % ("".join(tb.format_exception(exc_type, exc_value, exc_traceback, limit = 10))))
-	except:
-		exc_type, exc_value, exc_traceback = sys.exc_info()
-		print('Ran into an exception while trying to set level:\n %s' % ("".join(tb.format_exception(exc_type, exc_value, exc_traceback, limit = 10))))
-else:
+
 
 INIT = {
 	'settings': {
@@ -180,20 +169,20 @@ INIT = {
 				}
 			},
 			'views': {
-				'v_sched_trip_stop': {
-					'deflt_query': ('SELECT %(date)s,%(blockNumber)s,%(dir)s,'
-					'%(tripNumber)s,%(i_stop)s,%(t_stop)s,%(i_stop_name)s,'
-					'%(t_stop_name)s,%(time)s,%(layover)s,%(run)s,%(pieceNumber)s'
-					'FROM %(table)s '
-					'WHERE %(searchParam)s=%(search)s')
+				'scheduled': {
+					'table': 'v_sched_trip_stop',
+
+					'deflt_query': 'SELECT ?,?,?,?,?,?,?,?,?,?,?,?,? FROM ? WHERE ?=?',
+
+					'opt_query': 'SELECT ?,?,?,?,?,?,?,?,?,?,?,?,? FROM ? WHERE ?=? AND ?=?',
+
 				},
-				'v_vehicle_history': {
-					'deflt_query': ('SELECT %(date)s, %(blockNumber)s, '
-					'%(tripNumber)s, %(bus)s, %(time)s, %(route)s, '
-					'%(dir)s, %(stop)s, %(name)s, %(boards)s, '
-					'%(alights)s, %(onboard)s, %(opStatus)s'
-					'FROM %(table)s '
-					'WHERE %(searchParam)s=%(search)s')
+				'actual': {
+					'table': 'v_vehicle_history',
+
+					'deflt_query': 'SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? FROM ? WHERE ?=?',
+
+					'opt_query': 'SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? FROM ? WHERE ?=? AND ?=?',
 				}
 			},
 			'databases': {
@@ -289,21 +278,54 @@ class Connection:
 			r'PWD=%s'% (self.driver, self.host, self.write_database, self.user, self.password))
 
 	# Only should be called on
-	def selectActualDate(self, date, block=-1):
+	def selectDate(self, date, block=-1):
 		if block==-1:
-			query = settings['dbt_sql_map']['views']['actual']
+			aQuery = settings['dbt_sql_map']['views']['v_vehicle_history']['deflt_query']
+			sQuery = settings['dbt_sql_map']['views']['v_sched_trip_stop']['deflt_query']
 		else:
-			query = settings['dbt_sql_map']['views']['actual']
+			aQuery = settings['dbt_sql_map']['views']['v_vehicle_history']['opt_query']
+			sQuery = settings['dbt_sql_map']['views']['v_sched_trip_stop']['opt_query']
 		# else:
 		# 	query = settings['optSelectScheduledQuery']
-		cursor = self.read_conn.cursor()
-		cursor.execute(query, date, block)
-		return cursor
+		aCursor = self.actual_read_conn.cursor()
+		sCursor = self.scheduled_read_conn.cursor()
+		if block==-1:
+			aCursor.execute(aQuery, query, dbt_sql_map['date'], \
+			dbt_sql_map['blockNumber'], dbt_sql_map['tripNumber'],\
+			dbt_sql_map['bus'], dbt_sql_map['time'], dbt_sql_map['route'],\
+			dbt_sql_map['dir'], dbt_sql_map['stop'], dbt_sql_map['name'],\
+			dbt_sql_map['boards'], dbt_sql_map['alights'], dbt_sql_map['onboards'],\
+			dbt_sql_map['opStatus'], table, dbt_sql_map['date'], date)
 
-	def loadData(self, cursor, day=None):
-		cursor = self.cursor
+			sCursor.execute(sQuery, dbt_sql_map['date'], dbt_sql_map['blockNumber'],\
+			dbt_sql_map['dir'], dbt_sql_map['tripNumber'], dbt_sql_map['i_stop'],\
+			dbt_sql_map['t_stop'], dbt_sql_map['i_stop_name'],\
+			dbt_sql_map['t_stop_name'], dbt_sql_map['layover'], dbt_sql_map['run'],\
+			dbt_sql_map['pieceNumber'], table, dbt_sql_map['date'], date)
 
-		row = cursor.fetchone()
+		else:
+			aCursor.execute(aQuery, query, dbt_sql_map['date'], \
+			dbt_sql_map['blockNumber'], dbt_sql_map['tripNumber'],\
+			dbt_sql_map['bus'], dbt_sql_map['time'], dbt_sql_map['route'],\
+			dbt_sql_map['dir'], dbt_sql_map['stop'], dbt_sql_map['name'],\
+			dbt_sql_map['boards'], dbt_sql_map['alights'], dbt_sql_map['onboards'],\
+			dbt_sql_map['opStatus'], table, dbt_sql_map['date'], date,\
+			dbt_sql_map['blockNumber'], block)
+
+			sCursor.execute(sQuery, dbt_sql_map['date'], dbt_sql_map['blockNumber'],\
+			dbt_sql_map['dir'], dbt_sql_map['tripNumber'], dbt_sql_map['i_stop'],\
+			dbt_sql_map['t_stop'], dbt_sql_map['i_stop_name'],\
+			dbt_sql_map['t_stop_name'], dbt_sql_map['layover'], dbt_sql_map['run'],\
+			dbt_sql_map['pieceNumber'], table, dbt_sql_map['date'], date,\
+			dbt_sql_map['blockNumber'], block)
+		return (aCursor, sCursor)
+
+	def loadData(self, cursors, day=None):
+		aCursor, sCursor = cursors
+
+		# Start with ActualData
+
+		row = aCursor.fetchone()
 		# cursor_description documentation:
 		# 0. column name (or alias, if specified in the SQL)
 		# 1. type code
@@ -312,11 +334,14 @@ class Connection:
 		# 4. precision
 		# 5. scale
 		# 6. nullable (True/False)
-		col_names = cursor.description[0]
-		nullable = cursor.description[6]
-		dbt_col_names = [sql_dbt_map[col] for col in col_names]
+		aCol_names = aCursor.description[0]
+		aNullable = aCursor.description[6]
+		sCol_names = sCursor.description[0]
+		sNullable = sCursor.description[6]
+		# get dbt_names for each column for abstraction
+		dbt_col_names = [sql_dbt_map[col] for col in aCol_names]
 		while row:
-			# We zip up our data making a key-value pairing oc col_names and rows
+			# We zip up our data making a key-value pairing of col_names and rows
 			data = dict(zip(dbt_col_names, row))
 			if not day:
 				day = dbt_classes.Day()
@@ -342,6 +367,28 @@ class Connection:
 			# Have to login to avl to do some testing to see if col_names is
 			# a tuple of column names
 			row = cursor.fetchone()
+
+		# Now for scheduled data
+
+		row = sCursor.fetchone()
+		dbt_col_names = [sql_dbt_map[col] for col in sCol_names]
+		while row:
+			data = dict(zip(dbt_col_names, row))
+			if not day:
+				day = dbt_classes.Day()
+			day.date = data['date']
+			try:
+				block = day.getBlock(data['blockNumber'])
+			except BlockNotFound:
+				block = dbt_classes.Block(data('blockNumber'))
+				day.addBlock(bus)
+			try:
+				trip = block.getTrip(data['tripNumber'])
+			except TripNotFound:
+				trip = dbt_classes.Trip(data['tripNumber'], seq, data['route'], data['dir'])
+			trip.addStop(Stop(-1, data['stop'], data['name'], data['time'], -1))
+			row = cursor.fetchone()
+
 		return day
 	# [actualDay] is an ActualDay being written to the database
 	def writeToRebuiltSegments(actualDay, connection):

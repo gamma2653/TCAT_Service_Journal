@@ -1,6 +1,9 @@
+import sys
+import traceback as tb
 from datetime import datetime
-from enum import Enum
-class Level(Enum):
+from enum import IntEnum
+class Level(IntEnum):
+
 	FINEST = 7
 	FINER = 6
 	FINE = 5
@@ -30,26 +33,52 @@ class Logger:
 	def __init__(self, module, level=Level.INFO):
 		self.level = level
 		self.module = module
-	def log(message, level):
+	# Accepts str, int, or Level types.
+	def set_listen_level(self, level):
+		try:
+			try:
+				level = Level(int(level))
+				self.level = level
+			except ValueError:
+				level = Level[str(level)]
+				self.level = level
+			except:
+				exc_type, exc_value, exc_traceback = sys.exc_info()
+				print('Ran into an unexpected exception while trying to set level:\n %s' % ("".join(tb.format_exception(exc_type, exc_value, exc_traceback, limit = 10))))
+		except:
+			exc_type, exc_value, exc_traceback = sys.exc_info()
+			print('Ran into an exception while trying to set level:\n %s' % ("".join(tb.format_exception(exc_type, exc_value, exc_traceback, limit = 10))))
+	# General log method.
+	def log(self, message, level):
 		if level <= self.level:
 			print('[%s] [%s]: [%s] %s' % (datetime.now().strftime('%H:%M:%S'), level, self.module, message))
 			# TODO: Add log.txt
-	def finest(message):
-		log(message, Level.FINEST)
-	def finer(message):
-		log(message, Level.FINER)
-	def fine(message):
-		log(message, Level.FINE)
-	def info(message):
-		log(message, Level.INFO)
-	def warn(message):
-		log(message, Level.WARN)
-	def error(message):
-		log(message, Level.ERROR)
-	def fatal(message):
-		log(message, Level.FATAL)
+	# Log methods for ease of use.
+	def finest(self, message):
+		self.log(message, Level.FINEST)
+	def finer(self, message):
+		self.log(message, Level.FINER)
+	def fine(self, message):
+		self.log(message, Level.FINE)
+	def info(self, message):
+		self.log(message, Level.INFO)
+	def warn(self, message):
+		self.log(message, Level.WARN)
+	def error(self,message):
+		self.log(message, Level.ERROR)
+	def fatal(self, message):
+		self.log(message, Level.FATAL)
 
-	def set_module(module):
+	# Set's module for Logger object.
+	def set_module(self, module):
 		self.module = module
-	def set_listen_level(level):
-		self.level = level
+logger = Logger(__name__)
+print(logger.level)
+logger.set_listen_level('ERROR')
+print(logger.level)
+logger.set_listen_level(2)
+print(logger.level)
+logger.set_listen_level(Level.FINEST)
+print(logger.level)
+logger.set_listen_level(-1)
+print(logger.level)
