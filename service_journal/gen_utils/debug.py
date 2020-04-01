@@ -72,13 +72,3 @@ class Logger:
 	# Set's module for Logger object.
 	def set_module(self, module):
 		self.module = module
-logger = Logger(__name__)
-print(logger.level)
-logger.set_listen_level('ERROR')
-print(logger.level)
-logger.set_listen_level(2)
-print(logger.level)
-logger.set_listen_level(Level.FINEST)
-print(logger.level)
-logger.set_listen_level(-1)
-print(logger.level)
