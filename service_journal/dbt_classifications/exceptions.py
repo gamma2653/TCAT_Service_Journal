@@ -8,3 +8,5 @@ class NotSchedule(Exception):
 	pass
 class BusNotFound(Exception):
 	pass
+class InformationMismatch(Exception):
+	pass

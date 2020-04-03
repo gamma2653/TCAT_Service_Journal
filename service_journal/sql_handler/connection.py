@@ -7,25 +7,8 @@ from service_journal.dbt_classifications import dbt_classes
 from service_journal.dbt_classifications.exceptions import BusNotFound, BlockNotFound, TripNotFound
 from service_journal.gen_utils.debug import Logger
 
-if '-ll' in sys.argv:
-	try:
-		level = sys.argv[sys.argv.index('-ll')+1]
-		logger = Logger(__name__)
-		logger.set_listen_level(level)
-	except IndexError:
-		logger = Logger(__name__)
-		logger.error('Logger was not able to be initialized to specified level. -ll Must be followed by Level Code.')
-elif '--log-level' in sys.argv:
-	try:
-		level = sys.argv[sys.argv.index('--log-level')+1]
-		logger = Logger(__name__)
-		logger.set_listen_level(level)
-	except IndexError:
-		logger = Logger(__name__)
-		logger.error('Logger was not able to be initialized to specified level. --log-level Must be followed by Level Code.')
-else:
-	logger = Logger(__name__)
-
+logger = Logger(__name__)
+logger.read_args()
 
 INIT = {
 	'settings': {
@@ -196,15 +179,19 @@ INIT = {
 
 
 def init_config():
+	logger.info('Initializing config...')
 	f = open('config.json', 'w')
 	f.write(json.dumps(INIT, sort_keys=True, indent=4))
 	f.close()
+	logger.info('Config has been initalized!')
 
 def read_config():
+	logger.fine('Reading config.')
 	f = open('config.json', 'r')
 	config = json.loads(f.read())
 	f.close()
 	del f
+	logger.fine('Read config.')
 	return config
 
 class Connection:
@@ -218,7 +205,7 @@ class Connection:
 		self.super().__del__()
 
 	def __init__(self, config_path):
-		debug.print_d('', module=__name__, level=debug.INFO)
+		logger.info('Initializing Connection with config path: %s' % (config_path))
 		# Open or initialize config into dictionary
 		if not os.path.exists(config_path, 'config.json'):
 			init_config()
@@ -243,9 +230,11 @@ class Connection:
 				sql_dbt_map[t]=dbt_sql_map[t]
 		self.dbt_sql_map = dbt_sql_map
 		self.sql_dbt_map = sql_dbt_map
+		logger.info('dbt and sql mappings made!')
 		self.resetConnection(config)
 
 	def resetConnection(self, config):
+		logger.info('Resetting connection to %s.', str(config))
 		try:
 			self.driver = config['driver']
 			self.user = config['username']
@@ -277,9 +266,11 @@ class Connection:
 			r'DATABASE=%s;'
 			r'UID=%s;'
 			r'PWD=%s'% (self.driver, self.host, self.write_database, self.user, self.password))
+		logger.info('Connection successfully set!')
 
 	# Only should be called on
 	def selectDate(self, date, block=-1):
+		logger.info('Selecting block=%s on day=%s' % (str(date), 'all' if block==-1 else str(block)))
 		if block==-1:
 			aQuery = settings['dbt_sql_map']['views']['v_vehicle_history']['deflt_query']
 			sQuery = settings['dbt_sql_map']['views']['v_sched_trip_stop']['deflt_query']
@@ -319,10 +310,11 @@ class Connection:
 			dbt_sql_map['t_stop_name'], dbt_sql_map['layover'], dbt_sql_map['run'],\
 			dbt_sql_map['pieceNumber'], table, dbt_sql_map['date'], date,\
 			dbt_sql_map['blockNumber'], block)
+		logger.info('%s successfully selected!' % (str(date)))
 		return (aCursor, sCursor)
 
 	def loadData(self, cursors, day=None):
-
+		logger.info('Loading data from cursor.')
 
 		aCursor, sCursor = cursors
 
@@ -338,9 +330,9 @@ class Connection:
 		# 5. scale
 		# 6. nullable (True/False)
 		aCol_names = aCursor.description[0]
-		aNullable = aCursor.description[6]
+		aNullable = aCursor.description[6] #Unused at the moment
 		sCol_names = sCursor.description[0]
-		sNullable = sCursor.description[6]
+		sNullable = sCursor.description[6] #Unused at the moment
 		# get dbt_names for each column for abstraction
 		dbt_col_names = [sql_dbt_map[col] for col in aCol_names]
 		while row:
@@ -349,7 +341,7 @@ class Connection:
 			if not day:
 				day = dbt_classes.Day(data['date'])
 			elif day.date != data['date']:
-				logger.warn('Date mismatch, reading %s into a day with %s.' % (data['date'], day.date))	
+				logger.warn('Date mismatch, reading %s into a day with %s.' % (data['date'], day.date))
 			# This would be for scheduled
 			# try:
 			# 	block = day.getBlock(data['blockNumber'])
@@ -392,57 +384,5 @@ class Connection:
 				trip = dbt_classes.Trip(data['tripNumber'], seq, data['route'], data['dir'])
 			trip.addStop(Stop(-1, data['stop'], data['name'], data['time'], -1))
 			row = cursor.fetchone()
-
+		logger.info('Date at cursor location loaded!')
 		return day
-	# [actualDay] is an ActualDay being written to the database
-	def writeToRebuiltSegments(actualDay, connection):
-		cursor = self.db.cursor()
-		for b in actualDay.blocks:
-			for t in b.trips:
-				for s in t.segments:
-					day=actualDay.date
-					bus=s.bus
-					blockNumber=b.blockNumber
-					route=t.route
-					tripNumber=t.tripNumber
-					direction=t.direction
-					iStopNumber=s.segmentID[0].stopID
-					iStopName=s.segmentID[0].stopName
-					iStopType=s.segmentID[0].messageTypeID
-					iStopSeen=s.segmentID[0].seen
-					tStopNumber=s.segmentID[1].stopID
-					tStopName=s.segmentID[1].stopName
-					tStopType=s.segmentID[1].messageTypeID
-					tStopSeen=s.segmentID[1].seen
-					boards=s.segmentID[0].boards
-					alights=s.segmentID[1].alights
-					onboard=s.onboard
-					adjOnboard=s.adjustedOnboard
-					iStopTime=s.segmentID[0].stopTime
-					tStopTime=s.segmentID[1].stopTime
-					segDistance=s.distance
-					pattern=t.pattern
-					segseq=s.segmentSeq
-					tripseq=t.tripSeq
-					try:
-						passenger_per_feet=s.feet_per_passenger
-					except Exception:
-						passenger_per_feet=None
-					try:
-						cursor.execute((' INSERT INTO dbo.Segments (ServiceDat'
-						'e, Bus, Block, Route, Trip, Pattern, Direction, iStop'
-						'ID, iStopName, iStopMessageID, iStopSeen, tStopID, tS'
-						'topName, tStopMessageID, tStopSeen, Boards, Alights, '
-						'Onboard, AdjustedOnboard, SegmentSequence, StartTime,'
-						' EndTime, SegmentFeet, trip_sequence, Feet_times_pass'
-						'engers) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,'
-						'?,?,?,?,?,?)'), day, bus, blockNumber, route, tripNumber,
-						pattern,direction,iStopNumber,iStopName,iStopType,
-						iStopSeen, tStopNumber,tStopName,tStopType, tStopSeen,
-						boards, alights, onboard, adjOnboard, segseq, iStopTime,
-						tStopTime, segDistance, tripseq, passenger_per_feet)
-					except Exception as e:
-						print('Exception has occurred when trying to write to self.\n%s' % (e))
-						# Debug.debug('Was unable to write the following record to dbo.Segments', record=
-						#     'VALUES(%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)'%(day, bus, blockNumber,route, tripNumber,pattern,direction, iStopNumber,iStopName,iStopType, iStopSeen, tStopNumber,tStopName,tStopType, tStopSeen, boards, alights, -1, -1, segseq, iStopTime, tStopTime, segDistance), exception=e)
-		self.db.commit()
