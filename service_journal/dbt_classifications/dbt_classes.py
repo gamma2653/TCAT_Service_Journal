@@ -1,10 +1,14 @@
 #DBT_Classes = Day-Block-Trip classes
 from abc import ABC, abstractmethod
 from enum import Enum
-from .exceptions import BlockNotFound, TripNotFound, NotActual, NotSchedule
+from service_journal.dbt_classifications.exceptions import BlockNotFound, TripNotFound, NotActual, NotSchedule
+from service_journal.gen_utils.debug import Logger
+logger = Logger(__name__)
+logger.read_args()
 
 class Stop():
 	def __init__(self, blockNumber, seq, stopID, stopName, time, distance, seen=False):
+		self.parent = None
 		self.blockNumber = blockNumber
 		self.seq = seq
 		self.stopID = stopID
@@ -21,6 +25,7 @@ class Stop():
 # [stops] is a list of Stop, which is the first stop of the trip.
 class Trip():
 	def __init__(self, blockNumbers, tripNumber, tripSeq, route, direction, stops=[]):
+		self.parent = None
 		self.blockNumbers = blockNumbers
 		self.stops = stops
 		self.tripNumber = tripNumber
@@ -29,6 +34,11 @@ class Trip():
 		self.direction = direction
 
 	def addStop(self, s):
+		if s.parent:
+			# Security flaw? Maybe. Patch later
+			logger.warn('Reassigning parent. Old parent = %s, new parent = %s.'\
+			% (str(s.parent), str(self)))
+		s.parent = self
 		self.stops.append(s)
 		self.blockNumbers.add(s.blockNumber)
 
@@ -70,9 +80,15 @@ class Trip():
 
 class BB():
 	def __init__(self):
+		self.parent = None
 		self.trips=[]
 
 	def addTrip(self, t):
+		if t.parent:
+			# Security flaw? Maybe. Patch later
+			logger.warn('Reassigning parent. Old parent = %s, new parent = %s.'\
+			% (str(t.parent), str(self)))
+		t.parent = self
 		self.trips.append(t)
 
 	def getTrip(self, tn):
@@ -122,13 +138,17 @@ class Day():
 		self.date=date
 		self.blocks=[]
 		self.buses=[]
-		self.blockNumbers=set()
+		self.tripBlockNumbers=set()
 		self.busNumbers=set()
 
 	def addBlock(self, b):
+		if b.parent:
+			# Security flaw? Maybe. Patch later
+			logger.warn('Reassigning parent. Old parent = %s, new parent = %s.'\
+			% (str(b.parent), str(self)))
+		b.parent = self
 		self.blocks.add(b)
-		self.blockNumbers.append(b.blockNumber)
-
+		self.tripBlockNumbers.append(b.blockNumber)
 	def getBlock(self, blockNumber):
 		for b in self.blocks:
 			if b.blockNumber==blockNumber:
@@ -139,9 +159,10 @@ class Day():
 		b = self.getBlock(blockNumber)
 		self.blocks.remove(b)
 		if self.blocks.count(b)==0:
-			self.blockNumbers.remove(blockNumber)
+			self.tripBlockNumbers.remove(blockNumber)
 
 	def addBus(self, b):
+		b.parent = self
 		self.buses.add(b)
 		self.busNumbers.append(b.busNumber)
 
@@ -169,4 +190,13 @@ class Day():
 				blocks.union(b.blockNumbers)
 			return blocks
 		else:
-			return self.blockNumbers.copy()
+			return self.tripBlockNumbers.copy()
+	# Searches through blocks for scheduled trip.
+	def resolveScheduledTrip(self, tn):
+		trips = set()
+		for b in self.blocks:
+			try:
+				trips.add(b.getTrip(tn))
+			except TripNotFound:
+				pass
+		return trips

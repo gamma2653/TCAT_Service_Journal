@@ -341,7 +341,7 @@ class Connection:
 			if not day:
 				day = dbt_classes.Day(data['date'])
 			elif day.date != data['date']:
-				logger.warn('Date mismatch, reading %s into a day with %s.' % (data['date'], day.date))
+				logger.warn('Date mismatch, reading information from %s into a day with date %s.' % (data['date'], day.date))
 			# This would be for scheduled
 			# try:
 			# 	block = day.getBlock(data['blockNumber'])
@@ -351,7 +351,7 @@ class Connection:
 			try:
 				bus = day.getBus(data['bus'])
 			except BusNotFound:
-				bus = dbt_classes.Bus(data('bus'))
+				bus = dbt_classes.Bus(int(data('bus')), blockNumbers=set([int(data['blockNumber'])]))
 				day.addBus(bus)
 			try:
 				trip = bus.getTrip(data['tripNumber'])

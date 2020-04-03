@@ -43,11 +43,9 @@ class Logger:
 				level = Level[str(level)]
 				self.level = level
 			except:
-				exc_type, exc_value, exc_traceback = sys.exc_info()
-				print('Ran into an unexpected exception while trying to set level:\n %s' % ("".join(tb.format_exception(exc_type, exc_value, exc_traceback, limit = 10))))
+				self.error('Ran into an unexpected exception while trying to set level:\n %s' % (tb.format_exc(limit = 10)))
 		except:
-			exc_type, exc_value, exc_traceback = sys.exc_info()
-			print('Ran into an exception while trying to set level:\n %s' % ("".join(tb.format_exception(exc_type, exc_value, exc_traceback, limit = 10))))
+			self.error('Ran into an exception while trying to set level:\n %s' % (tb.format_exc(limit = 10)))
 	# General log method.
 	def log(self, message, level):
 		if level <= self.level:
