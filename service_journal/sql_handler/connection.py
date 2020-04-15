@@ -351,6 +351,7 @@ class Connection:
 			try:
 				bus = day.getBus(data['bus'])
 			except BusNotFound:
+				# Create new bus and set it's bus number and blockNumber set.
 				bus = dbt_classes.Bus(int(data('bus')), blockNumbers=set([int(data['blockNumber'])]))
 				day.addBus(bus)
 			try:

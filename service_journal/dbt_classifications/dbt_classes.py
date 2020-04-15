@@ -135,11 +135,10 @@ class Block(BB):
 
 class Day():
 	def __init__(self, date):
+		# TODO: Maybe add a dictionary lookup for buses and blocks?
 		self.date=date
-		self.blocks=[]
-		self.buses=[]
-		self.tripBlockNumbers=set()
-		self.busNumbers=set()
+		self.blocks=set()
+		self.buses=set()
 
 	def addBlock(self, b):
 		if b.parent:
@@ -148,7 +147,6 @@ class Day():
 			% (str(b.parent), str(self)))
 		b.parent = self
 		self.blocks.add(b)
-		self.tripBlockNumbers.append(b.blockNumber)
 	def getBlock(self, blockNumber):
 		for b in self.blocks:
 			if b.blockNumber==blockNumber:
@@ -158,13 +156,10 @@ class Day():
 	def removeBlock(self, blockNumber):
 		b = self.getBlock(blockNumber)
 		self.blocks.remove(b)
-		if self.blocks.count(b)==0:
-			self.tripBlockNumbers.remove(blockNumber)
 
 	def addBus(self, b):
 		b.parent = self
 		self.buses.add(b)
-		self.busNumbers.append(b.busNumber)
 
 	def getBus(self, busNumber):
 		for b in self.buses:
@@ -175,8 +170,6 @@ class Day():
 	def removeBus(self, busNumber):
 		b = self.getBus(busNumber)
 		self.buses.remove(b)
-		if self.buses.count(b)==0:
-			self.busNumbers.remove(busNumber)
 
 	def getTripNumbers(self, actual=True):
 		trips = set()
@@ -184,13 +177,19 @@ class Day():
 			# Some Python conditional expression magic, read like English
 			trips.union((bus if actual else block).getTripNumbers())
 	def getBlockNumbers(self, actual=True):
+		blocks = set()
 		if actual:
-			blocks = set()
 			for b in self.buses:
 				blocks.union(b.blockNumbers)
 			return blocks
 		else:
-			return self.tripBlockNumbers.copy()
+			for b in self.blocks:
+				blocks.add(b.blockNumber)
+	def getBusNumbers(self):
+		buses = set()
+		for b in self.buses:
+			buses.add(b.busNumber)
+		return buses
 	# Searches through blocks for scheduled trip.
 	def resolveScheduledTrip(self, tn):
 		trips = set()
