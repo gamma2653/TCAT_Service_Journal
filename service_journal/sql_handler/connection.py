@@ -313,12 +313,21 @@ class Connection:
 		logger.info('%s successfully selected!' % (str(date)))
 		return (aCursor, sCursor)
 
-	def loadData(self, cursors, day=None):
+	def loadData(self, cursors, days=None):
 		logger.info('Loading data from cursor.')
-
+		if not days:
+			days = dbt_classes.Days()
 		aCursor, sCursor = cursors
-
-		# Start with ActualData
+		# Now for scheduled data
+		row = sCursor.fetchone()
+		dbt_col_names = [sql_dbt_map[col] for col in sCol_names]
+		while row:
+			data = dict(zip(dbt_col_names, row))
+			days.addDay(data['date'], data['blockNumber'], data['tripNumber'], \
+			data['route'], data['direction'], data['stop'], data['name'], \
+			data['time'], data['distance'],data['bus'])
+			row = cursor.fetchone()
+		# Now for ActualData
 
 		row = aCursor.fetchone()
 		# cursor_description documentation:
@@ -338,52 +347,11 @@ class Connection:
 		while row:
 			# We zip up our data making a key-value pairing of col_names and rows
 			data = dict(zip(dbt_col_names, row))
-			if not day:
-				day = dbt_classes.Day(data['date'])
-			elif day.date != data['date']:
-				logger.warn('Date mismatch, reading information from %s into a day with date %s.' % (data['date'], day.date))
-			# This would be for scheduled
-			# try:
-			# 	block = day.getBlock(data['blockNumber'])
-			# except BlockNotFound:
-			# 	block = dbt_classes.Block(data['blockNumber'])
-			# 	day.addBlock(block)
-			try:
-				bus = day.getBus(data['bus'])
-			except BusNotFound:
-				# Create new bus and set it's bus number and blockNumber set.
-				bus = dbt_classes.Bus(int(data('bus')), blockNumbers=set([int(data['blockNumber'])]))
-				day.addBus(bus)
-			try:
-				trip = bus.getTrip(data['tripNumber'])
-			except TripNotFound:
-				trip = dbt_classes.Trip(data['tripNumber'], seq, data['route'], data['dir'])
-			trip.addStop(Stop(-1, data['stop'], data['name'], data['time'], -1))
-			# Will replace -1's when I hear back.
-			# -1 Values have to inquire about.
-			# Have to login to avl to do some testing to see if col_names is
-			# a tuple of column names
+			days.crossRef(data['date'], data['blockNumber'], data['tripNumber'],\
+			 data['stop'],data['bus'],data['boards'],data['alights'],\
+			 data['onboard'],data['adjustedOnboard'])
 			row = cursor.fetchone()
 
-		# Now for scheduled data
 
-		row = sCursor.fetchone()
-		dbt_col_names = [sql_dbt_map[col] for col in sCol_names]
-		while row:
-			data = dict(zip(dbt_col_names, row))
-			if not day:
-				day = dbt_classes.Day()
-			day.date = data['date']
-			try:
-				block = day.getBlock(data['blockNumber'])
-			except BlockNotFound:
-				block = dbt_classes.Block(data('blockNumber'))
-				day.addBlock(bus)
-			try:
-				trip = block.getTrip(data['tripNumber'])
-			except TripNotFound:
-				trip = dbt_classes.Trip(data['tripNumber'], seq, data['route'], data['dir'])
-			trip.addStop(Stop(-1, data['stop'], data['name'], data['time'], -1))
-			row = cursor.fetchone()
 		logger.info('Date at cursor location loaded!')
 		return day
