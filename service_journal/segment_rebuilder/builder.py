@@ -32,3 +32,4 @@ def compare(day, opts):
 			seenStops = seenTrip.get_stopIDs()
 			scheduledStops
 			for seenStop in seenTrip.stops:
+				

@@ -3,8 +3,10 @@ from abc import ABC, abstractmethod
 from enum import Enum
 from service_journal.dbt_classifications.exceptions import BlockNotFound, TripNotFound, NotActual, NotSchedule
 from service_journal.gen_utils.debug import Logger
+# Logger initialization
 logger = Logger(__name__)
 logger.read_args()
+
 
 class Stop():
 	def __init__(self, blockNumber, seq, stopID, stopName, time, distance, seen=False):
@@ -15,6 +17,7 @@ class Stop():
 		self.stopName = stopName
 		self.time = time
 		self.distance = distance
+		# Keeping this for geo checks
 		self.seen = seen
 
 
@@ -25,8 +28,8 @@ class Stop():
 # [stops] is a list of Stop, which is the first stop of the trip.
 class Trip():
 	def __init__(self, blockNumbers, tripNumber, tripSeq, route, direction, stops=[]):
-		self.parent = None
-		self.blockNumbers = blockNumbers
+		self.parents = set()
+		self.blockNumber = blockNumber
 		self.stops = stops
 		self.tripNumber = tripNumber
 		self.tripSeq = tripSeq
@@ -34,13 +37,10 @@ class Trip():
 		self.direction = direction
 
 	def addStop(self, s):
-		if s.parent:
-			# Security flaw? Maybe. Patch later
-			logger.warn('Reassigning parent. Old parent = %s, new parent = %s.'\
-			% (str(s.parent), str(self)))
-		s.parent = self
+		s.parents.add(self)
 		self.stops.append(s)
-		self.blockNumbers.add(s.blockNumber)
+		# Add check later
+		self.blockNumber= s.blockNumber
 
 	def get_stopIDs(self):
 		return [stop.stopID for stop in self.stops]
@@ -57,25 +57,20 @@ class Trip():
 	def removeStop(self, s, correct_meta=False):
 		try:
 			index = self.stops.index(s)
-			if correct_meta:
-				self.increment_seq(index = index, amount = -1)
-				if index>0:
-					self.stops[index-1].distance_feet+= self.stops[index].distance_feet
-					self.stops[index-1].mileage+= self.stops[index].mileage
-			return self.pop(index)
-		# Not recommended to use stopIDs in case of trip loop, but it won't break
-		# when using stopIDs instead of Stop objects.
 		except ValueError:
 			try:
 				index = self.get_stopIDs().index(s)
-				if correct_meta:
-					self.increment_seq(index = index, amount = -1)
-					if index>0:
-						self.stops[index-1].distance_feet+= self.stops[index].distance_feet
-						self.stops[index-1].mileage+= self.stops[index].mileage
-				return self.pop(index)
 			except ValueError:
 				return None
+
+		if correct_meta:
+			self.increment_seq(index = index, amount = -1)
+			if index>0:
+				self.stops[index-1].distance_feet+= self.stops[index].distance_feet
+				self.stops[index-1].mileage+= self.stops[index].mileage
+		return self.stops.pop(index)
+		# Not recommended to use stopIDs in case of trip loop, but it won't break
+
 
 
 class BB():
@@ -84,8 +79,7 @@ class BB():
 		self.trips=[]
 
 	def addTrip(self, t):
-		if t.parent:
-			# Security flaw? Maybe. Patch later
+		if t.parent!=self:
 			logger.warn('Reassigning parent. Old parent = %s, new parent = %s.'\
 			% (str(t.parent), str(self)))
 		t.parent = self
@@ -121,7 +115,9 @@ class Bus(BB):
 		self.blockNumbers = set()
 		for t in self.trips:
 			self.blockNumbers.add(t.blockNumber)
-
+	# Example:
+	# trip1 = block(1) trip2 = block(3) trip3 = block(1) and remove trip3
+	# If you don't validate, it'll remove block(1)
 	def removeTrip(self, t):
 		super().removeTrip(t)
 		self.validateBlockNumbers()
@@ -141,8 +137,7 @@ class Day():
 		self.buses=set()
 
 	def addBlock(self, b):
-		if b.parent:
-			# Security flaw? Maybe. Patch later
+		if b.parent!=self:
 			logger.warn('Reassigning parent. Old parent = %s, new parent = %s.'\
 			% (str(b.parent), str(self)))
 		b.parent = self
@@ -158,6 +153,9 @@ class Day():
 		self.blocks.remove(b)
 
 	def addBus(self, b):
+		if b.parent!=self:
+			logger.warn('Reassigning parent. Old parent = %s, new parent = %s.'\
+			% (str(b.parent), str(self)))
 		b.parent = self
 		self.buses.add(b)
 
@@ -173,9 +171,9 @@ class Day():
 
 	def getTripNumbers(self, actual=True):
 		trips = set()
-		for block in self.blocks:
-			# Some Python conditional expression magic, read like English
-			trips.union((bus if actual else block).getTripNumbers())
+		# Some Python conditional expression magic, read like English
+		for b in (self.buses if actual else self.blocks):
+			trips.union(b.getTripNumbers())
 	def getBlockNumbers(self, actual=True):
 		blocks = set()
 		if actual:
