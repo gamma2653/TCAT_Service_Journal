@@ -77,7 +77,7 @@ class Logger:
 				level = sys.argv[sys.argv.index('-ll')+1]
 				self.set_listen_level(level)
 			except IndexError:
-				self..error('Logger was not able to be initialized to specified level. -ll Must be followed by Level Code.')
+				self.error('Logger was not able to be initialized to specified level. -ll Must be followed by Level Code.')
 		elif '--log-level' in sys.argv:
 			try:
 				level = sys.argv[sys.argv.index('--log-level')+1]

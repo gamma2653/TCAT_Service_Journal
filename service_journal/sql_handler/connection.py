@@ -3,6 +3,7 @@ import pyodbc
 import json
 import os
 import sys
+from datetime import date
 from service_journal.dbt_classifications import dbt_classes
 from service_journal.dbt_classifications.exceptions import BusNotFound, BlockNotFound, TripNotFound
 from service_journal.gen_utils.debug import Logger
@@ -172,6 +173,7 @@ INIT = {
 			'databases': {
 				'scheduled': 'TA_ITHACA_SCHEDULE_HISTORY',
 				'actual': 'TA_ITHACA_ACTUAL_HISTORY',
+				'writeTo' : ''
 			}
 		},
 	}
@@ -197,22 +199,25 @@ def read_config():
 class Connection:
 	def close(self):
 		try:
-			self.db.close()
+			pass
+			# self.db.close()
 		except NameError:
 			pass
 	def __del__(self):
 		self.close()
-		self.super().__del__()
+		super().__del__()
 
 	def __init__(self, config_path):
 		logger.info('Initializing Connection with config path: %s' % (config_path))
 		# Open or initialize config into dictionary
-		if not os.path.exists(config_path, 'config.json'):
+		if not os.path.exists(os.path.join(config_path, 'config.json')):
+			logger.info('Initializing config for first time!')
 			init_config()
 
 		config = read_config()
+		self.config = config
 		try:
-			settings = config['Settings']
+			settings = config['settings']
 		except KeyError as e:
 			print(('Error: Key (%s) not found in config.json. If this is your first time '
 			'running this, please setup your config and re-run it.') % (e.args[0]))
@@ -234,13 +239,15 @@ class Connection:
 		self.resetConnection(config)
 
 	def resetConnection(self, config):
-		logger.info('Resetting connection to %s.', str(config))
+		logger.info('Resetting connection to %s.'% (str(config)))
+		self.config = config
+		settings = config['settings']
 		try:
-			self.driver = config['driver']
-			self.user = config['username']
-			self.password = config['password']
+			self.driver = settings['driver']
+			self.user = settings['username']
+			self.password = settings['password']
 			self.databases = self.dbt_sql_map['databases']
-			self.host = config['host']
+			self.host = settings['host']
 		except KeyError as e:
 			print(('Error: Key (%s) not found in config.json. If this is your first time '
 				   'running this, please setup your config and re-run it.') % (e.args[0]))
@@ -259,57 +266,70 @@ class Connection:
 			r'DATABASE=%s;'
 			r'UID=%s;'
 			r'PWD=%s'% (self.driver, self.host, self.databases['scheduled'], self.user, self.password))
-		self.write_conn = pyodbc.connect(r'DRIVER=%s;'
-			#The host driver, as list of these can be found on the pyodbc
-			#library readme on github
-			r'SERVER=%s;'
-			r'DATABASE=%s;'
-			r'UID=%s;'
-			r'PWD=%s'% (self.driver, self.host, self.write_database, self.user, self.password))
+		# self.write_conn = pyodbc.connect(r'DRIVER=%s;'
+		# 	#The host driver, as list of these can be found on the pyodbc
+		# 	#library readme on github
+		# 	r'SERVER=%s;'
+		# 	r'DATABASE=%s;'
+		# 	r'UID=%s;'
+		# 	r'PWD=%s'% (self.driver, self.host, self.write_database, self.user, self.password))
 		logger.info('Connection successfully set!')
 
 	# Only should be called on
 	def selectDate(self, date, block=-1):
 		logger.info('Selecting block=%s on day=%s' % (str(date), 'all' if block==-1 else str(block)))
+		settings = self.config['settings']
+		a_dbt_sql_map = self.dbt_sql_map['actual']
+		s_dbt_sql_map = self.dbt_sql_map['scheduled']
 		if block==-1:
-			aQuery = settings['dbt_sql_map']['views']['v_vehicle_history']['deflt_query']
-			sQuery = settings['dbt_sql_map']['views']['v_sched_trip_stop']['deflt_query']
+			tQuery = 'deflt_query'
 		else:
-			aQuery = settings['dbt_sql_map']['views']['v_vehicle_history']['opt_query']
-			sQuery = settings['dbt_sql_map']['views']['v_sched_trip_stop']['opt_query']
+			tQuery = 'opt_query'
+		aQuery = settings['dbt_sql_map']['views']['actual'][tQuery]
+		sQuery = settings['dbt_sql_map']['views']['scheduled'][tQuery]
+		aTable = settings['dbt_sql_map']['views']['actual']['table']
+		sTable = settings['dbt_sql_map']['views']['scheduled']['table']
 		# else:
 		# 	query = settings['optSelectScheduledQuery']
 		aCursor = self.actual_read_conn.cursor()
 		sCursor = self.scheduled_read_conn.cursor()
 		if block==-1:
-			aCursor.execute(aQuery, query, dbt_sql_map['date'], \
-			dbt_sql_map['blockNumber'], dbt_sql_map['tripNumber'],\
-			dbt_sql_map['bus'], dbt_sql_map['time'], dbt_sql_map['route'],\
-			dbt_sql_map['dir'], dbt_sql_map['stop'], dbt_sql_map['name'],\
-			dbt_sql_map['boards'], dbt_sql_map['alights'], dbt_sql_map['onboards'],\
-			dbt_sql_map['opStatus'], table, dbt_sql_map['date'], date)
+			print(aQuery)
+			print(type(aQuery))
+			print(a_dbt_sql_map['date'])
+			print(type(a_dbt_sql_map['date']))
+			aCursor.execute(aQuery, a_dbt_sql_map['date']['name'], \
+			 a_dbt_sql_map['blockNumber']['name'], a_dbt_sql_map['tripNumber']['name'],\
+			 a_dbt_sql_map['bus']['name'], a_dbt_sql_map['time']['name'], a_dbt_sql_map['route']['name'],\
+			 a_dbt_sql_map['dir']['name'], a_dbt_sql_map['stop']['name'], a_dbt_sql_map['name']['name'],\
+			 a_dbt_sql_map['boards']['name'], a_dbt_sql_map['alights']['name'],\
+			 a_dbt_sql_map['onboard']['name'],a_dbt_sql_map['opStatus']['name'],\
+			 aTable, a_dbt_sql_map['date']['name'], date)
 
-			sCursor.execute(sQuery, dbt_sql_map['date'], dbt_sql_map['blockNumber'],\
-			dbt_sql_map['dir'], dbt_sql_map['tripNumber'], dbt_sql_map['i_stop'],\
-			dbt_sql_map['t_stop'], dbt_sql_map['i_stop_name'],\
-			dbt_sql_map['t_stop_name'], dbt_sql_map['layover'], dbt_sql_map['run'],\
-			dbt_sql_map['pieceNumber'], table, dbt_sql_map['date'], date)
+			sCursor.execute(sQuery, s_dbt_sql_map['date']['name'], s_dbt_sql_map['blockNumber']['name'],\
+			 s_dbt_sql_map['dir']['name'], s_dbt_sql_map['tripNumber']['name'],\
+			 s_dbt_sql_map['i_stop']['name'], s_dbt_sql_map['t_stop']['name'],\
+			 s_dbt_sql_map['i_stop_name']['name'], s_dbt_sql_map['t_stop_name']['name'],\
+			 s_dbt_sql_map['layover']['name'], s_dbt_sql_map['run']['name'],\
+			 s_dbt_sql_map['pieceNumber']['name'], sTable, s_dbt_sql_map['date']['name'], date)
 
 		else:
-			aCursor.execute(aQuery, query, dbt_sql_map['date'], \
-			dbt_sql_map['blockNumber'], dbt_sql_map['tripNumber'],\
-			dbt_sql_map['bus'], dbt_sql_map['time'], dbt_sql_map['route'],\
-			dbt_sql_map['dir'], dbt_sql_map['stop'], dbt_sql_map['name'],\
-			dbt_sql_map['boards'], dbt_sql_map['alights'], dbt_sql_map['onboards'],\
-			dbt_sql_map['opStatus'], table, dbt_sql_map['date'], date,\
-			dbt_sql_map['blockNumber'], block)
+			aCursor.execute(aQuery, query, a_dbt_sql_map['date']['name'], \
+			 a_dbt_sql_map['blockNumber']['name'], a_dbt_sql_map['tripNumber']['name'],\
+			 a_dbt_sql_map['bus']['name'], a_dbt_sql_map['time']['name'],\
+			 a_dbt_sql_map['route']['name'],a_dbt_sql_map['dir']['name'],\
+			 a_dbt_sql_map['stop']['name'], a_dbt_sql_map['name']['name'],\
+			 a_dbt_sql_map['boards']['name'], a_dbt_sql_map['alights']['name'],\
+			 a_dbt_sql_map['onboard']['name'], a_dbt_sql_map['opStatus']['name'],\
+			 aTable, a_dbt_sql_map['date']['name'], date, a_dbt_sql_map['blockNumber']['name'], block)
 
-			sCursor.execute(sQuery, dbt_sql_map['date'], dbt_sql_map['blockNumber'],\
-			dbt_sql_map['dir'], dbt_sql_map['tripNumber'], dbt_sql_map['i_stop'],\
-			dbt_sql_map['t_stop'], dbt_sql_map['i_stop_name'],\
-			dbt_sql_map['t_stop_name'], dbt_sql_map['layover'], dbt_sql_map['run'],\
-			dbt_sql_map['pieceNumber'], table, dbt_sql_map['date'], date,\
-			dbt_sql_map['blockNumber'], block)
+			sCursor.execute(sQuery, s_dbt_sql_map['date']['name'], \
+			 s_dbt_sql_map['blockNumber']['name'], s_dbt_sql_map['dir']['name'],\
+			 s_dbt_sql_map['tripNumber']['name'], s_dbt_sql_map['i_stop']['name'],\
+			 s_dbt_sql_map['t_stop']['name'], s_dbt_sql_map['i_stop_name']['name'],\
+			 s_dbt_sql_map['t_stop_name']['name'], s_dbt_sql_map['layover']['name'],\
+			 s_dbt_sql_map['run']['name'], s_dbt_sql_map['pieceNumber']['name'],\
+			 sTable, s_dbt_sql_map['date']['name'], date, s_dbt_sql_map['blockNumber']['name'], block)
 		logger.info('%s successfully selected!' % (str(date)))
 		return (aCursor, sCursor)
 
