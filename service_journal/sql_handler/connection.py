@@ -18,6 +18,9 @@ INIT = {
 		'username': '',
 		'password': '',
 		'__comment': 'Warning: Stored passwords are unencrypted.',
+		'static' : {
+
+		},
 		'dbt_sql_map': {
 			'actual': {
 				'date': {
@@ -154,28 +157,20 @@ INIT = {
 				}
 			},
 			'views': {
-				'scheduled': {
-					'table': 'v_sched_trip_stop',
-
-					'deflt_query': 'SELECT ?,?,?,?,?,?,?,?,?,?,?,?,? FROM ? WHERE ?=?',
-
-					'opt_query': 'SELECT ?,?,?,?,?,?,?,?,?,?,?,?,? FROM ? WHERE ?=? AND ?=?',
-
-				},
 				'actual': {
-					'table': 'v_vehicle_history',
-
 					'deflt_query': 'SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? FROM ? WHERE ?=?',
-
 					'opt_query': 'SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? FROM ? WHERE ?=? AND ?=?',
+					'table': 'v_vehicle_history',
+					'database':  'TA_ITHACA_SCHEDULE_HISTORY'
+				},
+				'scheduled': {
+					'deflt_query': 'SELECT ?,?,?,?,?,?,?,?,?,?,?,?,? FROM ? WHERE ?=?',
+					'opt_query': 'SELECT ?,?,?,?,?,?,?,?,?,?,?,?,? FROM ? WHERE ?=? AND ?=?',
+					'table': 'v_sched_trip_stop',
+					'database': 'TA_ITHACA_SCHEDULE_HISTORY'
 				}
-			},
-			'databases': {
-				'scheduled': 'TA_ITHACA_SCHEDULE_HISTORY',
-				'actual': 'TA_ITHACA_ACTUAL_HISTORY',
-				'writeTo' : ''
 			}
-		},
+		}
 	}
 }
 
@@ -203,10 +198,7 @@ class Connection:
 			# self.db.close()
 		except NameError:
 			pass
-	def __del__(self):
-		self.close()
-		super().__del__()
-
+# Need to clean this up later
 	def __init__(self, config_path):
 		logger.info('Initializing Connection with config path: %s' % (config_path))
 		# Open or initialize config into dictionary
@@ -246,7 +238,6 @@ class Connection:
 			self.driver = settings['driver']
 			self.user = settings['username']
 			self.password = settings['password']
-			self.databases = self.dbt_sql_map['databases']
 			self.host = settings['host']
 		except KeyError as e:
 			print(('Error: Key (%s) not found in config.json. If this is your first time '
@@ -258,14 +249,14 @@ class Connection:
 			r'SERVER=%s;'
 			r'DATABASE=%s;'
 			r'UID=%s;'
-			r'PWD=%s'% (self.driver, self.host, self.databases['actual'], self.user, self.password))
+			r'PWD=%s'% (self.driver, self.host, self.dbt_sql_map['views']['actual']['database'], self.user, self.password))
 		self.scheduled_read_conn = pyodbc.connect(r'DRIVER=%s;'
 			#The host driver, as list of these can be found on the pyodbc
 			#library readme on github
 			r'SERVER=%s;'
 			r'DATABASE=%s;'
 			r'UID=%s;'
-			r'PWD=%s'% (self.driver, self.host, self.databases['scheduled'], self.user, self.password))
+			r'PWD=%s'% (self.driver, self.host, self.dbt_sql_map['views']['scheduled']['database'], self.user, self.password))
 		# self.write_conn = pyodbc.connect(r'DRIVER=%s;'
 		# 	#The host driver, as list of these can be found on the pyodbc
 		# 	#library readme on github
@@ -295,16 +286,33 @@ class Connection:
 		sCursor = self.scheduled_read_conn.cursor()
 		if block==-1:
 			print(aQuery)
-			print(type(aQuery))
-			print(a_dbt_sql_map['date'])
-			print(type(a_dbt_sql_map['date']))
+			print(a_dbt_sql_map['date']['name'])
+			print('\nTrying to demo query:\n')
+			b = aQuery
+			b = b.replace('?', a_dbt_sql_map['date']['name'], 1)
+			b = b.replace('?', a_dbt_sql_map['blockNumber']['name'], 1)
+			b = b.replace('?', a_dbt_sql_map['tripNumber']['name'], 1)
+			b = b.replace('?', a_dbt_sql_map['bus']['name'], 1)
+			b = b.replace('?', a_dbt_sql_map['time']['name'], 1)
+			b = b.replace('?', a_dbt_sql_map['route']['name'], 1)
+			b = b.replace('?', a_dbt_sql_map['dir']['name'], 1)
+			b = b.replace('?', a_dbt_sql_map['stop']['name'], 1)
+			b = b.replace('?', a_dbt_sql_map['name']['name'], 1)
+			b = b.replace('?', a_dbt_sql_map['boards']['name'], 1)
+			b = b.replace('?', a_dbt_sql_map['alights']['name'], 1)
+			b = b.replace('?', a_dbt_sql_map['onboard']['name'], 1)
+			b = b.replace('?', a_dbt_sql_map['opStatus']['name'], 1)
+			b = b.replace('?', aTable, 1)
+			b = b.replace('?', a_dbt_sql_map['date']['name'], 1)
+			b = b.replace('?', str(date), 1)
+			print('\n'+b+'\n')
 			aCursor.execute(aQuery, a_dbt_sql_map['date']['name'], \
 			 a_dbt_sql_map['blockNumber']['name'], a_dbt_sql_map['tripNumber']['name'],\
 			 a_dbt_sql_map['bus']['name'], a_dbt_sql_map['time']['name'], a_dbt_sql_map['route']['name'],\
 			 a_dbt_sql_map['dir']['name'], a_dbt_sql_map['stop']['name'], a_dbt_sql_map['name']['name'],\
 			 a_dbt_sql_map['boards']['name'], a_dbt_sql_map['alights']['name'],\
 			 a_dbt_sql_map['onboard']['name'],a_dbt_sql_map['opStatus']['name'],\
-			 aTable, a_dbt_sql_map['date']['name'], date)
+			 aTable, a_dbt_sql_map['date']['name'], str(date))
 
 			sCursor.execute(sQuery, s_dbt_sql_map['date']['name'], s_dbt_sql_map['blockNumber']['name'],\
 			 s_dbt_sql_map['dir']['name'], s_dbt_sql_map['tripNumber']['name'],\
@@ -343,7 +351,7 @@ class Connection:
 		dbt_col_names = [sql_dbt_map[col] for col in sCol_names]
 		while row:
 			data = dict(zip(dbt_col_names, row))
-			days.addDay(data['date'], data['blockNumber'], data['tripNumber'], \
+			days.addStop(data['date'], data['blockNumber'], data['tripNumber'], \
 			data['route'], data['direction'], data['stop'], data['name'], \
 			data['time'], data['distance'],data['bus'])
 			row = cursor.fetchone()
