@@ -349,7 +349,7 @@ class Connection:
 		# sCol_names = sCursor.description[0]
 		# sNullable = sCursor.description[6] #Unused at the moment
 
-		dbt_col_names = [self.sql_dbt_map['scheduled'][col[0]] for col in sCursor.description]
+		dbt_col_names = [self.sql_dbt_map['scheduled'][col[0]['name']] for col in sCursor.description]
 		logger.info('generated col names: %s' % (dbt_col_names))
 		while row:
 			logger.info('Processing a scheduled row')
@@ -364,7 +364,7 @@ class Connection:
 		row = aCursor.fetchone()
 
 		# get dbt_names for each column for abstraction
-		dbt_col_names = [self.sql_dbt_map['actual'][col[0]] for col in aCursor.description]
+		dbt_col_names = [self.sql_dbt_map['actual'][col[0]['name']] for col in aCursor.description]
 		logger.info('generated col names: %s' % (dbt_col_names))
 		while row:
 			logger.info('Processing an actual row')
