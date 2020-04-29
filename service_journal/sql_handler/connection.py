@@ -302,8 +302,9 @@ class Connection:
 		sCursor = self.scheduled_read_conn.cursor()
 		if block==-1:
 			# Execute primary query
+			logger.info('Selecting %s from the schedule.' % (str(date)))
 			aCursor.execute(aQuery, str(date))
-
+			logger.info('Selecting %s from the history.' % (str(date).replace('-','')))
 			sCursor.execute(sQuery, str(date).replace('-',''))
 
 		else:
