@@ -48,11 +48,11 @@ INIT = {
 					'view': 'v_vehicle_history',
 					'nullable': True
 				},
-				# 'dep_time': {
-				# 	'name': 'Departure_Time',
-				# 	'view': 'v_vehicle_history',
-				# 	'nullable': True
-				# },
+				'dep_time': {
+					'name': 'Departure_Time',
+					'view': 'v_vehicle_history',
+					'nullable': True
+				},
 				'route': {
 					'name': 'Route',
 					'view': 'v_vehicle_history',
@@ -155,6 +155,11 @@ INIT = {
 					'view': 'v_sched_trip_stop',
 					'nullable': True
 				},
+				'route': {
+					'name': 'RouteNumber',
+					'view': 'v_sched_trip_stop',
+					'nullable': False
+				},
 				'pieceNumber': {
 					'name': 'PieceNumber',
 					'view': 'v_sched_trip_stop',
@@ -165,14 +170,14 @@ INIT = {
 				'actual': {
 					'deflt_query': 'SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? FROM ? WHERE ?=?',
 					'opt_query': 'SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? FROM ? WHERE ?=? AND ?=?',
-					'static': 'SELECT [service_day],[block],[trip26],[bus],[Time],[Operator_Record_Id],[Departure_Time],[Route],[dir],[Stop_Id],[Stop_Name],[Boards],[Alights],[Onboard],[OperationalStatus] FROM [TA_ITHACA_ACTUAL_HISTORY].[dbo].[v_vehicle_history] WHERE [service_day]=?',
+					'static': 'SELECT [service_day],[block],[trip26],[bus],[Time],[Departure_Time],[Route],[dir],[Stop_Id],[Stop_Name],[Boards],[Alights],[Onboard],[OperationalStatus] FROM [TA_ITHACA_ACTUAL_HISTORY].[dbo].[v_vehicle_history] WHERE [service_day]=?',
 					'table': 'v_vehicle_history',
 					'database':  'TA_ITHACA_SCHEDULE_HISTORY'
 				},
 				'scheduled': {
 					'deflt_query': 'SELECT ?,?,?,?,?,?,?,?,?,?,?,?,? FROM ? WHERE ?=?',
 					'opt_query': 'SELECT ?,?,?,?,?,?,?,?,?,?,?,?,? FROM ? WHERE ?=? AND ?=?',
-					'static':'SELECT [calendar],[ServiceRecordId],[BlockNumber],[TripRecordId],[RouteRecordId],[PatternRecordId],[Direction],[Trip26],[iStop],[tStop],[iStopName],[tStopName],[DepartureTime],[layover],[timepoint],[RunNumber],[PieceNumber]  FROM [TA_ITHACA_SCHEDULE_HISTORY].[dbo].[v_sched_trip_stop] WHERE [calendar]=?',
+					'static':'SELECT [calendar], [ServiceRecordId], [BlockNumber], [RouteNumber], [Direction], [Trip26], [iStop], [tStop], [iStopName], [tStopName], [DepartureTime], [layover], [RunNumber], [PieceNumber] FROM [TA_ITHACA_SCHEDULE_HISTORY].[dbo].[v_sched_trip_stop] WHERE [calendar]=?',
 					'table': 'v_sched_trip_stop',
 					'database': 'TA_ITHACA_SCHEDULE_HISTORY'
 				}
@@ -366,4 +371,4 @@ class Connection:
 
 
 		logger.info('Date at cursor location loaded!')
-		return day
+		return days
