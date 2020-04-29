@@ -96,7 +96,7 @@ INIT = {
 			},
 			'scheduled': {
 				'date': {
-					'name': 'calendar',
+					'name': 'Service_Date',
 					'view': 'v_sched_trip_stop',
 					'nullable': True
 				},
@@ -177,7 +177,7 @@ INIT = {
 				'scheduled': {
 					'deflt_query': 'SELECT ?,?,?,?,?,?,?,?,?,?,?,?,? FROM ? WHERE ?=?',
 					'opt_query': 'SELECT ?,?,?,?,?,?,?,?,?,?,?,?,? FROM ? WHERE ?=? AND ?=?',
-					'static':'SELECT [calendar], [ServiceRecordId], [BlockNumber], [RouteNumber], [Direction], [Trip26], [iStop], [tStop], [iStopName], [tStopName], [DepartureTime], [layover], [RunNumber], [PieceNumber] FROM [TA_ITHACA_SCHEDULE_HISTORY].[dbo].[v_sched_trip_stop] WHERE [calendar]=?',
+					'static':'SELECT [Service_Date], [ServiceRecordId], [BlockNumber], [RouteNumber], [Direction], [Trip26], [iStop], [tStop], [iStopName], [tStopName], [DepartureTime], [layover], [RunNumber], [PieceNumber] FROM [TA_ITHACA_SCHEDULE_HISTORY].[dbo].[v_sched_trip_stop] WHERE [calendar]=?',
 					'table': 'v_sched_trip_stop',
 					'database': 'TA_ITHACA_SCHEDULE_HISTORY'
 				}
@@ -304,8 +304,8 @@ class Connection:
 			# Execute primary query
 			logger.info('Selecting %s from the schedule.' % (str(date)))
 			aCursor.execute(aQuery, str(date))
-			logger.info('Selecting %s from the history.' % (str(date).replace('-','')))
-			sCursor.execute(sQuery, str(date).replace('-',''))
+			logger.info('Selecting %s from the history.' % (str(date)))
+			sCursor.execute(sQuery, str(date))
 
 		else:
 			# Execute optional query
@@ -358,7 +358,7 @@ class Connection:
 			days.addStop(data['date'], data['blockNumber'], data['tripNumber'], \
 			data['route'], data['direction'], data['stop'], data['name'], \
 			data['time'], data['distance'],data['bus'])
-			row = cursor.fetchone()
+			row = sCursor.fetchone()
 		# Now for ActualData
 
 		row = aCursor.fetchone()
@@ -372,7 +372,7 @@ class Connection:
 			days.crossRef(data['date'], data['blockNumber'], data['tripNumber'],\
 			 data['stop'],data['bus'],data['boards'],data['alights'],\
 			 data['onboard'])
-			row = cursor.fetchone()
+			row = aCursor.fetchone()
 
 
 		logger.info('Date at cursor location loaded!')
