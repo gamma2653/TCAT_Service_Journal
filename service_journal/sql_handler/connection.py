@@ -351,7 +351,7 @@ class Connection:
 
 		dbt_col_names = [self.sql_dbt_map['scheduled'][col[0]] for col in sCursor.description]
 		while row:
-			logger.finer('Processing a scheduled row')
+			logger.info('Processing a scheduled row')
 			# We zip up our data making a key-value pairing of col_names and rows
 			data = dict(zip(dbt_col_names, row))
 			days.addStop(data['date'], data['blockNumber'], data['tripNumber'], \
@@ -365,7 +365,7 @@ class Connection:
 		# get dbt_names for each column for abstraction
 		dbt_col_names = [self.sql_dbt_map['actual'][col[0]] for col in aCursor.description]
 		while row:
-			logger.finer('Processing an actual row')
+			logger.info('Processing an actual row')
 			data = dict(zip(dbt_col_names, row))
 			days.crossRef(data['date'], data['blockNumber'], data['tripNumber'],\
 			 data['stop'],data['bus'],data['boards'],data['alights'],\
