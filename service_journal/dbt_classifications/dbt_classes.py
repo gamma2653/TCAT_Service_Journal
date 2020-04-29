@@ -30,7 +30,7 @@ class Days:
 		if blockNumber not in self.root[date]:
 			self.addBlock(date, blockNumber)
 		if tripNumber not in self.root[date][blockNumber]:
-			self.addTrip(date, blockNumber, tripNumber)
+			self.addTrip(date, blockNumber, tripNumber, route, direction)
 		self.root[date][blockNumber][tripID]['stops'][stopID] = dict({'name':stopName,\
 		 'time':time,'distance':distance, 'bus':None, 'boards':-1, 'alights':-1, \
 		 'onboard':-1, 'adjustedOnboard':-1, 'seen':False})
