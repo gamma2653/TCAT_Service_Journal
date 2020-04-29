@@ -18,14 +18,14 @@ class Days:
 			self.addDay(self, date)
 		self.root[date][blockNumber] = dict()
 	def addTrip(self, date, blockNumber, tripNumber, route, direction):
-		if date in self.root:
+		if date not in self.root:
 			self.addDay(self, date)
 		if blockNumber not in self.root[date]:
 			self.addBlock(self, date, blockNumber)
 		self.root[date][blockNumber][tripNumber] = dict({'stops':OrderedDict(), route:route, direction:direction})
 	# stopInfo is a tuple containing stopInfo
 	def addStop(self, date, blockNumber, tripNumber, route, direction, stopID, stopName, time, distance,):
-		if date in self.root:
+		if date not in self.root:
 			self.addDay(self, date)
 		if blockNumber not in self.root[date]:
 			self.addBlock(self, date, blockNumber)

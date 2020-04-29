@@ -100,6 +100,11 @@ INIT = {
 					'view': 'v_sched_trip_stop',
 					'nullable': True
 				},
+				'direction': {
+					'name': 'Direction',
+					'view': 'v_vehicle_history',
+					'nullable': True
+				},
 				'blockNumber': {
 					'name': 'BlockNumber',
 					'view': 'v_sched_trip_stop',
