@@ -371,7 +371,7 @@ class Connection:
 			data = dict(zip(dbt_col_names, row))
 			days.crossRef(data['date'], data['blockNumber'], data['tripNumber'],\
 			 data['stop'],data['bus'],data['boards'],data['alights'],\
-			 data['onboard'],data['adjustedOnboard'])
+			 data['onboard'])
 			row = cursor.fetchone()
 
 
