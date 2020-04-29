@@ -350,6 +350,7 @@ class Connection:
 		# sNullable = sCursor.description[6] #Unused at the moment
 
 		dbt_col_names = [self.sql_dbt_map['scheduled'][col[0]] for col in sCursor.description]
+		logger.info('generated col names: %s' % (dbt_col_names))
 		while row:
 			logger.info('Processing a scheduled row')
 			# We zip up our data making a key-value pairing of col_names and rows
@@ -364,6 +365,7 @@ class Connection:
 
 		# get dbt_names for each column for abstraction
 		dbt_col_names = [self.sql_dbt_map['actual'][col[0]] for col in aCursor.description]
+		logger.info('generated col names: %s' % (dbt_col_names))
 		while row:
 			logger.info('Processing an actual row')
 			data = dict(zip(dbt_col_names, row))
