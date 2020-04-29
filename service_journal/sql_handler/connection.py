@@ -58,7 +58,7 @@ INIT = {
 					'view': 'v_vehicle_history',
 					'nullable': True
 				},
-				'dir': {
+				'direction': {
 					'name': 'dir',
 					'view': 'v_vehicle_history',
 					'nullable': True
@@ -110,8 +110,8 @@ INIT = {
 					'view': 'v_sched_trip_stop',
 					'nullable': True
 				},
-				'dir': {
-					'name': 'Direction',
+				'distance': {
+					'name': 'dist_ft',
 					'view': 'v_sched_trip_stop',
 					'nullable': True
 				},
@@ -135,7 +135,7 @@ INIT = {
 					'view': 'v_sched_trip_stop',
 					'nullable': True
 				},
-				't_stop_name': {
+				'stop_name': {
 					'name': 'tStopName',
 					'view': 'v_sched_trip_stop',
 					'nullable': True
@@ -177,8 +177,8 @@ INIT = {
 				'scheduled': {
 					'deflt_query': 'SELECT ?,?,?,?,?,?,?,?,?,?,?,?,? FROM ? WHERE ?=?',
 					'opt_query': 'SELECT ?,?,?,?,?,?,?,?,?,?,?,?,? FROM ? WHERE ?=? AND ?=?',
-					'static':'SELECT [Service_Date], [ServiceRecordId], [BlockNumber], [RouteNumber], [Direction], [Trip26], [iStop], [tStop], [iStopName], [tStopName], [DepartureTime], [layover], [RunNumber], [PieceNumber] FROM [TA_ITHACA_SCHEDULE_HISTORY].[dbo].[v_sched_trip_stop] WHERE [calendar]=?',
-					'table': 'v_sched_trip_stop',
+					'static':'SELECT [Service_Date], [dist_ft], [ServiceRecordId], [BlockNumber], [RouteNumber], [Direction], [Trip26], [iStop], [tStop], [iStopName], [tStopName], [DepartureTime], [layover], [RunNumber], [PieceNumber] FROM [TA_ITHACA_SCHEDULE_HISTORY].[dbo].[v_date_block_trip_stop] WHERE [Service_Date]=?',
+					'table': 'v_date_block_trip_stop',
 					'database': 'TA_ITHACA_SCHEDULE_HISTORY'
 				}
 			},
@@ -350,14 +350,18 @@ class Connection:
 		# sNullable = sCursor.description[6] #Unused at the moment
 
 		dbt_col_names = [self.sql_dbt_map['scheduled'][col[0]]['name'] for col in sCursor.description]
+		data = dict(zip(dbt_col_names, row))
+		days.addStop(data['date'], data['blockNumber'], data['tripNumber'], \
+		data['route'], data['direction'], data['i_stop'], data['i_stop_name'], \
+		data['time'], data['distance'])
 		logger.info('generated col names: %s' % (dbt_col_names))
 		while row:
 			logger.info('Processing a scheduled row')
 			# We zip up our data making a key-value pairing of col_names and rows
 			data = dict(zip(dbt_col_names, row))
 			days.addStop(data['date'], data['blockNumber'], data['tripNumber'], \
-			data['route'], data['direction'], data['stop'], data['name'], \
-			data['time'], data['distance'],data['bus'])
+			data['route'], data['direction'], data['stop'], data['stop_name'], \
+			data['time'], data['distance'])
 			row = sCursor.fetchone()
 		# Now for ActualData
 
