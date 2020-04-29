@@ -304,7 +304,7 @@ class Connection:
 			# Execute primary query
 			aCursor.execute(aQuery, str(date))
 
-			sCursor.execute(sQuery, str(date))
+			sCursor.execute(sQuery, str(date).replace('-',''))
 
 		else:
 			# Execute optional query
