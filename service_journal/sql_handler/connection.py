@@ -105,6 +105,11 @@ INIT = {
 					'view': 'v_sched_trip_stop',
 					'nullable': True
 				},
+				'service_record': {
+					'name': 'ServiceRecordId',
+					'view': 'v_sched_trip_stop',
+					'nullable': True
+				},
 				'dir': {
 					'name': 'Direction',
 					'view': 'v_sched_trip_stop',
@@ -160,16 +165,18 @@ INIT = {
 				'actual': {
 					'deflt_query': 'SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? FROM ? WHERE ?=?',
 					'opt_query': 'SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? FROM ? WHERE ?=? AND ?=?',
+					'static': 'SELECT [service_day],[block],[trip26],[bus],[Time],[Operator_Record_Id],[Departure_Time],[Route],[dir],[Stop_Id],[Stop_Name],[Boards],[Alights],[Onboard],[OperationalStatus] FROM [TA_ITHACA_ACTUAL_HISTORY].[dbo].[v_vehicle_history] WHERE [service_day]=?',
 					'table': 'v_vehicle_history',
 					'database':  'TA_ITHACA_SCHEDULE_HISTORY'
 				},
 				'scheduled': {
 					'deflt_query': 'SELECT ?,?,?,?,?,?,?,?,?,?,?,?,? FROM ? WHERE ?=?',
 					'opt_query': 'SELECT ?,?,?,?,?,?,?,?,?,?,?,?,? FROM ? WHERE ?=? AND ?=?',
+					'static':'SELECT [calendar],[ServiceRecordId],[BlockNumber],[TripRecordId],[RouteRecordId],[PatternRecordId],[Direction],[Trip26],[iStop],[tStop],[iStopName],[tStopName],[DepartureTime],[layover],[timepoint],[RunNumber],[PieceNumber]  FROM [TA_ITHACA_SCHEDULE_HISTORY].[dbo].[v_sched_trip_stop] WHERE [calendar]=?',
 					'table': 'v_sched_trip_stop',
 					'database': 'TA_ITHACA_SCHEDULE_HISTORY'
 				}
-			}
+			},
 		}
 	}
 }
@@ -276,8 +283,12 @@ class Connection:
 			tQuery = 'deflt_query'
 		else:
 			tQuery = 'opt_query'
-		aQuery = settings['dbt_sql_map']['views']['actual'][tQuery]
-		sQuery = settings['dbt_sql_map']['views']['scheduled'][tQuery]
+		# aQuery = settings['dbt_sql_map']['views']['actual'][tQuery]
+		# sQuery = settings['dbt_sql_map']['views']['scheduled'][tQuery]
+		# Temporarily disabled dynamically generated queries.
+		aQuery = settings['dbt_sql_map']['views']['actual']['static']
+		sQuery = settings['dbt_sql_map']['views']['scheduled']['static']
+
 		aTable = settings['dbt_sql_map']['views']['actual']['table']
 		sTable = settings['dbt_sql_map']['views']['scheduled']['table']
 		# else:
@@ -285,43 +296,13 @@ class Connection:
 		aCursor = self.actual_read_conn.cursor()
 		sCursor = self.scheduled_read_conn.cursor()
 		if block==-1:
-			print(aQuery)
-			print(a_dbt_sql_map['date']['name'])
-			print('\nTrying to demo query:\n')
-			b = aQuery
-			b = b.replace('?', a_dbt_sql_map['date']['name'], 1)
-			b = b.replace('?', a_dbt_sql_map['blockNumber']['name'], 1)
-			b = b.replace('?', a_dbt_sql_map['tripNumber']['name'], 1)
-			b = b.replace('?', a_dbt_sql_map['bus']['name'], 1)
-			b = b.replace('?', a_dbt_sql_map['time']['name'], 1)
-			b = b.replace('?', a_dbt_sql_map['route']['name'], 1)
-			b = b.replace('?', a_dbt_sql_map['dir']['name'], 1)
-			b = b.replace('?', a_dbt_sql_map['stop']['name'], 1)
-			b = b.replace('?', a_dbt_sql_map['name']['name'], 1)
-			b = b.replace('?', a_dbt_sql_map['boards']['name'], 1)
-			b = b.replace('?', a_dbt_sql_map['alights']['name'], 1)
-			b = b.replace('?', a_dbt_sql_map['onboard']['name'], 1)
-			b = b.replace('?', a_dbt_sql_map['opStatus']['name'], 1)
-			b = b.replace('?', aTable, 1)
-			b = b.replace('?', a_dbt_sql_map['date']['name'], 1)
-			b = b.replace('?', str(date), 1)
-			print('\n'+b+'\n')
-			aCursor.execute(aQuery, a_dbt_sql_map['date']['name'], \
-			 a_dbt_sql_map['blockNumber']['name'], a_dbt_sql_map['tripNumber']['name'],\
-			 a_dbt_sql_map['bus']['name'], a_dbt_sql_map['time']['name'], a_dbt_sql_map['route']['name'],\
-			 a_dbt_sql_map['dir']['name'], a_dbt_sql_map['stop']['name'], a_dbt_sql_map['name']['name'],\
-			 a_dbt_sql_map['boards']['name'], a_dbt_sql_map['alights']['name'],\
-			 a_dbt_sql_map['onboard']['name'],a_dbt_sql_map['opStatus']['name'],\
-			 aTable, a_dbt_sql_map['date']['name'], str(date))
+			# Execute primary query
+			aCursor.execute(aQuery, str(date))
 
-			sCursor.execute(sQuery, s_dbt_sql_map['date']['name'], s_dbt_sql_map['blockNumber']['name'],\
-			 s_dbt_sql_map['dir']['name'], s_dbt_sql_map['tripNumber']['name'],\
-			 s_dbt_sql_map['i_stop']['name'], s_dbt_sql_map['t_stop']['name'],\
-			 s_dbt_sql_map['i_stop_name']['name'], s_dbt_sql_map['t_stop_name']['name'],\
-			 s_dbt_sql_map['layover']['name'], s_dbt_sql_map['run']['name'],\
-			 s_dbt_sql_map['pieceNumber']['name'], sTable, s_dbt_sql_map['date']['name'], date)
+			sCursor.execute(sQuery, str(date))
 
 		else:
+			# Execute optional query
 			aCursor.execute(aQuery, query, a_dbt_sql_map['date']['name'], \
 			 a_dbt_sql_map['blockNumber']['name'], a_dbt_sql_map['tripNumber']['name'],\
 			 a_dbt_sql_map['bus']['name'], a_dbt_sql_map['time']['name'],\
@@ -348,7 +329,21 @@ class Connection:
 		aCursor, sCursor = cursors
 		# Now for scheduled data
 		row = sCursor.fetchone()
-		dbt_col_names = [sql_dbt_map[col] for col in sCol_names]
+
+		# cursor_description documentation:
+		# 0. column name (or alias, if specified in the SQL)
+		# 1. type code
+		# 2. display size (pyodbc does not set this value)
+		# 3. internal size (in bytes)
+		# 4. precision
+		# 5. scale
+		# 6. nullable (True/False)
+		# aCol_names = aCursor.description[0]
+		# aNullable = aCursor.description[6] #Unused at the moment
+		# sCol_names = sCursor.description[0]
+		# sNullable = sCursor.description[6] #Unused at the moment
+
+		dbt_col_names = [self.sql_dbt_map['scheduled'][col[0]] for col in sCursor.description]
 		while row:
 			data = dict(zip(dbt_col_names, row))
 			days.addStop(data['date'], data['blockNumber'], data['tripNumber'], \
@@ -358,20 +353,9 @@ class Connection:
 		# Now for ActualData
 
 		row = aCursor.fetchone()
-		# cursor_description documentation:
-		# 0. column name (or alias, if specified in the SQL)
-		# 1. type code
-		# 2. display size (pyodbc does not set this value)
-		# 3. internal size (in bytes)
-		# 4. precision
-		# 5. scale
-		# 6. nullable (True/False)
-		aCol_names = aCursor.description[0]
-		aNullable = aCursor.description[6] #Unused at the moment
-		sCol_names = sCursor.description[0]
-		sNullable = sCursor.description[6] #Unused at the moment
+
 		# get dbt_names for each column for abstraction
-		dbt_col_names = [sql_dbt_map[col] for col in aCol_names]
+		dbt_col_names = [self.sql_dbt_map['actual'][col[0]] for col in aCursor.description]
 		while row:
 			# We zip up our data making a key-value pairing of col_names and rows
 			data = dict(zip(dbt_col_names, row))

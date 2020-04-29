@@ -1,4 +1,5 @@
 import sys
+# import argparse
 import traceback as tb
 from datetime import datetime
 from enum import IntEnum
@@ -72,6 +73,8 @@ class Logger:
 		self.module = module
 
 	def read_args(self):
+		# parser = argparse.ArgumentParser()
+		# parser.add_argument('--log-level', aliases=['-ll'])
 		if '-ll' in sys.argv:
 			try:
 				level = sys.argv[sys.argv.index('-ll')+1]

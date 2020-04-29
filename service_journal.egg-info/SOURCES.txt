@@ -4,6 +4,7 @@ service_journal.egg-info/PKG-INFO
 service_journal.egg-info/SOURCES.txt
 service_journal.egg-info/dependency_links.txt
 service_journal.egg-info/top_level.txt
+service_journal/command_line_tools/__init__.py
 service_journal/dbt_classifications/__init__.py
 service_journal/dbt_classifications/dbt_classes.py
 service_journal/dbt_classifications/exceptions.py
