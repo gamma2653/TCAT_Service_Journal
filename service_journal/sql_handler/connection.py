@@ -365,7 +365,7 @@ class Connection:
 		data['time'], data['distance'])
 		logger.info('generated col names: %s' % (dbt_col_names))
 		while row:
-			logger.info('Processing a scheduled row')
+			logger.finest('Processing a scheduled row')
 			# We zip up our data making a key-value pairing of col_names and rows
 			data = dict(zip(dbt_col_names, row))
 			days.addStop(data['date'], data['blockNumber'], data['tripNumber'], \
@@ -380,7 +380,7 @@ class Connection:
 		dbt_col_names = [self.sql_dbt_map['actual'][col[0]]['name'] for col in aCursor.description]
 		logger.info('generated col names: %s' % (dbt_col_names))
 		while row:
-			logger.info('Processing an actual row')
+			logger.finest('Processing an actual row')
 			data = dict(zip(dbt_col_names, row))
 			days.crossRef(data['date'], data['blockNumber'], data['tripNumber'],\
 			 data['stop'],data['bus'],data['boards'],data['alights'],\
@@ -402,5 +402,6 @@ class Connection:
 						 stopNumber, stop['name'], None, stop['seen'], \
 						 stop['boards'], stop['alights'], stop['onboard'], \
 						 stop['adjustedOnboard'], None, None, stop['distance'], \
-						 None, None, None, None, stop['distance']*stop['onboard'],\
-						 None)
+						 None, None, None, None, \
+						 (stop['distance'] if stop['distance']!=None else 0)\
+						 *stop['onboard'], None)
