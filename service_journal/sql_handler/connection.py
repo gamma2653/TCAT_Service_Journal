@@ -412,3 +412,4 @@ class Connection:
 						 None, None, stop['sched_time'], None, \
 						 (stop['distance'] if stop['distance']!=None else 0)\
 						 *stop['onboard'], None)
+		cursor.commit()
