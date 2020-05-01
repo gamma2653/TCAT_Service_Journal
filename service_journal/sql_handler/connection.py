@@ -174,7 +174,7 @@ INIT = {
 					'opt_query': 'SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? FROM ? WHERE ?=? AND ?=?',
 					'static': 'SELECT [service_day],[block],[trip26],[bus],[Time],[Departure_Time],[Route],[dir],[Stop_Id],[Stop_Name],[Boards],[Alights],[Onboard],[OperationalStatus] FROM [TA_ITHACA_ACTUAL_HISTORY].[dbo].[v_vehicle_history] WHERE [service_day]=? ORDER BY [Time] asc',
 					'table': 'v_vehicle_history',
-					'database':  'TA_ITHACA_ACUTAL_HISTORY'
+					'database':  'TA_ITHACA_ACTUAL_HISTORY'
 				},
 				'scheduled': {
 					'deflt_query': 'SELECT ?,?,?,?,?,?,?,?,?,?,?,?,? FROM ? WHERE ?=?',
@@ -391,7 +391,7 @@ class Connection:
 		logger.info('Date at cursor location loaded!')
 		return days
 	def writeDays(self, days):
-		query = self.sql_dbt_map['output']['views_tables']['static']
+		query = self.sql_dbt_map['views_tables']['output']['static']
 		cursor = self.write_conn.cursor()
 		for date, journal in days.root.items():
 			for blockNumber, block in journal.items():
