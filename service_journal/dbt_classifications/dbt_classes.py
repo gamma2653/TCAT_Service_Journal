@@ -22,7 +22,7 @@ class Days:
 			self.addBlock(date, blockNumber)
 		self.root[date][blockNumber][tripNumber] = dict({'stops':OrderedDict(), 'route':route, 'direction':direction})
 	# stopInfo is a tuple containing stopInfo
-	def addStop(self, date, blockNumber, tripNumber, route, direction, stopID, stopName, actual_time, distance,):
+	def addStop(self, date, blockNumber, tripNumber, route, direction, stopID, stopName, sched_time, distance,):
 		if date not in self.root:
 			self.addDay(date)
 		if blockNumber not in self.root[date]:
