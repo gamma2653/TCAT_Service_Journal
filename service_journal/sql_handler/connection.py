@@ -40,12 +40,12 @@ INIT = {
 					'view': 'v_vehicle_history',
 					'nullable': True
 				},
-				'actual_time': {
+				'trigger_time': {
 					'name': 'Time',
 					'view': 'v_vehicle_history',
 					'nullable': True
 				},
-				'dep_time': {
+				'actual_time': {
 					'name': 'Departure_Time',
 					'view': 'v_vehicle_history',
 					'nullable': True
