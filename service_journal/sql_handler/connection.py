@@ -18,9 +18,6 @@ INIT = {
 		'username': '',
 		'password': '',
 		'__comment': 'Warning: Stored passwords are unencrypted.',
-		'static' : {
-
-		},
 		'dbt_sql_map': {
 			'actual': {
 				'date': {
@@ -97,7 +94,7 @@ INIT = {
 			'scheduled': {
 				'date': {
 					'name': 'Service_Date',
-					'view': 'v_sched_trip_stop',
+					'view': 'v_date_block_trip_stop',
 					'nullable': True
 				},
 				'direction': {
@@ -107,84 +104,91 @@ INIT = {
 				},
 				'blockNumber': {
 					'name': 'BlockNumber',
-					'view': 'v_sched_trip_stop',
+					'view': 'v_date_block_trip_stop',
 					'nullable': True
 				},
 				'service_record': {
 					'name': 'ServiceRecordId',
-					'view': 'v_sched_trip_stop',
+					'view': 'v_date_block_trip_stop',
 					'nullable': True
 				},
 				'distance': {
 					'name': 'dist_ft',
-					'view': 'v_sched_trip_stop',
+					'view': 'v_date_block_trip_stop',
 					'nullable': True
 				},
 				'tripNumber': {
 					'name': 'Trip26',
-					'view': 'v_sched_trip_stop',
+					'view': 'v_date_block_trip_stop',
 					'nullable': True
 				},
 				'i_stop': {
 					'name': 'iStop',
-					'view': 'v_sched_trip_stop',
+					'view': 'v_date_block_trip_stop',
 					'nullable': True
 				},
 				'stop': {
 					'name': 'tStop',
-					'view': 'v_sched_trip_stop',
+					'view': 'v_date_block_trip_stop',
 					'nullable': True
 				},
 				'i_stop_name': {
 					'name': 'iStopName',
-					'view': 'v_sched_trip_stop',
+					'view': 'v_date_block_trip_stop',
 					'nullable': True
 				},
 				'stop_name': {
 					'name': 'tStopName',
-					'view': 'v_sched_trip_stop',
+					'view': 'v_date_block_trip_stop',
 					'nullable': True
 				},
 				'time': {
 					'name': 'DepartureTime',
-					'view': 'v_sched_trip_stop',
+					'view': 'v_date_block_trip_stop',
 					'nullable': True
 				},
 				'layover': {
 					'name': 'layover',
-					'view': 'v_sched_trip_stop',
+					'view': 'v_date_block_trip_stop',
 					'nullable': True
 				},
 				'run': {
 					'name': 'RunNumber',
-					'view': 'v_sched_trip_stop',
+					'view': 'v_date_block_trip_stop',
 					'nullable': True
 				},
 				'route': {
 					'name': 'RouteNumber',
-					'view': 'v_sched_trip_stop',
-					'nullable': False
+					'view': 'v_date_block_trip_stop',
+					'nullable': True
 				},
 				'pieceNumber': {
 					'name': 'PieceNumber',
-					'view': 'v_sched_trip_stop',
+					'view': 'v_date_block_trip_stop',
 					'nullable': True
 				}
 			},
-			'views': {
+			'views_tables': {
 				'actual': {
 					'deflt_query': 'SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? FROM ? WHERE ?=?',
 					'opt_query': 'SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? FROM ? WHERE ?=? AND ?=?',
-					'static': 'SELECT [service_day],[block],[trip26],[bus],[Time],[Departure_Time],[Route],[dir],[Stop_Id],[Stop_Name],[Boards],[Alights],[Onboard],[OperationalStatus] FROM [TA_ITHACA_ACTUAL_HISTORY].[dbo].[v_vehicle_history] WHERE [service_day]=?',
+					'static': 'SELECT [service_day],[block],[trip26],[bus],[Time],[Departure_Time],[Route],[dir],[Stop_Id],[Stop_Name],[Boards],[Alights],[Onboard],[OperationalStatus] FROM [TA_ITHACA_ACTUAL_HISTORY].[dbo].[v_vehicle_history] WHERE [service_day]=? ORDER BY [Time] asc',
 					'table': 'v_vehicle_history',
-					'database':  'TA_ITHACA_SCHEDULE_HISTORY'
+					'database':  'TA_ITHACA_ACUTAL_HISTORY'
 				},
 				'scheduled': {
 					'deflt_query': 'SELECT ?,?,?,?,?,?,?,?,?,?,?,?,? FROM ? WHERE ?=?',
 					'opt_query': 'SELECT ?,?,?,?,?,?,?,?,?,?,?,?,? FROM ? WHERE ?=? AND ?=?',
-					'static':'SELECT [Service_Date], [dist_ft], [ServiceRecordId], [BlockNumber], [RouteNumber], [Direction], [Trip26], [iStop], [tStop], [iStopName], [tStopName], [DepartureTime], [layover], [RunNumber], [PieceNumber] FROM [TA_ITHACA_SCHEDULE_HISTORY].[dbo].[v_date_block_trip_stop] WHERE [Service_Date]=?',
+					'static':'SELECT [Service_Date], [dist_ft], [ServiceRecordId], [BlockNumber], [RouteNumber], [Direction], [Trip26], [iStop], [tStop], [iStopName], [tStopName], [DepartureTime], [layover], [RunNumber], [PieceNumber] FROM [TA_ITHACA_SCHEDULE_HISTORY].[dbo].[v_date_block_trip_stop] WHERE [Service_Date]=? ORDER BY [DepartureTime] asc',
 					'table': 'v_date_block_trip_stop',
 					'database': 'TA_ITHACA_SCHEDULE_HISTORY'
+				},
+				'output': {
+					'deflt_query': '',
+					'opt_query': '',
+					'static':'INSERT INTO [dbo].[segments] ([service_date] ,[bus],[block],[route],[trip],[trip_sequence],[stop_sequence],[direction],[stop_id],[stop_name],[stop_message_id],[stop_seen],[boards],[alights],[onboard],[adjusted_onboard],[start_time],[end_time],[segment_feet],[segment_seconds],[confidence],[sched_start_time],[sched_end_time],[feet_times_passengers],[feet_times_adj_passengers]) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
+					'table': 'segments',
+					'database': 'segments'
 				}
 			},
 		}
@@ -266,21 +270,21 @@ class Connection:
 			r'SERVER=%s;'
 			r'DATABASE=%s;'
 			r'UID=%s;'
-			r'PWD=%s'% (self.driver, self.host, self.dbt_sql_map['views']['actual']['database'], self.user, self.password))
+			r'PWD=%s'% (self.driver, self.host, self.dbt_sql_map['views_tables']['actual']['database'], self.user, self.password))
 		self.scheduled_read_conn = pyodbc.connect(r'DRIVER=%s;'
 			#The host driver, as list of these can be found on the pyodbc
 			#library readme on github
 			r'SERVER=%s;'
 			r'DATABASE=%s;'
 			r'UID=%s;'
-			r'PWD=%s'% (self.driver, self.host, self.dbt_sql_map['views']['scheduled']['database'], self.user, self.password))
-		# self.write_conn = pyodbc.connect(r'DRIVER=%s;'
-		# 	#The host driver, as list of these can be found on the pyodbc
-		# 	#library readme on github
-		# 	r'SERVER=%s;'
-		# 	r'DATABASE=%s;'
-		# 	r'UID=%s;'
-		# 	r'PWD=%s'% (self.driver, self.host, self.write_database, self.user, self.password))
+			r'PWD=%s'% (self.driver, self.host, self.dbt_sql_map['views_tables']['scheduled']['database'], self.user, self.password))
+		self.write_conn = pyodbc.connect(r'DRIVER=%s;'
+			#The host driver, as list of these can be found on the pyodbc
+			#library readme on github
+			r'SERVER=%s;'
+			r'DATABASE=%s;'
+			r'UID=%s;'
+			r'PWD=%s'% (self.driver, self.host, self.dbt_sql_map['views_tables']['output']['database'], self.user, self.password))
 		logger.info('Connection successfully set!')
 
 	# Only should be called on
@@ -293,14 +297,14 @@ class Connection:
 			tQuery = 'deflt_query'
 		else:
 			tQuery = 'opt_query'
-		# aQuery = settings['dbt_sql_map']['views']['actual'][tQuery]
-		# sQuery = settings['dbt_sql_map']['views']['scheduled'][tQuery]
+		# aQuery = settings['dbt_sql_map']['views_tables']['actual'][tQuery]
+		# sQuery = settings['dbt_sql_map']['views_tables']['scheduled'][tQuery]
 		# Temporarily disabled dynamically generated queries.
-		aQuery = settings['dbt_sql_map']['views']['actual']['static']
-		sQuery = settings['dbt_sql_map']['views']['scheduled']['static']
+		aQuery = settings['dbt_sql_map']['views_tables']['actual']['static']
+		sQuery = settings['dbt_sql_map']['views_tables']['scheduled']['static']
 
-		aTable = settings['dbt_sql_map']['views']['actual']['table']
-		sTable = settings['dbt_sql_map']['views']['scheduled']['table']
+		aTable = settings['dbt_sql_map']['views_tables']['actual']['table']
+		sTable = settings['dbt_sql_map']['views_tables']['scheduled']['table']
 		# else:
 		# 	query = settings['optSelectScheduledQuery']
 		aCursor = self.actual_read_conn.cursor()
@@ -386,3 +390,17 @@ class Connection:
 
 		logger.info('Date at cursor location loaded!')
 		return days
+	def writeDays(self, days):
+		query = self.sql_dbt_map['output']['views_tables']['static']
+		cursor = self.write_conn.cursor()
+		for date, journal in days.root.items():
+			for blockNumber, block in journal.items():
+				for tripNumber, trip in block.items():
+					for stopNumber, stop in trip['stops'].items():
+						cursor.execute(query, date, stop['bus'], blockNumber, \
+						 trip['route'], tripNumber, None, None, trip['direction'],\
+						 stopNumber, stop['name'], None, stop['seen'], \
+						 stop['boards'], stop['alights'], stop['onboard'], \
+						 stop['adjustedOnboard'], None, None, stop['distance'], \
+						 None, None, None, None, stop['distance']*stop['onboard'],\
+						 stop['distance']*stop['adjustedOnboard'])

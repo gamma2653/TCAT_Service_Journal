@@ -1,6 +1,4 @@
 #DBT_Classes = Day-Block-Trip classes
-from abc import ABC, abstractmethod
-from enum import Enum
 from collections import OrderedDict
 from service_journal.dbt_classifications.exceptions import BlockNotFound, TripNotFound, NotActual, NotSchedule
 from service_journal.gen_utils.debug import Logger
@@ -33,7 +31,7 @@ class Days:
 			self.addTrip(date, blockNumber, tripNumber, route, direction)
 		self.root[date][blockNumber][tripNumber]['stops'][stopID] = dict({'name':stopName,\
 		 'time':time,'distance':distance, 'bus':None, 'boards':-1, 'alights':-1, \
-		 'onboard':-1, 'adjustedOnboard':-1, 'seen':False})
+		 'onboard':-1, 'adjustedOnboard':-1, 'seen':0})
 	def crossRef(self, date, blockNumber, tripNumber, stopID, bus, boards, alights, onboard):
 		if date in self.root:
 			if blockNumber in self.root[date]:
@@ -44,4 +42,4 @@ class Days:
 						stop['boards'] = boards
 						stop['alights'] = alights
 						stop['onboard'] = onboard
-						stop['seen'] = True
+						stop['seen']+=1
