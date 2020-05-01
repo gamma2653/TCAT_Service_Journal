@@ -40,7 +40,7 @@ INIT = {
 					'view': 'v_vehicle_history',
 					'nullable': True
 				},
-				'time': {
+				'actual_time': {
 					'name': 'Time',
 					'view': 'v_vehicle_history',
 					'nullable': True
@@ -142,7 +142,7 @@ INIT = {
 					'view': 'v_date_block_trip_stop',
 					'nullable': True
 				},
-				'time': {
+				'sched_time': {
 					'name': 'DepartureTime',
 					'view': 'v_date_block_trip_stop',
 					'nullable': True
@@ -215,8 +215,15 @@ def read_config():
 class Connection:
 	def close(self):
 		try:
+			self.actual_read_conn.close()
+		except NameError:
 			pass
-			# self.db.close()
+		try:
+			self.scheduled_read_conn.close()
+		except NameError:
+			pass
+		try:
+			self.write_conn.close()
 		except NameError:
 			pass
 # Need to clean this up later
@@ -362,7 +369,7 @@ class Connection:
 		data = dict(zip(dbt_col_names, row))
 		days.addStop(data['date'], data['blockNumber'], data['tripNumber'], \
 		data['route'], data['direction'], data['i_stop'], data['i_stop_name'], \
-		data['time'], data['distance'])
+		data['sched_time'], data['distance'])
 		logger.info('generated col names: %s' % (dbt_col_names))
 		while row:
 			logger.finest('Processing a scheduled row')
@@ -370,7 +377,7 @@ class Connection:
 			data = dict(zip(dbt_col_names, row))
 			days.addStop(data['date'], data['blockNumber'], data['tripNumber'], \
 			data['route'], data['direction'], data['stop'], data['stop_name'], \
-			data['time'], data['distance'])
+			data['sched_time'], data['distance'])
 			row = sCursor.fetchone()
 		# Now for ActualData
 
@@ -384,7 +391,7 @@ class Connection:
 			data = dict(zip(dbt_col_names, row))
 			days.crossRef(data['date'], data['blockNumber'], data['tripNumber'],\
 			 data['stop'],data['bus'],data['boards'],data['alights'],\
-			 data['onboard'])
+			 data['onboard'], data['actual_time'])
 			row = aCursor.fetchone()
 
 
@@ -401,7 +408,7 @@ class Connection:
 						 trip['route'], tripNumber, None, None, trip['direction'],\
 						 stopNumber, stop['name'], None, stop['seen'], \
 						 stop['boards'], stop['alights'], stop['onboard'], \
-						 stop['adjustedOnboard'], None, None, stop['distance'], \
-						 None, None, None, None, \
+						 stop['adjustedOnboard'], stop['actual_time'], None, stop['distance'], \
+						 None, None, stop['sched_time'], None, \
 						 (stop['distance'] if stop['distance']!=None else 0)\
 						 *stop['onboard'], None)
