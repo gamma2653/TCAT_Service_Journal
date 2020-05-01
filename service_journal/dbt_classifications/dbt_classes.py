@@ -31,7 +31,7 @@ class Days:
 			self.addTrip(date, blockNumber, tripNumber, route, direction)
 		self.root[date][blockNumber][tripNumber]['stops'][stopID] = dict({'name':stopName,\
 		 'time':time,'distance':distance, 'bus':None, 'boards':-1, 'alights':-1, \
-		 'onboard':-1, 'adjustedOnboard':-1, 'seen':0})
+		 'onboard':-1, 'adjustedOnboard':None, 'seen':0})
 	def crossRef(self, date, blockNumber, tripNumber, stopID, bus, boards, alights, onboard):
 		if date in self.root:
 			if blockNumber in self.root[date]:

@@ -403,4 +403,4 @@ class Connection:
 						 stop['boards'], stop['alights'], stop['onboard'], \
 						 stop['adjustedOnboard'], None, None, stop['distance'], \
 						 None, None, None, None, stop['distance']*stop['onboard'],\
-						 stop['distance']*stop['adjustedOnboard'])
+						 None)
