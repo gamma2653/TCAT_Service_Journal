@@ -30,7 +30,7 @@ class Days:
 		if tripNumber not in self.root[date][blockNumber]:
 			self.addTrip(date, blockNumber, tripNumber, route, direction)
 		self.root[date][blockNumber][tripNumber]['stops'][stopID] = dict({'name':stopName,\
-		 'sched_time':sched_time, 'actual_time':actual_time,'distance':distance, 'bus':None, 'boards':0, 'alights':0, \
+		 'sched_time':sched_time, 'actual_time':None,'distance':distance, 'bus':None, 'boards':0, 'alights':0, \
 		 'onboard':0, 'adjustedOnboard':None, 'seen':0})
 	def crossRef(self, date, blockNumber, tripNumber, stopID, bus, boards, alights, onboard, actual_time):
 		if date in self.root:
