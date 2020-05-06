@@ -376,8 +376,6 @@ class Connection:
 			logger.finest('Processing a scheduled row')
 			# We zip up our data making a key-value pairing of col_names and rows
 			data = dict(zip(dbt_col_names, row))
-			print(data['sched_time'])
-			print(type(data['sched_time']))
 			days.addStop(data['date'], data['blockNumber'], data['tripNumber'], \
 			data['route'], data['direction'], data['stop'], data['stop_name'], \
 			data['sched_time'], data['distance'])
