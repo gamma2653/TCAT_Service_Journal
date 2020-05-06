@@ -8,7 +8,7 @@ logger = Logger(__name__)
 logger.read_args()
 
 def closestStopID(stop_locations, loc):
-	min = sys.maxint
+	min = sys.maxsize
 	closestStop = 0
 	for stop_id, stop_loc in stop_locations:
 		dist = (stop_loc[0]-loc[0])**2+(stop_loc[1]-loc[1])**2
@@ -16,7 +16,7 @@ def closestStopID(stop_locations, loc):
 			closestStop=stopID
 			min = dist
 	return closestStop
-	
+
 class Days:
 	def __init__(self):
 		self.root = dict()
