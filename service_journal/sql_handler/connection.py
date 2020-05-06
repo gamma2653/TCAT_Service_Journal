@@ -380,7 +380,7 @@ class Connection:
 			print(type(data['sched_time']))
 			days.addStop(data['date'], data['blockNumber'], data['tripNumber'], \
 			data['route'], data['direction'], data['stop'], data['stop_name'], \
-			datetime.fromtimestamp(data['sched_time']), data['distance'])
+			data['sched_time'], data['distance'])
 			row = sCursor.fetchone()
 		# Now for ActualData
 
