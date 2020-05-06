@@ -338,7 +338,7 @@ class Connection:
 		# grab query string
 		query = self.dbt_sql_map['views_tables']['stop_locations']['static']
 		# Grab cursor object
-		cursor = self.stop_locations.cursor()
+		cursor = self.stop_locations_conn.cursor()
 		# Execute query
 		cursor.execute(query)
 		# Grab first row from result
