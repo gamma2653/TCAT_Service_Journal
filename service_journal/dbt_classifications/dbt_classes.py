@@ -7,6 +7,16 @@ from service_journal.gen_utils.debug import Logger
 logger = Logger(__name__)
 logger.read_args()
 
+def closestStopID(stop_locations, loc):
+	min = sys.maxint
+	closestStop = 0
+	for stop_id, stop_loc in stop_locations:
+		dist = (stop_loc[0]-loc[0])**2+(stop_loc[1]-loc[1])**2
+		if dist<=min:
+			closestStop=stopID
+			min = dist
+	return closestStop
+	
 class Days:
 	def __init__(self):
 		self.root = dict()
@@ -33,15 +43,7 @@ class Days:
 		self.root[date][blockNumber][tripNumber]['stops'][stopID] = dict({'name':stopName,\
 		 'sched_time':sched_time, 'actual_time':None,'distance':distance, 'bus':None, 'boards':0, 'alights':0, \
 		 'onboard':0, 'adjustedOnboard':None, 'seen':0})
-	def closestStopID(stop_locations, loc):
-		min = sys.maxint
-		closestStop = 0
-		for stop_id, stop_loc in stop_locations:
-			dist = (stop_loc[0]-loc[0])**2+(stop_loc[1]-loc[1])**2
-			if dist<=min:
-				closestStop=stopID
-				min = dist
-		return closestStop
+
 
 	def crossRef(self, date, blockNumber, tripNumber, stopID, bus, boards, alights, onboard, actual_time, loc, stop_locations):
 		if date in self.root:
