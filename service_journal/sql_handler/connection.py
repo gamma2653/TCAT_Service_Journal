@@ -231,8 +231,9 @@ class Connection:
 		logger.info('Initializing Connection with config path: %s' % (config_path))
 		# Open or initialize config into dictionary
 		if not os.path.exists(os.path.join(config_path, 'config.json')):
-			logger.info('Initializing config for first time!')
+			logger.info('Initializing config for first time! Please rerun after having set-up your config.')
 			init_config()
+			sys.exit(0)
 
 		config = read_config()
 		self.config = config
@@ -377,7 +378,7 @@ class Connection:
 			data = dict(zip(dbt_col_names, row))
 			days.addStop(data['date'], data['blockNumber'], data['tripNumber'], \
 			data['route'], data['direction'], data['stop'], data['stop_name'], \
-			datetime.fromtimestamp(data['sched_time']).strftime('%H:%M:%S'), data['distance'])
+			datetime.fromtimestamp(data['sched_time']), data['distance'])
 			row = sCursor.fetchone()
 		# Now for ActualData
 
