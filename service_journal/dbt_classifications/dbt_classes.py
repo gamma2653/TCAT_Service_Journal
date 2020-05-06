@@ -14,7 +14,7 @@ def closestStopID(stop_locations, loc):
 	for stop_id, stop_loc in stop_locations.items():
 		dist = (float(stop_loc[0])-float(loc[0]))**2+(float(stop_loc[1])-float(loc[1]))**2
 		if dist<=min:
-			closestStop=stopID
+			closestStop=stop_id
 			min = dist
 	return closestStop
 
