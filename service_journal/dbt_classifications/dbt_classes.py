@@ -10,7 +10,6 @@ logger.read_args()
 def closestStopID(stop_locations, loc):
 	min = sys.maxsize
 	closestStop = 0
-	print(stop_locations)
 	for stop_id, stop_loc in stop_locations.items():
 		dist = (float(stop_loc[0])-float(loc[0]))**2+(float(stop_loc[1])-float(loc[1]))**2
 		if dist<=min:
