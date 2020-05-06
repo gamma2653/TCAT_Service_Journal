@@ -3,7 +3,7 @@ import pyodbc
 import json
 import os
 import sys
-from datetime import date
+from datetime import date, datetime
 from service_journal.dbt_classifications import dbt_classes
 from service_journal.dbt_classifications.exceptions import BusNotFound, BlockNotFound, TripNotFound
 from service_journal.gen_utils.debug import Logger
@@ -377,7 +377,7 @@ class Connection:
 			data = dict(zip(dbt_col_names, row))
 			days.addStop(data['date'], data['blockNumber'], data['tripNumber'], \
 			data['route'], data['direction'], data['stop'], data['stop_name'], \
-			data['sched_time'], data['distance'])
+			datetime.fromtimestamp(data['sched_time']).strftime('%H:%M:%S'), data['distance'])
 			row = sCursor.fetchone()
 		# Now for ActualData
 
