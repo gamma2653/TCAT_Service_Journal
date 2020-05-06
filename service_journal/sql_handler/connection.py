@@ -89,7 +89,17 @@ INIT = {
 					'name': 'OperationalStatus',
 					'view': 'v_vehicle_history',
 					'nullable': True
-				}
+				},
+				'latitude':{
+					'name': 'Latitude',
+					'view': 'v_vehicle_history',
+					'nullable': True
+				},
+				'latitude':{
+					'name': 'Longitude',
+					'view': 'v_vehicle_history',
+					'nullable': True
+				},
 			},
 			'scheduled': {
 				'date': {
@@ -168,6 +178,23 @@ INIT = {
 					'nullable': True
 				}
 			},
+			'stop_locations': {
+				'stop_num': {
+					'name': 'stop_num',
+					'view': 'stop_locations',
+					'nullable': False
+				},
+				'latitude': {
+					'name': 'latitude',
+					'view': 'stop_locations',
+					'nullable': False
+				},
+				'longitude': {
+					'name': 'longitude',
+					'view': 'stop_locations',
+					'nullable': False
+				}
+			},
 			'views_tables': {
 				'actual': {
 					'deflt_query': 'SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? FROM ? WHERE ?=?',
@@ -189,6 +216,11 @@ INIT = {
 					'static':'INSERT INTO [dbo].[segments] ([service_date] ,[bus],[block],[route],[trip],[trip_sequence],[stop_sequence],[direction],[stop_id],[stop_name],[stop_message_id],[stop_seen],[boards],[alights],[onboard],[adjusted_onboard],[start_time],[end_time],[segment_feet],[segment_seconds],[confidence],[sched_start_time],[sched_end_time],[feet_times_passengers],[feet_times_adj_passengers]) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
 					'table': 'segments',
 					'database': 'segments'
+				},
+				'stop_locations':{
+					'static':'SELECT [stop_num],[latitude],[longitude] FROM [Utilities].[dbo].[stops]',
+					'table': 'stops',
+					'database': 'Utilities'
 				}
 			},
 		}
@@ -293,7 +325,36 @@ class Connection:
 			r'DATABASE=%s;'
 			r'UID=%s;'
 			r'PWD=%s'% (self.driver, self.host, self.dbt_sql_map['views_tables']['output']['database'], self.user, self.password))
+		self.stop_locations_conn = pyodbc.connect(r'DRIVER=%s;'
+			#The host driver, as list of these can be found on the pyodbc
+			#library readme on github
+			r'SERVER=%s;'
+			r'DATABASE=%s;'
+			r'UID=%s;'
+			r'PWD=%s'% (self.driver, self.host, self.dbt_sql_map['views_tables']['stop_locations']['database'], self.user, self.password))
+		self.load_stop_loc()
 		logger.info('Connection successfully set!')
+	def load_stop_loc(self):
+		# grab query string
+		query = self.dbt_sql_map['views_tables']['stop_locations']['static']
+		# Grab cursor object
+		cursor = self.stop_locations.cursor()
+		# Execute query
+		cursor.execute(query)
+		# Grab first row from result
+		row = cursor.fetchone()
+
+		self.stop_locations = {}
+
+		# get dbt_names for each column for abstraction
+		dbt_col_names = [self.sql_dbt_map['stop_locations'][col[0]]['name'] for col in cursor.description]
+		logger.info('generated col names: %s' % (dbt_col_names))
+		while row:
+			logger.finest('Processing an actual row')
+			data = dict(zip(dbt_col_names, row))
+			self.stop_locations[data['stop_num']] = (data['latitude'], data['longitude'])
+			row = aCursor.fetchone()
+
 
 	# Only should be called on
 	def selectDate(self, date, block=-1):
@@ -391,13 +452,15 @@ class Connection:
 			logger.finest('Processing an actual row')
 			data = dict(zip(dbt_col_names, row))
 			days.crossRef(data['date'], data['blockNumber'], data['tripNumber'],\
-			 data['stop'],data['bus'],data['boards'],data['alights'],\
-			 data['onboard'], data['actual_time'])
+			 data['stop'],data['bus'],data['boards'],data['alights'], data['onboard'],\
+			 data['actual_time'], (data['latitude'], data['longitude']), self.stop_locations)
 			row = aCursor.fetchone()
 
 
 		logger.info('Date at cursor location loaded!')
 		return days
+	def selectAndLoad(self, date):
+		return self.loadData(self.selectDate(date))
 	def writeDays(self, days):
 		query = self.sql_dbt_map['views_tables']['output']['static']
 		cursor = self.write_conn.cursor()
