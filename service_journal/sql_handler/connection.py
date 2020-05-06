@@ -353,7 +353,7 @@ class Connection:
 			logger.finest('Processing an actual row')
 			data = dict(zip(dbt_col_names, row))
 			self.stop_locations[data['stop_num']] = (data['latitude'], data['longitude'])
-			row = aCursor.fetchone()
+			row = cursor.fetchone()
 
 
 	# Only should be called on
