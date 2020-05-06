@@ -95,7 +95,7 @@ INIT = {
 					'view': 'v_vehicle_history',
 					'nullable': True
 				},
-				'latitude':{
+				'longitude':{
 					'name': 'Longitude',
 					'view': 'v_vehicle_history',
 					'nullable': True
@@ -199,7 +199,7 @@ INIT = {
 				'actual': {
 					'deflt_query': 'SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? FROM ? WHERE ?=?',
 					'opt_query': 'SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? FROM ? WHERE ?=? AND ?=?',
-					'static': 'SELECT [service_day],[block],[trip26],[bus],[Time],[Departure_Time],[Route],[dir],[Stop_Id],[Stop_Name],[Boards],[Alights],[Onboard],[OperationalStatus] FROM [TA_ITHACA_ACTUAL_HISTORY].[dbo].[v_vehicle_history] WHERE [service_day]=? ORDER BY [Time] asc',
+					'static': 'SELECT [service_day],[block],[trip26],[bus],[Time],[Departure_Time],[Route],[dir],[Stop_Id],[Stop_Name],[Boards],[Alights],[Onboard],[OperationalStatus],[Latitude],[Longitude] FROM [TA_ITHACA_ACTUAL_HISTORY].[dbo].[v_vehicle_history] WHERE [service_day]=? ORDER BY [Time] asc',
 					'table': 'v_vehicle_history',
 					'database':  'TA_ITHACA_ACTUAL_HISTORY'
 				},

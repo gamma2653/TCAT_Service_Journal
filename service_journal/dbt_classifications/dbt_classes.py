@@ -49,7 +49,7 @@ class Days:
 				if tripNumber in self.root[date][blockNumber]:
 					if stopID==0:
 						t_stop_locs = {stop_id : stop_locations[stop_id] for \
-						stop_id in self.root[date][blockNumber][tripNumber].keys()}
+						stop_id in self.root[date][blockNumber][tripNumber]['stops'].keys()}
 						stopID = closestStopID(stop_locations, loc)
 						was197 = True
 					else:
