@@ -30,10 +30,10 @@ def run():
 		from_date = date(y1, m1, d1)
 		to_date = date(y2, m2, d2)
 		conn = connection.Connection(_path)
-		days = Days()
+		# TODO: Have days work as day(s)
 		for day in daterange(from_date, to_date):
-			days = conn.selectAndLoad(day, days=days)
-		conn.writeDays(days)
+			days = conn.selectAndLoad(day)
+			conn.writeDays(days)
 		conn.close()
 		userin = input('Would you like to continue? (Y/n)')
 		if userin.strip().lower() == 'n':
