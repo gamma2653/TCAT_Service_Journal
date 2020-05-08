@@ -3,6 +3,7 @@ import sys
 from collections import OrderedDict
 from service_journal.dbt_classifications.exceptions import BlockNotFound, TripNotFound, NotActual, NotSchedule
 from service_journal.gen_utils.debug import Logger
+from datetime import datetime, timedelta
 # Logger initialization
 logger = Logger(__name__)
 logger.read_args()
@@ -40,6 +41,7 @@ class Days:
 			self.addBlock(date, blockNumber)
 		if tripNumber not in self.root[date][blockNumber]:
 			self.addTrip(date, blockNumber, tripNumber, route, direction)
+		sched_time = datetime.combine(date, timedelta(seconds=sched_time))
 		self.root[date][blockNumber][tripNumber]['stops'][stopID] = dict({'name':stopName,\
 		 'sched_time':sched_time, 'actual_time':None,'distance':distance, 'bus':None, 'boards':0, 'alights':0, \
 		 'onboard':0, 'adjustedOnboard':None, 'seen':0})
