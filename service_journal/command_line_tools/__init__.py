@@ -12,7 +12,7 @@ _path = '.'
 
 def daterange(start_date, end_date):
 	for n in range(int ((end_date - start_date).days)):
-		yield day = start_date + timedelta(n)
+		yield start_date + timedelta(n)
 
 def run():
 	while True:
