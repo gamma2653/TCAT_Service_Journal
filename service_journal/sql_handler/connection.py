@@ -428,16 +428,15 @@ class Connection:
 		# sNullable = sCursor.description[6] #Unused at the moment
 
 		dbt_col_names = [self.sql_dbt_map['scheduled'][col[0]]['name'] for col in sCursor.description]
-		data = dict(zip(dbt_col_names, row))
-		days.addStop(data['date'], data['blockNumber'], data['tripNumber'], \
-		data['route'], data['direction'], data['i_stop'], data['i_stop_name'], \
-		data['sched_time'], data['distance'])
 		logger.info('generated col names: %s' % (dbt_col_names))
+		if row:
+			data = dict(zip(dbt_col_names, row))
+			days.addStop(data['date'], data['blockNumber'], data['tripNumber'], \
+			data['route'], data['direction'], data['i_stop'], data['i_stop_name'], \
+			data['sched_time'], data['distance'])
 		while row:
 			logger.finest('Processing a scheduled row')
 			# We zip up our data making a key-value pairing of col_names and rows
-			print(type(row))
-			print(row)
 			data = dict(zip(dbt_col_names, row))
 			days.addStop(data['date'], data['blockNumber'], data['tripNumber'], \
 			data['route'], data['direction'], data['stop'], data['stop_name'], \
