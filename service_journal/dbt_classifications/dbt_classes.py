@@ -52,7 +52,6 @@ class Days:
 			if blockNumber in self.root[date]:
 				if tripNumber in self.root[date][blockNumber]:
 					if stopID==0:
-						print(route)
 						t_stop_locs = {stop_id : stop_locations[stop_id] for \
 						stop_id in self.root[date][blockNumber][tripNumber]['stops'].keys()}
 						stopID = closestStopID(stop_locations, loc)
