@@ -459,8 +459,8 @@ class Connection:
 
 		logger.info('Date at cursor location loaded!')
 		return days
-	def selectAndLoad(self, date):
-		return self.loadData(self.selectDate(date))
+	def selectAndLoad(self, date, days=None):
+		return self.loadData(self.selectDate(date), days=None)
 	def writeDays(self, days):
 		query = self.sql_dbt_map['views_tables']['output']['static']
 		cursor = self.write_conn.cursor()
