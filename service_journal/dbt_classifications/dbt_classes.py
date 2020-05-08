@@ -47,11 +47,12 @@ class Days:
 		 'onboard':0, 'adjustedOnboard':None, 'seen':0})
 
 
-	def crossRef(self, date, blockNumber, tripNumber, stopID, bus, boards, alights, onboard, actual_time, loc, stop_locations):
+	def crossRef(self, date, blockNumber, tripNumber, stopID, bus, boards, alights, onboard, actual_time, loc, route, stop_locations):
 		if date in self.root:
 			if blockNumber in self.root[date]:
 				if tripNumber in self.root[date][blockNumber]:
 					if stopID==0:
+						print(route)
 						t_stop_locs = {stop_id : stop_locations[stop_id] for \
 						stop_id in self.root[date][blockNumber][tripNumber]['stops'].keys()}
 						stopID = closestStopID(stop_locations, loc)

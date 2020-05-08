@@ -454,7 +454,7 @@ class Connection:
 			data = dict(zip(dbt_col_names, row))
 			days.crossRef(data['date'], data['blockNumber'], data['tripNumber'],\
 			 data['stop'],data['bus'],data['boards'],data['alights'], data['onboard'],\
-			 data['actual_time'], (data['latitude'], data['longitude']), self.stop_locations)
+			 data['actual_time'], (data['latitude'], data['longitude']), data['route'], self.stop_locations)
 			row = aCursor.fetchone()
 
 
