@@ -86,31 +86,63 @@ class Days:
 						stop['avl_onboard'] = stop['avl_onboard']+onboard
 						stop['actual_time'] = actual_time
 						stop['seen']+= 1 if was197 else 10
-	def postProcess(self):
-		buses = {}
+	# def postProcess(self):
+	# 	buses = {}
+	# 	for date in self.root.keys():
+	# 		for blockNumber in self.root[date].keys():
+	# 			for tripNumber in self.root[date][blockNumber].keys():
+	# 				for stopID in self.root[date][blockNunber][tripNumber]['stops'].keys():
+	# 					stop = self.root[date][blockNunber][tripNumber]['stops'][stopID]
+	# 					if stop['bus']==None:
+	# 						pass
+	# 						# Check day-bus-block actual times, take start and end time
+	# 						# Check for overlap, if overlap, flag overlapping stops
+	# 						# Mainly just find a mapping for bus
+	# 					else
+	# 						if stop['bus'] not in buses:
+	# 							buses[stop['bus']] = []
+	# 						buses[stop['bus']].append(stop)
+
+	def inferStops(self):
+		bus_start_end = {}
+		for bus, stops in self.getStopsByBusDict():
+			for stop in stops:
+				if bus not in bus_start_end:
+					bus_start_end[bus] = (stop['actual_time'], stop['actual_time'])
+				else:
+					# cross-reference bus stop times
+					if stop['actual_time']>bus_start_end[bus][0]:
+						pass
+		# for date in self.root.keys():
+		# 	for blockNumber in self.root[date].keys():
+		# 		busStops = {}
+		# 		for tripNumber in self.root[date][blockNumber].keys():
+		# 			for (stopID, instanceID), stop in self.root[date][blockNunber][tripNumber]['stops'].items():
+		# 				busStops[stop['bus']] = stop
+		# 				if not stop['bus']:
+		# 					# Try to find previous bus
+
+
+
+	def getStopsByBusDict(self):
+		stops_made = {}
 		for date in self.root.keys():
 			for blockNumber in self.root[date].keys():
 				for tripNumber in self.root[date][blockNumber].keys():
-					for stopID in self.root[date][blockNunber][tripNumber]['stops'].keys():
-						stop = self.root[date][blockNunber][tripNumber]['stops'][stopID]
-						if stop['bus']==None:
-							pass
-							# Check day-bus-block actual times, take start and end time
-							# Check for overlap, if overlap, flag overlapping stops
-							# Mainly just find a mapping for bus
-						else
-							if stop['bus'] not in buses:
-								buses[stop['bus']] = []
-							buses[stop['bus']].append(stop)
-
-
-
+					for stopID_instance in self.root[date][blockNunber][tripNumber]['stops'].keys():
+						stop = self.root[date][blockNunber][tripNumber]['stops'][stopID_instance]
+						if stop['bus'] in stops_made:
+							stops_made[stop['bus']].append(stop)
+						else:
+							stop_made[stop['bus']] = [stop]
+		return stops_made
 	def getStopsByBus(self, bus):
 		stops_made = []
 		for date in self.root.keys():
 			for blockNumber in self.root[date].keys():
 				for tripNumber in self.root[date][blockNumber].keys():
-					for stopID in self.root[date][blockNunber][tripNumber]['stops'].keys():
-						stop = self.root[date][blockNunber][tripNumber]['stops'][stopID]
+					for stopID_instance in self.root[date][blockNunber][tripNumber]['stops'].keys():
+						stop = self.root[date][blockNunber][tripNumber]['stops'][stopID_instance]
 						if stop['bus'] == bus:
 							stops_made.append(stop)
+		return stops_made

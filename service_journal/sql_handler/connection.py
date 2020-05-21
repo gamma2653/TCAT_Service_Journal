@@ -213,7 +213,7 @@ INIT = {
 				'output': {
 					'deflt_query': '',
 					'opt_query': '',
-					'static':'INSERT INTO [dbo].[segments] ([service_date] ,[bus],[block],[route],[trip],[trip_sequence],[stop_sequence],[direction],[stop_id],[stop_name],[stop_message_id],[stop_seen],[boards],[alights],[onboard],[adjusted_onboard],[start_time],[end_time],[segment_feet],[segment_seconds],[confidence],[sched_start_time],[sched_end_time],[feet_times_passengers],[feet_times_adj_passengers]) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
+					'static':'INSERT INTO [dbo].[segments] ([service_date],[bus],[block],[route],[trip],[trip_sequence],[stop_sequence],[direction],[stop_id],[stop_instance],[stop_name],[stop_message_id],[stop_seen],[boards],[alights],[onboard],[adjusted_onboard],[start_time],[end_time],[segment_feet],[segment_seconds],[confidence],[sched_start_time],[sched_end_time],[feet_times_passengers],[feet_times_adj_passengers]) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
 					'table': 'segments',
 					'database': 'segments'
 				},
@@ -468,10 +468,10 @@ class Connection:
 		for date, journal in days.root.items():
 			for blockNumber, block in journal.items():
 				for tripNumber, trip in block.items():
-					for stopNumber, stop in trip['stops'].items():
+					for (stopNumber, stopInstance), stop in trip['stops'].items():
 						cursor.execute(query, date, stop['bus'], blockNumber, \
 						 trip['route'], tripNumber, None, None, trip['direction'],\
-						 stopNumber, stop['name'], None, stop['seen'], \
+						 stopNumber, stopInstance, stop['name'], None, stop['seen'], \
 						 stop['boards'], stop['alights'], stop['onboard'], \
 						 stop['adjustedOnboard'], stop['actual_time'], None, stop['distance'], \
 						 None, None, stop['sched_time'], None, \
