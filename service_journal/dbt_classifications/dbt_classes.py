@@ -148,8 +148,8 @@ class Days:
 						# look ahead
 						else:
 							lookAhead.append(stop)
-						_, lastStop = trip['stops'].items()[len(trip['stops'])-1]
-						_, sndToLastStop = trip['stops'].items()[len(trip['stops'])-2]
+						_, lastStop = list(trip['stops'].items())[len(trip['stops'])-1]
+						_, sndToLastStop = list(trip['stops'].items())[len(trip['stops'])-2]
 						# We determine that the end of the trip happened.
 						tripCompleted = lastStop['seen'] and sndToLastStop['seen']
 						if stop['seen'] and tripCompleted:
