@@ -122,7 +122,7 @@ class Days:
 					prevStop = None
 					for stopID_instance, stop in trip['stops'].items():
 						busesOnBlock.add(stop['bus'])
-						if prevStop['bus']==stop['bus'] and stop['actual_time'] < prevStop['actual_time']:
+						if prevStop!=None and prevStop['bus']==stop['bus'] and stop['actual_time'] < prevStop['actual_time']:
 							# We went back in time!
 							stop['flag'] |= Flag.BACKWARDS_TIME
 							prevStop['flag'] |= Flag.BACKWARDS_TIME
