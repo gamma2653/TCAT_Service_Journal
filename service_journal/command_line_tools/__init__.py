@@ -17,7 +17,7 @@ def daterange(start_date, end_date):
 def run():
 	while True:
 		userin = input('Please input the range of service dates as intergers in \
-		the format "year month day - year month day"')
+		the format.\n"YEAR MONTH DAY - YEAR MONTH DAY":\n')
 		ins = userin.split('-')
 		_from = ins[0].strip().split()
 		_to = ins[1].strip().split()
@@ -33,6 +33,8 @@ def run():
 		# TODO: Have days work as day(s)
 		for day in daterange(from_date, to_date):
 			days = conn.selectAndLoad(day)
+			days.inferStops()
+			days.flagDeviations()
 			conn.writeDays(days)
 		conn.close()
 		userin = input('Would you like to continue? (Y/n)')

@@ -84,9 +84,14 @@ class Days:
 					if (stopID,instance_id) in stops:
 						stop = stops[(stopID, instance_id)]
 						stop['bus'] = bus
+						
 						stop['avl_boards'] = stop['avl_boards']+boards
 						stop['avl_alights'] = stop['avl_alights']+alights
 						stop['avl_onboard'] = stop['avl_onboard']+onboard
+						stop['boards'] = stop['boards']+boards
+						stop['alights'] = stop['alights']+alights
+						stop['onboard'] = stop['onboard']+onboard
+
 						stop['actual_time'] = actual_time
 						stop['seen']+= 1 if was197 else 10
 						if not trip['actual_start'] or actual_time<trip['actual_start']:
