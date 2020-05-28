@@ -475,6 +475,6 @@ class Connection:
 						 stop['boards'], stop['alights'], stop['onboard'], \
 						 stop['adjustedOnboard'], stop['actual_time'], None, stop['distance'], \
 						 None, None, stop['sched_time'], None, \
-						 (stop['distance'] if stop['distance']!=None else 0)\
-						 *stop['onboard'], None)
+						 (0 if stop['distance']==None else stop['distance'])*stop['onboard'],\
+						  None)
 		cursor.commit()
