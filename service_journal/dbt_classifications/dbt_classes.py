@@ -84,7 +84,7 @@ class Days:
 					if (stopID,instance_id) in stops:
 						stop = stops[(stopID, instance_id)]
 						stop['bus'] = bus
-						
+
 						stop['avl_boards'] = stop['avl_boards']+boards
 						stop['avl_alights'] = stop['avl_alights']+alights
 						stop['avl_onboard'] = stop['avl_onboard']+onboard
@@ -115,20 +115,21 @@ class Days:
 	# 							buses[stop['bus']] = []
 	# 						buses[stop['bus']].append(stop)
 	def flagDeviations(self):
-		for blockNumber, block in day.items():
-			busesOnBlock = set()
-			for tripNumber, trip in block.items():
-				prevStop = None
-				for stopID_instance, stop in trip['stops'].items():
-					buses.add(stop['bus'])
-					if prevStop['bus']==stop['bus'] and stop['actual_time'] < prevStop['actual_time']:
-						# We went back in time!
-						stop['flag'] |= Flag.BACKWARDS_TIME
-						prevStop['flag'] |= Flag.BACKWARDS_TIME
-					prevStop = stop
-			if len(busesOnBlock>1):
-				for trip in trip.values():
-					trip['flag'] |= Flag.MULTIPLE_BUS_BLOCK
+		for date, day in self.root.items():
+			for blockNumber, block in day.items():
+				busesOnBlock = set()
+				for tripNumber, trip in block.items():
+					prevStop = None
+					for stopID_instance, stop in trip['stops'].items():
+						buses.add(stop['bus'])
+						if prevStop['bus']==stop['bus'] and stop['actual_time'] < prevStop['actual_time']:
+							# We went back in time!
+							stop['flag'] |= Flag.BACKWARDS_TIME
+							prevStop['flag'] |= Flag.BACKWARDS_TIME
+						prevStop = stop
+				if len(busesOnBlock>1):
+					for trip in trip.values():
+						trip['flag'] |= Flag.MULTIPLE_BUS_BLOCK
 
 	def inferStops(self):
 		# Organize data
