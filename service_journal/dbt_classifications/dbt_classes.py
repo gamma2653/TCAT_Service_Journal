@@ -81,7 +81,7 @@ class Days:
 						instance_id+=1
 					# while stops[(stopID, instance_id)].seen==10 and not was197:
 					# 	instance_id+=1
-					if stopID in stops:
+					if (stopID,instance_id) in stops:
 						stop = stops[(stopID, instance_id)]
 						stop['bus'] = bus
 						stop['avl_boards'] = stop['avl_boards']+boards
@@ -151,7 +151,6 @@ class Days:
 								s = lookAhead.pop()
 								s['bus'] = stop['bus']
 								s['onboard'] = stop['onboard']
-
 							# look ahead
 						prevStop = (stopID_instance, stop)
 
