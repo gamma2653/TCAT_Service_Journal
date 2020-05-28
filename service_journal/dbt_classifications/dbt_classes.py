@@ -38,7 +38,7 @@ class Days:
 			self.addDay(date)
 		if blockNumber not in self.root[date]:
 			self.addBlock(date, blockNumber)
-		self.root[date][blockNumber][tripNumber] = OrderDict({'stops':OrderedDict(), 'route':route, 'direction':direction, 'actual_start':None, 'actual_end':None, 'flag'=Flag.FINE})
+		self.root[date][blockNumber][tripNumber] = OrderDict({'stops':OrderedDict(), 'route':route, 'direction':direction, 'actual_start':None, 'actual_end':None, 'flag':Flag.FINE})
 	# stopInfo is a tuple containing stopInfo
 	def addStop(self, date, blockNumber, tripNumber, route, direction, stopID, stopName, sched_time, distance,):
 		if date not in self.root:
