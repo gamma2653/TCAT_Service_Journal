@@ -128,8 +128,9 @@ class Days:
 							stop['flag'] |= Flag.BACKWARDS_TIME
 							prevStop['flag'] |= Flag.BACKWARDS_TIME
 						prevStop = stop
+
 				if len(busesOnBlock)>1:
-					for trip in trip.values():
+					for trip in block.values():
 						trip['flag'] |= Flag.MULTIPLE_BUS_BLOCK
 
 	def inferStops(self):
