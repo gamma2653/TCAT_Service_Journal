@@ -76,7 +76,7 @@ class Days:
 					else:
 						was197 = False
 					instance_id = 0
-					(l_stopID, _), l_stop_info = stops.items()[0]
+					(l_stopID, _), l_stop_info = list(stops.items())[0]
 					if stopID==l_stopID and l_stop_info['seen']:
 						instance_id+=1
 					# while stops[(stopID, instance_id)].seen==10 and not was197:
