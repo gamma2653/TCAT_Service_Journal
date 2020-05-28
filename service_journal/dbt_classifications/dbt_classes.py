@@ -123,7 +123,7 @@ class Days:
 					for stopID_instance, stop in trip['stops'].items():
 						busesOnBlock.add(stop['bus'])
 						# TODO: Replace the prevStop['actual_time']!=None with a mechanism to lookBack for the last available time. Maybe using a function
-						if prevStop!=None and prevStop['bus']==stop['bus'] and prevStop['actual_time']!=None and stop['actual_time'] < prevStop['actual_time']:
+						if prevStop!=None and prevStop['bus']==stop['bus'] and stop['actual_time']!= None and prevStop['actual_time']!=None and stop['actual_time'] < prevStop['actual_time']:
 							# We went back in time!
 							stop['flag'] |= Flag.BACKWARDS_TIME
 							prevStop['flag'] |= Flag.BACKWARDS_TIME
