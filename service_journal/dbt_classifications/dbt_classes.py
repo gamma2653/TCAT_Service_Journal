@@ -127,7 +127,7 @@ class Days:
 
 	def inferStops(self):
 		# Organize data
-		for date, day in self.root.items()
+		for date, day in self.root.items():
 			for blockNumber, block in day.items():
 				# busesOnBlock = {}
 				# stopsToSort = {}
