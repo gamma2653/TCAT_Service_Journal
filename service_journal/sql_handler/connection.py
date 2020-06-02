@@ -433,14 +433,14 @@ class Connection:
 			data = dict(zip(dbt_col_names, row))
 			days.addStop(data['date'], data['blockNumber'], data['tripNumber'], \
 			data['route'], data['direction'], data['i_stop'], data['i_stop_name'], \
-			data['sched_time'], data['distance'])
+			data['sched_time'], data['distance'],data['run'])
 		while row:
 			logger.finest('Processing a scheduled row')
 			# We zip up our data making a key-value pairing of col_names and rows
 			data = dict(zip(dbt_col_names, row))
 			days.addStop(data['date'], data['blockNumber'], data['tripNumber'], \
 			data['route'], data['direction'], data['stop'], data['stop_name'], \
-			data['sched_time'], data['distance'])
+			data['sched_time'], data['distance'], data['run'])
 			row = sCursor.fetchone()
 		# Now for ActualData
 
