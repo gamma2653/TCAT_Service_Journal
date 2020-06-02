@@ -40,7 +40,7 @@ class Days:
 			self.addBlock(date, blockNumber)
 		self.root[date][blockNumber][tripNumber] = OrderedDict({'stops':OrderedDict(), 'route':route, 'direction':direction, 'actual_start':None, 'actual_end':None, 'flag':Flag.FINE})
 	# stopInfo is a tuple containing stopInfo
-	def addStop(self, date, blockNumber, tripNumber, route, direction, stopID, stopName, sched_time, distance,):
+	def addStop(self, date, blockNumber, tripNumber, route, direction, stopID, stopName, sched_time, distance,run):
 		if date not in self.root:
 			self.addDay(date)
 		if blockNumber not in self.root[date]:
@@ -57,7 +57,7 @@ class Days:
 		stops[(stopID, instance_id)] = dict({'name':stopName,\
 		 'sched_time':sched_time, 'actual_time':None,'distance':distance, 'bus':None,\
 		 'avl_boards':0, 'avl_alights':0, 'avl_onboard':0, 'boards':0, 'alights':0, \
-		 'onboard':0, 'adjustedOnboard':None, 'seen':0, 'flag':Flag.FINE})
+		 'onboard':0, 'adjustedOnboard':None, 'seen':0, 'run':run, 'flag':Flag.FINE})
 
 
 	def crossRef(self, date, blockNumber, tripNumber, stopID, bus, boards, alights, onboard, actual_time, loc, route, stop_locations):

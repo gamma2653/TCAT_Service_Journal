@@ -36,6 +36,7 @@ def run():
 			days.inferStops()
 			days.flagDeviations()
 			conn.writeDays(days)
+			del days
 		conn.close()
 		userin = input('Would you like to continue? (Y/n)')
 		if userin.strip().lower() == 'n':
