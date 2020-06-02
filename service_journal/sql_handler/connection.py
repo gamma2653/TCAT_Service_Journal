@@ -213,7 +213,7 @@ INIT = {
 				'output': {
 					'deflt_query': '',
 					'opt_query': '',
-					'static':'INSERT INTO [dbo].[segments] ([service_date],[bus],[block],[route],[trip],[trip_sequence],[stop_sequence],[direction],[stop_id],[stop_instance],[stop_name],[stop_message_id],[stop_seen],[boards],[alights],[onboard],[adjusted_onboard],[start_time],[end_time],[segment_feet],[segment_seconds],[confidence],[sched_start_time],[sched_end_time],[feet_times_passengers],[feet_times_adj_passengers], [flag], [run]) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
+					'static':'INSERT INTO [dbo].[segments] ([service_date],[bus],[block],[route],[trip],[trip_sequence],[stop_sequence],[direction],[stop_id],[stop_instance],[stop_name],[stop_message_id],[stop_seen],[boards],[alights],[onboard],[adjusted_onboard],[start_time],[end_time],[segment_feet],[segment_seconds],[sched_start_time],[sched_end_time],[feet_times_passengers],[feet_times_adj_passengers], [flag], [run]) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
 					'table': 'segments',
 					'database': 'segments'
 				},
@@ -474,7 +474,7 @@ class Connection:
 						 stopNumber, stopInstance, stop['name'], None, stop['seen'], \
 						 stop['boards'], stop['alights'], stop['onboard'], \
 						 stop['adjustedOnboard'], stop['actual_time'], None, stop['distance'], \
-						 None, None, stop['sched_time'], None, \
+						 None, stop['sched_time'], None, \
 						 (0 if stop['distance']==None else stop['distance'])*stop['onboard'],\
 						  None, stop['flag'] | trip['flag'], stop['run'])
 		cursor.commit()
