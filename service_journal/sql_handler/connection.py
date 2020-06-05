@@ -199,14 +199,14 @@ INIT = {
 				'actual': {
 					'deflt_query': 'SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? FROM ? WHERE ?=?',
 					'opt_query': 'SELECT ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ? FROM ? WHERE ?=? AND ?=?',
-					'static': 'SELECT [service_day],[block],[trip26],[bus],[Time],[Departure_Time],[Route],[dir],[Stop_Id],[Stop_Name],[Boards],[Alights],[Onboard],[OperationalStatus],[Latitude],[Longitude] FROM [TA_ITHACA_ACTUAL_HISTORY].[dbo].[v_vehicle_history] WHERE [service_day]=? ORDER BY [Time] asc',
+					'static': 'SELECT [service_day],[block],[trip26],[bus],[Time],[Departure_Time],[Route],[dir],[Stop_Id],[Stop_Name],[Boards],[Alights],[Onboard],[OperationalStatus],[Latitude],[Longitude] FROM [TA_ITHACA_ACTUAL_HISTORY].[dbo].[v_vehicle_history] WHERE [service_day]=? ORDER BY [service_day],[block],[trip26],[Time] asc',
 					'table': 'v_vehicle_history',
 					'database':  'TA_ITHACA_ACTUAL_HISTORY'
 				},
 				'scheduled': {
 					'deflt_query': 'SELECT ?,?,?,?,?,?,?,?,?,?,?,?,? FROM ? WHERE ?=?',
 					'opt_query': 'SELECT ?,?,?,?,?,?,?,?,?,?,?,?,? FROM ? WHERE ?=? AND ?=?',
-					'static':'SELECT [Service_Date], [dist_ft], [ServiceRecordId], [BlockNumber], [RouteNumber], [Direction], [Trip26], [iStop], [tStop], [iStopName], [tStopName], [DepartureTime], [layover], [RunNumber], [PieceNumber] FROM [TA_ITHACA_SCHEDULE_HISTORY].[dbo].[v_date_block_trip_stop] WHERE [Service_Date]=? ORDER BY [DepartureTime] asc',
+					'static':'SELECT [Service_Date], [dist_ft], [ServiceRecordId], [BlockNumber], [RouteNumber], [Direction], [Trip26], [iStop], [tStop], [iStopName], [tStopName], [DepartureTime], [layover], [RunNumber], [PieceNumber] FROM [TA_ITHACA_SCHEDULE_HISTORY].[dbo].[v_date_block_trip_stop] WHERE [Service_Date]=? ORDER BY [Service_Date],[BlockNumber],[Trip26],[DepartureTime] asc',
 					'table': 'v_date_block_trip_stop',
 					'database': 'TA_ITHACA_SCHEDULE_HISTORY'
 				},
@@ -335,6 +335,7 @@ class Connection:
 		self.load_stop_loc()
 		logger.info('Connection successfully set!')
 	def load_stop_loc(self):
+		self.stop_locations = {}
 		# grab query string
 		query = self.dbt_sql_map['views_tables']['stop_locations']['static']
 		# Grab cursor object
@@ -343,8 +344,6 @@ class Connection:
 		cursor.execute(query)
 		# Grab first row from result
 		row = cursor.fetchone()
-
-		self.stop_locations = {}
 
 		# get dbt_names for each column for abstraction
 		dbt_col_names = [self.sql_dbt_map['stop_locations'][col[0]]['name'] for col in cursor.description]
@@ -386,23 +385,24 @@ class Connection:
 			sCursor.execute(sQuery, str(date))
 
 		else:
+			pass
 			# Execute optional query
-			aCursor.execute(aQuery, query, a_dbt_sql_map['date']['name'], \
-			 a_dbt_sql_map['blockNumber']['name'], a_dbt_sql_map['tripNumber']['name'],\
-			 a_dbt_sql_map['bus']['name'], a_dbt_sql_map['time']['name'],\
-			 a_dbt_sql_map['route']['name'],a_dbt_sql_map['dir']['name'],\
-			 a_dbt_sql_map['stop']['name'], a_dbt_sql_map['name']['name'],\
-			 a_dbt_sql_map['boards']['name'], a_dbt_sql_map['alights']['name'],\
-			 a_dbt_sql_map['onboard']['name'], a_dbt_sql_map['opStatus']['name'],\
-			 aTable, a_dbt_sql_map['date']['name'], date, a_dbt_sql_map['blockNumber']['name'], block)
-
-			sCursor.execute(sQuery, s_dbt_sql_map['date']['name'], \
-			 s_dbt_sql_map['blockNumber']['name'], s_dbt_sql_map['dir']['name'],\
-			 s_dbt_sql_map['tripNumber']['name'], s_dbt_sql_map['i_stop']['name'],\
-			 s_dbt_sql_map['t_stop']['name'], s_dbt_sql_map['i_stop_name']['name'],\
-			 s_dbt_sql_map['t_stop_name']['name'], s_dbt_sql_map['layover']['name'],\
-			 s_dbt_sql_map['run']['name'], s_dbt_sql_map['pieceNumber']['name'],\
-			 sTable, s_dbt_sql_map['date']['name'], date, s_dbt_sql_map['blockNumber']['name'], block)
+			# aCursor.execute(aQuery, query, a_dbt_sql_map['date']['name'], \
+			#  a_dbt_sql_map['blockNumber']['name'], a_dbt_sql_map['tripNumber']['name'],\
+			#  a_dbt_sql_map['bus']['name'], a_dbt_sql_map['time']['name'],\
+			#  a_dbt_sql_map['route']['name'],a_dbt_sql_map['dir']['name'],\
+			#  a_dbt_sql_map['stop']['name'], a_dbt_sql_map['name']['name'],\
+			#  a_dbt_sql_map['boards']['name'], a_dbt_sql_map['alights']['name'],\
+			#  a_dbt_sql_map['onboard']['name'], a_dbt_sql_map['opStatus']['name'],\
+			#  aTable, a_dbt_sql_map['date']['name'], date, a_dbt_sql_map['blockNumber']['name'], block)
+			#
+			# sCursor.execute(sQuery, s_dbt_sql_map['date']['name'], \
+			#  s_dbt_sql_map['blockNumber']['name'], s_dbt_sql_map['dir']['name'],\
+			#  s_dbt_sql_map['tripNumber']['name'], s_dbt_sql_map['i_stop']['name'],\
+			#  s_dbt_sql_map['t_stop']['name'], s_dbt_sql_map['i_stop_name']['name'],\
+			#  s_dbt_sql_map['t_stop_name']['name'], s_dbt_sql_map['layover']['name'],\
+			#  s_dbt_sql_map['run']['name'], s_dbt_sql_map['pieceNumber']['name'],\
+			#  sTable, s_dbt_sql_map['date']['name'], date, s_dbt_sql_map['blockNumber']['name'], block)
 		logger.info('%s successfully selected!' % (str(date)))
 		return (aCursor, sCursor)
 
@@ -414,7 +414,7 @@ class Connection:
 		# Now for scheduled data
 		row = sCursor.fetchone()
 
-		# cursor_description documentation:
+		# cursor.description documentation:
 		# 0. column name (or alias, if specified in the SQL)
 		# 1. type code
 		# 2. display size (pyodbc does not set this value)
@@ -422,30 +422,28 @@ class Connection:
 		# 4. precision
 		# 5. scale
 		# 6. nullable (True/False)
-		# aCol_names = aCursor.description[0]
-		# aNullable = aCursor.description[6] #Unused at the moment
-		# sCol_names = sCursor.description[0]
-		# sNullable = sCursor.description[6] #Unused at the moment
 
 		dbt_col_names = [self.sql_dbt_map['scheduled'][col[0]]['name'] for col in sCursor.description]
 		logger.info('generated col names: %s' % (dbt_col_names))
-		if row:
-			data = dict(zip(dbt_col_names, row))
-			days.addStop(data['date'], data['blockNumber'], data['tripNumber'], \
-			data['route'], data['direction'], data['i_stop'], data['i_stop_name'], \
-			data['sched_time'], data['distance'],data['run'])
+		# TODO: Checkin with Tom
+		prevTrip = None
 		while row:
 			logger.finest('Processing a scheduled row')
 			# We zip up our data making a key-value pairing of col_names and rows
 			data = dict(zip(dbt_col_names, row))
+			# Capture intial stop on new trips (Schedule is ordered by trip)
+			if prevTrip!=data['tripNumber']:
+				days.addStop(data['date'], data['blockNumber'], data['tripNumber'], \
+				 data['route'], data['direction'], data['i_stop'], data['i_stop_name'], \
+				 data['sched_time'], data['distance'],data['run'])
+				prevTrip = data['tripNumber']
 			days.addStop(data['date'], data['blockNumber'], data['tripNumber'], \
-			data['route'], data['direction'], data['stop'], data['stop_name'], \
-			data['sched_time'], data['distance'], data['run'])
+			 data['route'], data['direction'], data['stop'], data['stop_name'], \
+			 data['sched_time'], data['distance'], data['run'])
 			row = sCursor.fetchone()
+
 		# Now for ActualData
-
 		row = aCursor.fetchone()
-
 		# get dbt_names for each column for abstraction
 		dbt_col_names = [self.sql_dbt_map['actual'][col[0]]['name'] for col in aCursor.description]
 		logger.info('generated col names: %s' % (dbt_col_names))
@@ -457,11 +455,10 @@ class Connection:
 			 data['actual_time'], (data['latitude'], data['longitude']), data['route'], self.stop_locations)
 			row = aCursor.fetchone()
 
-
 		logger.info('Date at cursor location loaded!')
 		return days
 	def selectAndLoad(self, date, days=None):
-		return self.loadData(self.selectDate(date), days=None)
+		return self.loadData(self.selectDate(date), days=days)
 	def writeDays(self, days):
 		query = self.sql_dbt_map['views_tables']['output']['static']
 		cursor = self.write_conn.cursor()

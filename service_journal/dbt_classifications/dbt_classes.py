@@ -4,11 +4,12 @@ from collections import OrderedDict
 from service_journal.dbt_classifications.exceptions import BlockNotFound, TripNotFound, NotActual, NotSchedule
 from service_journal.gen_utils.debug import Logger
 from datetime import datetime, timedelta
-from enum import IntFlag
+from enum import IntFlag, Enum
 # Logger initialization
 logger = Logger(__name__)
 logger.read_args()
-
+class SortRules(Enum):
+	BY_BUS = 1
 class Flag(IntFlag):
 	FINE = 0
 	BACKWARDS_TIME = 1
@@ -68,14 +69,16 @@ class Days:
 				if tripNumber in block:
 					trip = block[tripNumber]
 					stops = trip['stops']
+					# Infer stop
 					if stopID==0:
 						t_stop_locs = {stop_id : stop_locations[stop_id] for \
 						(stop_id, instance_id) in stops.keys()}
-						stopID = closestStopID(stop_locations, loc)
+						stopID = closestStopID(t_stop_locs, loc)
 						was197 = True
 					else:
 						was197 = False
 					instance_id = 0
+					# Identify loops
 					(l_stopID, _), l_stop_info = list(stops.items())[0]
 					if stopID==l_stopID and l_stop_info['seen']:
 						instance_id+=1
@@ -98,22 +101,23 @@ class Days:
 							trip['actual_start'] = actual_time
 						if not trip['actual_end'] or actual_time>trip['actual_end']:
 							trip['actual_end'] = actual_time
-	# def postProcess(self):
-	# 	buses = {}
-	# 	for date in self.root.keys():
-	# 		for blockNumber in self.root[date].keys():
-	# 			for tripNumber in self.root[date][blockNumber].keys():
-	# 				for stopID in self.root[date][blockNunber][tripNumber]['stops'].keys():
-	# 					stop = self.root[date][blockNunber][tripNumber]['stops'][stopID]
-	# 					if stop['bus']==None:
-	# 						pass
-	# 						# Check day-bus-block actual times, take start and end time
-	# 						# Check for overlap, if overlap, flag overlapping stops
-	# 						# Mainly just find a mapping for bus
-	# 					else
-	# 						if stop['bus'] not in buses:
-	# 							buses[stop['bus']] = []
-	# 						buses[stop['bus']].append(stop)
+
+	def postProcess(self, processors, args=None, kwargs=None):
+		if not args:
+			args = [None]*len(processors)
+		if not kwargs:
+			kwargs = [(None,None)]*len(processors)
+		for i in range(0, len(processors)):
+			processors[i](self, args=args[i], kwargs=kwargs[i])
+	def sort(self, sort_rule=SortRules.BY_BUS):
+		
+# Example function for post_process
+# def f(ins, args=[], kwargs=[]):
+#   ins.a = args[0]
+#   ins.b = args[1]
+#   ins.kw = dict(kwargs)
+# Would leave the instance with field "a" equalling first argument, b second
+# argument, and the kw field equalling a dictionary of all passed kwargs.
 	def flagDeviations(self):
 		for date, day in self.root.items():
 			for blockNumber, block in day.items():
@@ -163,25 +167,25 @@ class Days:
 						prevStop = (stopID_instance, stop)
 
 
-	def getStopsByBusDict(self):
-		stops_made = {}
-		for date in self.root.keys():
-			for blockNumber in self.root[date].keys():
-				for tripNumber in self.root[date][blockNumber].keys():
-					for stopID_instance in self.root[date][blockNunber][tripNumber]['stops'].keys():
-						stop = self.root[date][blockNunber][tripNumber]['stops'][stopID_instance]
-						if stop['bus'] in stops_made:
-							stops_made[stop['bus']].append(stop)
-						else:
-							stop_made[stop['bus']] = [stop]
-		return stops_made
-	def getStopsByBus(self, bus):
-		stops_made = []
-		for date in self.root.keys():
-			for blockNumber in self.root[date].keys():
-				for tripNumber in self.root[date][blockNumber].keys():
-					for stopID_instance in self.root[date][blockNunber][tripNumber]['stops'].keys():
-						stop = self.root[date][blockNunber][tripNumber]['stops'][stopID_instance]
-						if stop['bus'] == bus:
-							stops_made.append(stop)
-		return stops_made
+	# def getStopsByBusDict(self):
+	# 	stops_made = {}
+	# 	for date in self.root.keys():
+	# 		for blockNumber in self.root[date].keys():
+	# 			for tripNumber in self.root[date][blockNumber].keys():
+	# 				for stopID_instance in self.root[date][blockNunber][tripNumber]['stops'].keys():
+	# 					stop = self.root[date][blockNunber][tripNumber]['stops'][stopID_instance]
+	# 					if stop['bus'] in stops_made:
+	# 						stops_made[stop['bus']].append(stop)
+	# 					else:
+	# 						stop_made[stop['bus']] = [stop]
+	# 	return stops_made
+	# def getStopsByBus(self, bus):
+	# 	stops_made = []
+	# 	for date in self.root.keys():
+	# 		for blockNumber in self.root[date].keys():
+	# 			for tripNumber in self.root[date][blockNumber].keys():
+	# 				for stopID_instance in self.root[date][blockNunber][tripNumber]['stops'].keys():
+	# 					stop = self.root[date][blockNunber][tripNumber]['stops'][stopID_instance]
+	# 					if stop['bus'] == bus:
+	# 						stops_made.append(stop)
+	# 	return stops_made
