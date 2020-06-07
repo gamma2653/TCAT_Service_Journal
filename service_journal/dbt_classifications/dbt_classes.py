@@ -33,13 +33,13 @@ class Days:
 	def addBlock(self, date, blockNumber):
 		if date not in self.root:
 			self.addDay(date)
-		self.root[date][blockNumber] = dict()
+		self.root[date][blockNumber] = OrderedDict()
 	def addTrip(self, date, blockNumber, tripNumber, route, direction):
 		if date not in self.root:
 			self.addDay(date)
 		if blockNumber not in self.root[date]:
 			self.addBlock(date, blockNumber)
-		self.root[date][blockNumber][tripNumber] = OrderedDict({'stops':OrderedDict(), 'route':route, 'direction':direction, 'actual_start':None, 'actual_end':None, 'flag':Flag.FINE})
+		self.root[date][blockNumber][tripNumber] = {'stops':OrderedDict(), 'route':route, 'direction':direction, 'actual_start':None, 'actual_end':None, 'flag':Flag.FINE}
 	# stopInfo is a tuple containing stopInfo
 	def addStop(self, date, blockNumber, tripNumber, route, direction, stopID, stopName, sched_time, distance,run):
 		if date not in self.root:
@@ -101,21 +101,49 @@ class Days:
 							trip['actual_start'] = actual_time
 						if not trip['actual_end'] or actual_time>trip['actual_end']:
 							trip['actual_end'] = actual_time
+	def sort(self, sort_rule=SortRules.BY_BUS):
+		# Fairly innefficient but functional and easy way to insert into OrderedDict
+		def insert(d, index, item):
+			try:
+				l = list(d.items())
+			except AttributeError:
+				l = list(d)
+				l.insert(index, item)
+				return OrderedDict(l)
+		if sort_rule==SortRules.BY_BUS:
+			for date, day in self.root.items():
+				for blockNumber, block in day.items():
+					oldTrips = dict(block)
+					newTrips = OrderedDict()
 
+					day[blockNumber] = newTrips
+
+	# Post-processing engine
+	# <processors> is a function of the format f(<instance>,[<arg1>,<arg2>,...],
+	# [<kwarg1>, <kwarg2>,...]). <args> is a list of list of arguments.
+	# <kwargs> is a list of list of keyword arguments. See post_process.py for
+	# an example.
 	def postProcess(self, processors, args=None, kwargs=None):
+		# Ensure args exists and is long enough
 		if not args:
 			args = [None]*len(processors)
+		if len(args)<len(processors):
+			args.append(None)
+		# Ensure kwargs exists and is long enough
 		if not kwargs:
 			kwargs = [(None,None)]*len(processors)
+		if len(kwargs)<len(processors):
+			args.append((None,None))
+		# Run each post process passing self and arguments
 		for i in range(0, len(processors)):
 			processors[i](self, args=args[i], kwargs=kwargs[i])
-	def sort(self, sort_rule=SortRules.BY_BUS):
-		
 # Example function for post_process
 # def f(ins, args=[], kwargs=[]):
 #   ins.a = args[0]
 #   ins.b = args[1]
 #   ins.kw = dict(kwargs)
+
+
 # Would leave the instance with field "a" equalling first argument, b second
 # argument, and the kw field equalling a dictionary of all passed kwargs.
 	def flagDeviations(self):
