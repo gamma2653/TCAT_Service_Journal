@@ -2,4 +2,4 @@
 dist/
 *__pycache__
 venv/
-*.egg-info/
+service_journal.egg-info/
