@@ -334,7 +334,11 @@ class Connection:
 			r'PWD=%s'% (self.driver, self.host, self.dbt_sql_map['views_tables']['stop_locations']['database'], self.user, self.password))
 		self.load_stop_loc()
 		logger.info('Connection successfully set!')
+
 	def load_stop_loc(self):
+		'''
+
+		'''
 		self.stop_locations = {}
 		# grab query string
 		query = self.dbt_sql_map['views_tables']['stop_locations']['static']
@@ -406,7 +410,7 @@ class Connection:
 		logger.info('%s successfully selected!' % (str(date)))
 		return (aCursor, sCursor)
 
-	def loadData(self, cursors, days=None):
+	def loadData(self, cursors, days=None, process=False):
 		logger.info('Loading data from cursor.')
 		if not days:
 			days = dbt_classes.Days()
@@ -447,18 +451,25 @@ class Connection:
 		# get dbt_names for each column for abstraction
 		dbt_col_names = [self.sql_dbt_map['actual'][col[0]]['name'] for col in aCursor.description]
 		logger.info('generated col names: %s' % (dbt_col_names))
-		while row:
-			logger.finest('Processing an actual row')
-			data = dict(zip(dbt_col_names, row))
-			days.crossRef(data['date'], data['blockNumber'], data['tripNumber'],\
-			 data['stop'],data['bus'],data['boards'],data['alights'], data['onboard'],\
-			 data['actual_time'], (data['latitude'], data['longitude']), data['route'], self.stop_locations)
+		while row: #Run iff [process] and there is a row
+			if process:
+				logger.finest('Processing an actual row')
+				data = dict(zip(dbt_col_names, row))
+				days.crossRef(data['date'], data['blockNumber'], data['tripNumber'],\
+				 data['stop'],data['bus'],data['boards'],data['alights'], data['onboard'],\
+				 data['actual_time'], (data['latitude'], data['longitude']), data['route'], self.stop_locations)
+			else:
+				logger.finest('Filling in an actual row')
+				data = dict(zip(dbt_col_names, row))
+				days.fillIn(data['date'], data['blockNumber'], data['tripNumber'],\
+				 data['stop'],data['bus'],data['boards'],data['alights'], data['onboard'],\
+				 data['actual_time'], (data['latitude'], data['longitude']), data['route'])
 			row = aCursor.fetchone()
-
 		logger.info('Date at cursor location loaded!')
 		return days
-	def selectAndLoad(self, date, days=None):
-		return self.loadData(self.selectDate(date), days=days)
+	def selectAndLoad(self, date, days=None, process=False):
+		'''Convenience method to select and load from the TCAT database [date] and to store in dbt dictionary format.'''
+		return self.loadData(self.selectDate(date), days=days, process=process)
 	def writeDays(self, days):
 		query = self.sql_dbt_map['views_tables']['output']['static']
 		cursor = self.write_conn.cursor()

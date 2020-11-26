@@ -53,6 +53,7 @@ class Days:
 		stops = self.root[date][blockNumber][tripNumber]['stops']
 		# Handle multiple instances of stop
 		instance_id = 0
+		# TODO: Why is this a while loop...?
 		while (stopID, instance_id) in stops.keys():
 			instance_id+=1
 		stops[(stopID, instance_id)] = dict({'name':stopName,\
@@ -60,6 +61,43 @@ class Days:
 		 'avl_boards':0, 'avl_alights':0, 'avl_onboard':0, 'boards':0, 'alights':0, \
 		 'onboard':0, 'adjustedOnboard':None, 'seen':0, 'run':run, 'flag':Flag.FINE})
 
+	def fillIn(self, date, blockNumber, tripNumber, stopID, bus, boards, alights, onboard, actual_time, loc, route):
+		if date in self.root:
+			day = self.root[date]
+			if blockNumber in day:
+				block = day[blockNumber]
+				if tripNumber in block:
+					trip = block[tripNumber]
+					stops = trip['stops']
+					if stopID==0:
+						if 'unorganized' not in stops:
+							stops['unorganized'] = []
+						stops['unorganized'].append((bus, board, alights, onboard, actual_time, loc, route))
+					else:
+						instance_id = 0
+						# Identify loops
+						(l_stopID, _), l_stop_info = list(stops.items())[0]
+						if stopID==l_stopID and l_stop_info['seen']:
+							instance_id+=1
+						# while stops[(stopID, instance_id)].seen==10 and not was197:
+						# 	instance_id+=1
+						if (stopID,instance_id) in stops:
+							stop = stops[(stopID, instance_id)]
+							stop['bus'] = bus
+
+							stop['avl_boards'] = stop['avl_boards']+boards
+							stop['avl_alights'] = stop['avl_alights']+alights
+							stop['avl_onboard'] = stop['avl_onboard']+onboard
+							stop['boards'] = stop['boards']+boards
+							stop['alights'] = stop['alights']+alights
+							stop['onboard'] = stop['onboard']+onboard
+
+							stop['actual_time'] = actual_time
+							stop['seen']=1
+							if not trip['actual_start'] or actual_time<trip['actual_start']:
+								trip['actual_start'] = actual_time
+							if not trip['actual_end'] or actual_time>trip['actual_end']:
+								trip['actual_end'] = actual_time
 
 	def crossRef(self, date, blockNumber, tripNumber, stopID, bus, boards, alights, onboard, actual_time, loc, route, stop_locations):
 		if date in self.root:

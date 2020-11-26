@@ -3,7 +3,8 @@ from service_journal.gen_utils import debug
 from service_journal.sql_handler import connection
 from service_journal.dbt_classifications.dbt_classes import Days
 from datetime import date, timedelta
-logger = debug.Logger(__name__)
+
+logger = debug.Logger(__name__) #TODO: Will just be __init__, change to name
 logger.read_args()
 
 # def init_terminal():
