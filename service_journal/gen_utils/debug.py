@@ -1,18 +1,22 @@
 import sys
-# import argparse
+import argparse
 import traceback as tb
 from datetime import datetime
 from enum import IntEnum
 class Level(IntEnum):
-
-	FINEST = 7
-	FINER = 6
-	FINE = 5
-	DEBUG = 4
-	INFO = 3
-	WARN = 2
-	ERROR = 1
+	'''
+	Higher levels denote finer log messages. Lower numbers (down to 0) denote
+	more fatal errors.
+	'''
 	FATAL = 0
+	ERROR = 1
+	WARN = 2
+	INFO = 3
+	FINE = 4
+	FINER = 5
+	FINEST = 6
+	def __str__(self):
+		return self.name
 
 # Expose as global variables
 FINEST = Level.FINEST
@@ -22,6 +26,8 @@ INFO = Level.INFO
 WARN = Level.WARN
 ERROR = Level.ERROR
 FATAL = Level.FATAL
+
+
 class Logger:
 	# Add Levels as Logger attributes
 	FINEST = Level.FINEST
@@ -31,11 +37,16 @@ class Logger:
 	WARN = Level.WARN
 	ERROR = Level.ERROR
 	FATAL = Level.FATAL
-	def __init__(self, module, level=Level.INFO):
+	def __init__(self, module, level=Level.INFO, gen_file=True):
 		self.level = level
 		self.module = module
-	# Accepts str, int, or Level types.
+		self.gen_file = gen_file
 	def set_listen_level(self, level):
+		'''
+		Accepts level as a str, enum, or int, then sets internal Logger.level as
+		the appropriate Level. The Logger will from that point forward only log
+		when the level is lower than or equal to the given level (as or more fatal).
+		'''
 		try:
 			try:
 				level = Level(int(level))
@@ -47,11 +58,18 @@ class Logger:
 				self.error('Ran into an unexpected exception while trying to set level:\n %s' % (tb.format_exc(limit = 10)))
 		except:
 			self.error('Ran into an exception while trying to set level:\n %s' % (tb.format_exc(limit = 10)))
-	# General log method.
 	def log(self, message, level):
+		'''
+		Logs the message if it is the given level is lower than or equal to the
+		internal level (as or more fatal).
+		'''
 		if level <= self.level:
-			print('[%s] [%s]: [%s] %s' % (datetime.now().strftime('%H:%M:%S'), level, self.module, message))
-			# TODO: Add log.txt
+			log_message = f'[{datetime.now().strftime("%H:%M:%S")}] [{str(self.module)}]: [{level}] {message}'
+			print(log_message)
+			if self.gen_file:
+				with open(f'{str(self.module)}.log', 'a') as f:
+					f.write(log_message+'\n')
+
 	# Log methods for ease of use.
 	def finest(self, message):
 		self.log(message, Level.FINEST)
@@ -68,22 +86,15 @@ class Logger:
 	def fatal(self, message):
 		self.log(message, Level.FATAL)
 
-	# Set's module for Logger object.
+
 	def set_module(self, module):
 		self.module = module
 
 	def read_args(self):
-		# parser = argparse.ArgumentParser()
-		# parser.add_argument('--log-level', aliases=['-ll'])
-		if '-ll' in sys.argv:
-			try:
-				level = sys.argv[sys.argv.index('-ll')+1]
-				self.set_listen_level(level)
-			except IndexError:
-				self.error('Logger was not able to be initialized to specified level. -ll Must be followed by Level Code.')
-		elif '--log-level' in sys.argv:
-			try:
-				level = sys.argv[sys.argv.index('--log-level')+1]
-				self.set_listen_level(level)
-			except IndexError:
-				self.error('Logger was not able to be initialized to specified level. --log-level Must be followed by Level Code.')
+		'''
+		Called when a module wants to set log levels using arguments.
+		'''
+		parser = argparse.ArgumentParser()
+		parser.add_argument('-ll', '--log-level', default=Level.INFO)
+		args = parser.parse_args()
+		self.set_listen_level(args.log_level)
