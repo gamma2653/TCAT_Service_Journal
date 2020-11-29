@@ -13,7 +13,7 @@ def test_granularity(s, up_to):
     return bool(flag)
 
 class TestMultipleLoggers(unittest.TestCase):
-    def testDetectLevels(self):
+    def testFileDetectLevels(self):
         loggers = logger0, logger1, logger2, logger3 = Logger('Module0'), Logger('Module1'), Logger('Module2'), Logger('Module3')
         # for logger in loggers:
         #     logger.read_args() #No need, test case
@@ -30,34 +30,33 @@ class TestMultipleLoggers(unittest.TestCase):
             with open(f'Module{i}.log', 'r') as f:
                 data = f.read()
                 results[i]= test_granularity(data, criterion[i])
-                print(results[i])
         for i in range(0,4):
             os.remove(f'Module{i}.log')
-        print(results)
         for i in range(0,4):
             self.assertTrue(results[i])
-    def testNotDetectLevels(self):
+    def testFileNotDetectLevels(self):
         loggers = logger0, logger1, logger2, logger3 = Logger('Module0'), Logger('Module1'), Logger('Module2'), Logger('Module3')
         # for logger in loggers:
         #     logger.read_args() #No need, test case
-        criterion = [Level.ERROR, Level.INFO, Level.WARN, Level.FINEST]
+        criterion = [Level.ERROR, Level.INFO, Level.WARN, Level.FINER]
         for i, logger in enumerate(loggers):
             logger.set_listen_level(criterion[i])
+        for i, level in enumerate(criterion):
+            criterion[i] = Level( (criterion[i]+1) if (criterion[i]+1)<len(Level) else criterion[i] )
         for level in Level:
             for logger in loggers:
                 logger.log(deflt_messages[level], level)
             sleep(1)
-        for i, level in enumerate(criterion):
-            criterion[i] = Level( (criterion[i]+1) if (criterion[i]+1)<len(Level) else criterion[i] )
+
         results = [True,True,True,True]
         for i, logger in enumerate(loggers):
             with open(f'Module{i}.log', 'r') as f:
                 data = f.read()
-                results[i]= test_granularity(data, Level.ERROR)
+                results[i]= test_granularity(data, criterion[i])
         for i in range(0,4):
             os.remove(f'Module{i}.log')
         for i in range(0,4):
-            self.assertTrue(results[i])
+            self.assertFalse(results[i])
 
 def run_tests():
     unittest.main()
