@@ -1,6 +1,8 @@
 @ECHO OFF
 python setup.py sdist
-python -m pip install ./dist/service_journal-2.0a0.tar.gz
+for /f "delims=" %%a in ('dir /b /od ".\dist\*"') do set file=%%a
+python -m pip install ".\dist\%file%"
+ECHO "%file%"
 ECHO.
 ECHO.
 ECHO Done packaging and installing!
