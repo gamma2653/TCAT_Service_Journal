@@ -257,26 +257,26 @@ class Journal:
 							# look ahead
 						prevStop = (stopID_instance, stop)
 
-
-	# def getStopsByBusDict(self):
-	# 	stops_made = {}
-	# 	for date in self.root.keys():
-	# 		for blockNumber in self.root[date].keys():
-	# 			for tripNumber in self.root[date][blockNumber].keys():
-	# 				for stopID_instance in self.root[date][blockNunber][tripNumber]['stops'].keys():
-	# 					stop = self.root[date][blockNunber][tripNumber]['stops'][stopID_instance]
-	# 					if stop['bus'] in stops_made:
-	# 						stops_made[stop['bus']].append(stop)
-	# 					else:
-	# 						stop_made[stop['bus']] = [stop]
-	# 	return stops_made
-	# def getStopsByBus(self, bus):
-	# 	stops_made = []
-	# 	for date in self.root.keys():
-	# 		for blockNumber in self.root[date].keys():
-	# 			for tripNumber in self.root[date][blockNumber].keys():
-	# 				for stopID_instance in self.root[date][blockNunber][tripNumber]['stops'].keys():
-	# 					stop = self.root[date][blockNunber][tripNumber]['stops'][stopID_instance]
-	# 					if stop['bus'] == bus:
-	# 						stops_made.append(stop)
-	# 	return stops_made
+	def __str__(self, indent=4, tabchar=' '):
+		tab = ' '*indent if tabchar==' ' else '\t'
+		print_out = '[Days]'
+		for date, day in thing_with_dict.root.items():
+			print_out+=f'{date}:\n'
+			print_out+=f'{tab}[Blocks]\n'
+			for blockNumber, block in day.items():
+				print_out+=f'{tab}{blockNumber}:\n'
+				print_out+=f'{tab*2}[Trips]\n'
+				for tripNumber, trip in block.items():
+					# Did it this disgusting way because I wanted stops printed last.
+					print_out+=f'{tab*2}{tripNumber}:\n'
+					print_out+=f'{tab*3}route: {trip["route"]}\n'
+					print_out+=f'{tab*3}direction: {trip["direction"]}\n'
+					print_out+=f'{tab*3}actual_start: {trip["actual_start"]}\n'
+					print_out+=f'{tab*3}actual_end: {trip["actual_end"]}\n'
+					print_out+=f'{tab*3}flag: {trip["flag"]}\n'
+					print_out+=f'{tab*3}stops:\n'
+					for (stop_id, stop_inst), stop in trip['stops'].items():
+						print_out+=f'{tab*4}{stop_id} / {stop_inst}\n'
+						for key, value in stop.items():
+							print_out+=f'{tab*5}{key}: {value}\n'
+		return print_out
