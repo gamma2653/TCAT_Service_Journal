@@ -9,13 +9,30 @@ from enum import IntFlag, Enum
 logger = Logger(__name__)
 logger.read_args()
 class SortRules(Enum):
+	"""
+	An enum of sort rules.
+	TODO: Replace usage with a sort function that gets passed.
+	"""
 	BY_BUS = 1
 class Flag(IntFlag):
+	"""
+	A binary flag system used to flag deviations from the norm in a given stop
+	or trip.
+	"""
 	FINE = 0
 	BACKWARDS_TIME = 1
 	MULTIPLE_BUS_BLOCK = 2
 
 def closestStopID(stop_locations, loc):
+	"""
+	Paramters:
+	[stop_locations] a dictionary with stop ids, "stop_id", as the key, and geographical
+	stop locations, "stop_loc", as the value.
+	"stop_loc" should be indexable by 0 and 1. {stop_loc[0]} should be longitude
+	and {stop_loc[1]} should be latitude, as per convention.
+
+	[loc] is the location we are trying to find the closest stop id to.
+	"""
 	min = sys.maxsize
 	closestStop = 0
 	for stop_id, stop_loc in stop_locations.items():
@@ -25,7 +42,15 @@ def closestStopID(stop_locations, loc):
 			min = dist
 	return closestStop
 
-class Days:
+class Journal:
+	"""
+	An class used to instantiate a journal. Should be able to accept multiple
+	dates and store them all.
+
+	NOTE: Currently bugged. Not able to store multiple dates for unknown reason.
+	TODO: Fix this problem, or figure out if I was making a silly mistake when
+	adding a new day.
+	"""
 	def __init__(self):
 		self.root = dict()
 	def addDay(self, date):

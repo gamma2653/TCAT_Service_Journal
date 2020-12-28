@@ -55,9 +55,9 @@ class Logger:
 				level = Level[str(level)]
 				self.level = level
 			except:
-				self.error('Ran into an unexpected exception while trying to set level:\n %s' % (tb.format_exc(limit = 10)))
+				self.error(f'Ran into an unexpected exception while trying to set level:\n {tb.format_exc(limit = 10)}'
 		except:
-			self.error('Ran into an exception while trying to set level:\n %s' % (tb.format_exc(limit = 10)))
+			self.error(f'Ran into an exception while trying to set level:\n {tb.format_exc(limit = 10)}'
 	def log(self, message, level):
 		'''
 		Logs the message if it is the given level is lower than or equal to the

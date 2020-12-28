@@ -11,6 +11,9 @@ from service_journal.gen_utils.debug import Logger
 logger = Logger(__name__)
 logger.read_args()
 
+'''
+Default SQL
+'''
 INIT = {
 	'settings': {
 		'driver': '{ODBC Driver 11 for SQL Server}',
@@ -260,7 +263,7 @@ class Connection:
 			pass
 # Need to clean this up later
 	def __init__(self, config_path):
-		logger.info('Initializing Connection with config path: %s' % (config_path))
+		logger.info(f'Initializing Connection with config path: {config_path}')
 		# Open or initialize config into dictionary
 		if not os.path.exists(os.path.join(config_path, 'config.json')):
 			logger.info('Initializing config for first time! Please rerun after having set-up your config.')
@@ -272,8 +275,8 @@ class Connection:
 		try:
 			settings = config['settings']
 		except KeyError as e:
-			print(('Error: Key (%s) not found in config.json. If this is your first time '
-			'running this, please setup your config and re-run it.') % (e.args[0]))
+			print(f'Error: Key ({e.args[0]}) not found in config.json. If this is your first time '
+			'running this, please setup your config and re-run it.')
 			raise e
 
 		dbt_sql_map = settings['dbt_sql_map'] #load in json
@@ -292,7 +295,7 @@ class Connection:
 		self.resetConnection(config)
 
 	def resetConnection(self, config):
-		logger.info('Resetting connection to %s.'% (str(config)))
+		logger.info(f'Resetting connection to {str(config)}.')
 		self.config = config
 		settings = config['settings']
 		try:
@@ -301,37 +304,37 @@ class Connection:
 			self.password = settings['password']
 			self.host = settings['host']
 		except KeyError as e:
-			print(('Error: Key (%s) not found in config.json. If this is your first time '
-				   'running this, please setup your config and re-run it.') % (e.args[0]))
+			print(f'Error: Key ({e.args[0]}) not found in config.json. If this is your first time '
+				   'running this, please setup your config and re-run it.')
 			raise e
-		self.actual_read_conn = pyodbc.connect(r'DRIVER=%s;'
+		self.actual_read_conn = pyodbc.connect(rf'DRIVER={self.driver};'
 			#The host driver, as list of these can be found on the pyodbc
 			#library readme on github
-			r'SERVER=%s;'
-			r'DATABASE=%s;'
-			r'UID=%s;'
-			r'PWD=%s'% (self.driver, self.host, self.dbt_sql_map['views_tables']['actual']['database'], self.user, self.password))
-		self.scheduled_read_conn = pyodbc.connect(r'DRIVER=%s;'
+			rf'SERVER={self.host};'
+			rf'DATABASE={self.dbt_sql_map['views_tables']['actual']['database']};'
+			rf'UID={self.user};'
+			rf'PWD={self.password};')
+		self.scheduled_read_conn = pyodbc.connect(rf'DRIVER={self.driver};'
 			#The host driver, as list of these can be found on the pyodbc
 			#library readme on github
-			r'SERVER=%s;'
-			r'DATABASE=%s;'
-			r'UID=%s;'
-			r'PWD=%s'% (self.driver, self.host, self.dbt_sql_map['views_tables']['scheduled']['database'], self.user, self.password))
-		self.write_conn = pyodbc.connect(r'DRIVER=%s;'
+			rf'SERVER={self.host};'
+			rf'DATABASE={self.dbt_sql_map['views_tables']['scheduled']['database']};'
+			rf'UID={self.user};'
+			rf'PWD={self.password};')
+		self.write_conn = pyodbc.connect(rf'DRIVER={self.driver};'
 			#The host driver, as list of these can be found on the pyodbc
 			#library readme on github
-			r'SERVER=%s;'
-			r'DATABASE=%s;'
-			r'UID=%s;'
-			r'PWD=%s'% (self.driver, self.host, self.dbt_sql_map['views_tables']['output']['database'], self.user, self.password))
-		self.stop_locations_conn = pyodbc.connect(r'DRIVER=%s;'
+			rf'SERVER={self.host};'
+			rf'DATABASE={self.dbt_sql_map['views_tables']['output']['database']};'
+			rf'UID={self.user};'
+			rf'PWD={self.password};')
+		self.stop_locations_conn = pyodbc.connect(rf'DRIVER={self.driver};'
 			#The host driver, as list of these can be found on the pyodbc
 			#library readme on github
-			r'SERVER=%s;'
-			r'DATABASE=%s;'
-			r'UID=%s;'
-			r'PWD=%s'% (self.driver, self.host, self.dbt_sql_map['views_tables']['stop_locations']['database'], self.user, self.password))
+			rf'SERVER={self.host};'
+			rf'DATABASE={self.dbt_sql_map['views_tables']['stop_locations']['database']};'
+			rf'UID={self.user};'
+			rf'PWD={self.password};')
 		self.load_stop_loc()
 		logger.info('Connection successfully set!')
 
@@ -351,7 +354,7 @@ class Connection:
 
 		# get dbt_names for each column for abstraction
 		dbt_col_names = [self.sql_dbt_map['stop_locations'][col[0]]['name'] for col in cursor.description]
-		logger.info('generated col names: %s' % (dbt_col_names))
+		logger.info(f'generated col names: {dbt_col_names}')
 		while row:
 			logger.finest('Processing an actual row')
 			data = dict(zip(dbt_col_names, row))
@@ -361,7 +364,7 @@ class Connection:
 
 	# Only should be called on
 	def selectDate(self, date, block=-1):
-		logger.info('Selecting block=%s on day=%s' % (str(date), 'all' if block==-1 else str(block)))
+		logger.info(f'Selecting block={str(date)} on day={'all' if block==-1 else str(block)}')
 		settings = self.config['settings']
 		a_dbt_sql_map = self.dbt_sql_map['actual']
 		s_dbt_sql_map = self.dbt_sql_map['scheduled']
@@ -383,9 +386,9 @@ class Connection:
 		sCursor = self.scheduled_read_conn.cursor()
 		if block==-1:
 			# Execute primary query
-			logger.info('Selecting %s from the schedule.' % (str(date)))
+			logger.info(f'Selecting {str(date)} from the schedule.')
 			aCursor.execute(aQuery, str(date))
-			logger.info('Selecting %s from the history.' % (str(date)))
+			logger.info(f'Selecting {str(date)} from the history.')
 			sCursor.execute(sQuery, str(date))
 
 		else:
@@ -407,13 +410,13 @@ class Connection:
 			#  s_dbt_sql_map['t_stop_name']['name'], s_dbt_sql_map['layover']['name'],\
 			#  s_dbt_sql_map['run']['name'], s_dbt_sql_map['pieceNumber']['name'],\
 			#  sTable, s_dbt_sql_map['date']['name'], date, s_dbt_sql_map['blockNumber']['name'], block)
-		logger.info('%s successfully selected!' % (str(date)))
+		logger.info(f'{str(date)} successfully selected!')
 		return (aCursor, sCursor)
 
-	def loadData(self, cursors, days=None, process=False):
+	def loadData(self, cursors, journal=None, process=False):
 		logger.info('Loading data from cursor.')
-		if not days:
-			days = dbt_classes.Days()
+		if not journal:
+			journal = dbt_classes.Journal()
 		aCursor, sCursor = cursors
 		# Now for scheduled data
 		row = sCursor.fetchone()
@@ -428,7 +431,7 @@ class Connection:
 		# 6. nullable (True/False)
 
 		dbt_col_names = [self.sql_dbt_map['scheduled'][col[0]]['name'] for col in sCursor.description]
-		logger.info('generated col names: %s' % (dbt_col_names))
+		logger.info(f'generated col names: {dbt_col_names}')
 		# TODO: Checkin with Tom
 		prevTrip = None
 		while row:
@@ -437,11 +440,11 @@ class Connection:
 			data = dict(zip(dbt_col_names, row))
 			# Capture intial stop on new trips (Schedule is ordered by trip)
 			if prevTrip!=data['tripNumber']:
-				days.addStop(data['date'], data['blockNumber'], data['tripNumber'], \
+				journal.addStop(data['date'], data['blockNumber'], data['tripNumber'], \
 				 data['route'], data['direction'], data['i_stop'], data['i_stop_name'], \
 				 data['sched_time'], data['distance'],data['run'])
 				prevTrip = data['tripNumber']
-			days.addStop(data['date'], data['blockNumber'], data['tripNumber'], \
+			journal.addStop(data['date'], data['blockNumber'], data['tripNumber'], \
 			 data['route'], data['direction'], data['stop'], data['stop_name'], \
 			 data['sched_time'], data['distance'], data['run'])
 			row = sCursor.fetchone()
@@ -450,30 +453,30 @@ class Connection:
 		row = aCursor.fetchone()
 		# get dbt_names for each column for abstraction
 		dbt_col_names = [self.sql_dbt_map['actual'][col[0]]['name'] for col in aCursor.description]
-		logger.info('generated col names: %s' % (dbt_col_names))
+		logger.info(f'generated col names: {dbt_col_names}')
 		while row: #Run iff [process] and there is a row
 			if process:
 				logger.finest('Processing an actual row')
 				data = dict(zip(dbt_col_names, row))
-				days.crossRef(data['date'], data['blockNumber'], data['tripNumber'],\
+				journal.crossRef(data['date'], data['blockNumber'], data['tripNumber'],\
 				 data['stop'],data['bus'],data['boards'],data['alights'], data['onboard'],\
 				 data['actual_time'], (data['latitude'], data['longitude']), data['route'], self.stop_locations)
 			else:
 				logger.finest('Filling in an actual row')
 				data = dict(zip(dbt_col_names, row))
-				days.fillIn(data['date'], data['blockNumber'], data['tripNumber'],\
+				journal.fillIn(data['date'], data['blockNumber'], data['tripNumber'],\
 				 data['stop'],data['bus'],data['boards'],data['alights'], data['onboard'],\
 				 data['actual_time'], (data['latitude'], data['longitude']), data['route'])
 			row = aCursor.fetchone()
 		logger.info('Date at cursor location loaded!')
-		return days
-	def selectAndLoad(self, date, days=None, process=False):
+		return journal
+	def selectAndLoad(self, date, journal=None, process=False):
 		'''Convenience method to select and load from the TCAT database [date] and to store in dbt dictionary format.'''
-		return self.loadData(self.selectDate(date), days=days, process=process)
-	def writeDays(self, days):
+		return self.loadData(self.selectDate(date), journal=journal, process=process)
+	def writeDays(self, journal):
 		query = self.sql_dbt_map['views_tables']['output']['static']
 		cursor = self.write_conn.cursor()
-		for date, journal in days.root.items():
+		for date, journal in journal.root.items():
 			for blockNumber, block in journal.items():
 				for tripNumber, trip in block.items():
 					for (stopNumber, stopInstance), stop in trip['stops'].items():
