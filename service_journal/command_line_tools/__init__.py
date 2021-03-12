@@ -1,25 +1,28 @@
-import sys
+# import sys
 from service_journal.gen_utils import debug
 from service_journal.sql_handler import connection
-from service_journal.dbt_classifications.dbt_classes import Journal
+# from service_journal.dbt_classifications.dbt_classes import Journal
 from datetime import date, timedelta
 
-logger = debug.Logger(__name__) #TODO: Will just be __init__, change to name
+# TODO: Will just be __init__, change to name
+logger = debug.Logger(__name__)
 logger.read_args()
 
 # def init_terminal():
 #
 _path = '.'
 
-def daterange(start_date, end_date):
-	for n in range(int ((end_date - start_date).days)):
+
+def date_range(start_date, end_date):
+	for n in range(int((end_date - start_date).days)):
 		yield start_date + timedelta(n)
+
 
 def run():
 	while True:
-		userin = input('Please input the range of service dates as intergers in \
-		the format.\n"YEAR MONTH DAY - YEAR MONTH DAY":\n')
-		ins = userin.split('-')
+		user_in = input('Please input the range of service dates as integers in the format.\
+		\n"YEAR MONTH DAY - YEAR MONTH DAY":\n')
+		ins = user_in.split('-')
 		_from = ins[0].strip().split()
 		_to = ins[1].strip().split()
 		y1 = int(_from[0].strip())
@@ -32,13 +35,13 @@ def run():
 		to_date = date(y2, m2, d2)
 		conn = connection.Connection(_path)
 		# TODO: Have days work as day(s)
-		for day in daterange(from_date, to_date):
+		for day in date_range(from_date, to_date):
 			days = conn.selectAndLoad(day)
-			days.inferStops()
-			days.flagDeviations()
+			days.infer_stops()
+			days.flag_deviations()
 			conn.writeDays(days)
 			del days
 		conn.close()
-		userin = input('Would you like to continue? (Y/n)')
-		if userin.strip().lower() == 'n':
+		user_in = input('Would you like to continue? (Y/n)')
+		if user_in.strip().lower() == 'n':
 			break
