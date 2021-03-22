@@ -12,15 +12,6 @@ from service_journal.sql_handler.connection import Connection, DataFormat
 logger = Logger(__name__)
 logger.read_args()
 
-
-class SortRules(Enum):
-    """
-    An enum of sort rules.
-    TODO: Replace usage with a sort function that gets passed.
-    """
-    BY_BUS = 1
-
-
 class Flag(IntFlag):
     """
     A binary flag system used to flag deviations from the norm in a given stop
@@ -29,26 +20,6 @@ class Flag(IntFlag):
     FINE = 0
     BACKWARDS_TIME = 1
     MULTIPLE_BUS_BLOCK = 2
-
-
-def closest_stop_id(stop_locations, loc):
-    """
-    Parameters:
-    [stop_locations] a dictionary with stop ids, "stop_id", as the key, and geographical
-    stop locations, "stop_loc", as the value.
-    "stop_loc" should be index-able by 0 and 1. {stop_loc[0]} should be longitude
-    and {stop_loc[1]} should be latitude, as per convention.
-
-    [loc] is the location we are trying to find the closest stop id to.
-    """
-    min_ = sys.maxsize
-    closest_stop = 0
-    for stop_id, stop_loc in stop_locations.items():
-        dist = (float(stop_loc[0]) - float(loc[0])) ** 2 + (float(stop_loc[1]) - float(loc[1])) ** 2
-        if dist <= min_:
-            closest_stop = stop_id
-            min_ = dist
-    return closest_stop
 
 
 class Journal:
@@ -62,10 +33,13 @@ class Journal:
     """
 
     def __init__(self, schedule: dict = None, avl_dict: dict = None):
-        self.schedule = schedule if schedule is not None else {}
-        self.avl_dict = avl_dict if avl_dict is not None else {}
+        self.schedule = {} if schedule is None else schedule
+        self.avl_dict = {} if avl_dict is None else avl_dict
 
     def update(self, schedule=None, avl_dict=None):
+        """
+        Updates the schedule and/or avl_dict with the given parameters.
+        """
         if schedule is not None:
             self.schedule.update(schedule)
         if avl_dict is not None:
@@ -73,18 +47,21 @@ class Journal:
 
 
     def read_days(self, date_range):
+        """
+        Read date_range from a newly established connection.
+        """
         with Connection() as conn:
             for day in date_range:
                 self.schedule[day], self.avl_dict[day] = conn.read(day, format_=conn.DBT)
 
     def process(self):
+        def approx_schedule_trip(schedule, date, block_number, trip, trigger_time)
         for date_, day in self.avl_dict.items():
             day_schedule = self.schedule[date_]
 
             for bus, bus_data in day.items():
                 for time_, report in bus_data.items():
-
-
+                    scheduled_stops = day_schedule[report['block_number']][report['trip_number']]['stops']
 
 
     def __str__(self, indent=4, tab_char=' '):
