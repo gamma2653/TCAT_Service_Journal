@@ -1,7 +1,12 @@
 # SQL_handler from scratch for detour_analyzer
+from typing import Dict, Optional, Tuple, Mapping, Set, Union
+from numbers import Number
 import pyodbc
 from enum import Enum
 from datetime import date
+
+from service_journal.gen_utils.debug import get_default_logger
+logger = get_default_logger(__name__)
 
 
 class DataFormat(Enum):
@@ -12,7 +17,68 @@ class DataFormat(Enum):
 
 
 class Connection:
-    def close(self) -> set:
+
+    stop_locations: Dict[str, Tuple[Number, Number]]
+    config: Mapping
+    driver: str
+    username: str
+    password: str
+    host: str
+    dbt_sql_map: Mapping
+    sql_dbt_map: Mapping
+    connections: Dict[str, Optional[pyodbc.Connection]]
+
+    def __init__(self, open_: bool = False, config: Mapping = None):
+        self.stop_locations = {}
+        if config is not None:
+            self.config = config
+        else:
+            from .environ import config
+            self.config = config
+        try:
+            settings = self.settings = config['settings']
+            self.driver = settings['driver']
+            self.username = settings['username']
+            self.password = settings['password']
+            self.host = settings['host']
+        except KeyError as e:
+            print(f'Error: Key ({e.args[0]}) not found in config.json. If this is your first time '
+                  'running this, please setup your config and re-run it.')
+            raise e
+
+        # setup dict key to sql field map and inverted map
+        dbt_sql_map = settings['dbt_sql_map']
+        sql_dbt_map = {}
+        # TODO: Simplify
+        for t in dbt_sql_map:
+            if t not in sql_dbt_map:
+                sql_dbt_map[t] = {}
+            if t == 'actual' or t == 'scheduled':
+                for field in dbt_sql_map[t]:
+                    sql_dbt_map[t][dbt_sql_map[t][field]['name']] = {
+                        'name': field,
+                        'nullable': dbt_sql_map[t][field]['nullable'],
+                        'view': dbt_sql_map[t][field]['view']
+                    }
+            else:
+                sql_dbt_map[t] = dbt_sql_map[t]
+        self.dbt_sql_map = dbt_sql_map
+        self.sql_dbt_map = sql_dbt_map
+
+        self.connections = {
+            'actual_read_conn': None,
+            'scheduled_read_conn': None,
+            'write_conn': None,
+            'stop_locations_conn': None
+        }
+
+        # Hacky way to add DataFormats as attributes to an instance.
+        for item in DataFormat:
+            setattr(self, item.name, item)
+        if open_:
+            self.open()
+
+    def close(self) -> Set[Exception]:
         """
         Closes all internal connections.
 
@@ -21,24 +87,21 @@ class Connection:
         set
             Set of exceptions that occurred when closing all connections.
         """
+        logger.info('Starting to close connections.')
         errors = set()
+
         # Attempt to close as many connections as possible, regardless of errors.
-        try:
-            self.actual_read_conn.close()
-        except NameError as e:
-            errors.add(e)
-        try:
-            self.scheduled_read_conn.close()
-        except NameError as e:
-            errors.add(e)
-        try:
-            self.write_conn.close()
-        except NameError as e:
-            errors.add(e)
-        try:
-            self.stop_locations_conn.close()
-        except NameError as e:
-            errors.add(e)
+        def attempt_close(conn_):
+            try:
+                conn_.close()
+            except NameError as e:
+                logger.error('Ran into a NameError when closing %s.\n%s', conn_, e)
+                errors.add(e)
+        for conn in self.connections.values():
+            if conn is not None:
+                attempt_close(conn)
+
+        logger.info('Closed connections. Errors if any: %s', errors)
         return errors
 
     def _connect(self, table_config: str) -> pyodbc.Connection:
@@ -64,15 +127,15 @@ class Connection:
         """
         Open all the connections to the tables for the config.
         """
-        print(type(self.dbt_sql_map))
-        print(self.dbt_sql_map.keys())
         # views_tables = self.dbt_sql_map['views_tables']
-        self.actual_read_conn = self._connect('actual')
-        self.scheduled_read_conn = self._connect('scheduled')
-        self.write_conn = self._connect('output')
-        self.stop_locations_conn = self._connect('stop_locations')
+        self.connections = {
+            'actual_read_conn': self._connect('actual'),
+            'scheduled_read_conn': self._connect('scheduled'),
+            'write_conn': self._connect('output'),
+            'stop_locations_conn': self._connect('stop_locations')
+        }
 
-    def load_stop_loc(self):
+    def load_stop_loc(self) -> None:
         """
         Load stop locations from database. These are the geo-cords.
         """
@@ -80,7 +143,7 @@ class Connection:
         # grab query string
         query = self.dbt_sql_map['views_tables']['stop_locations']['static']
         # Grab cursor object
-        cursor = self.stop_locations_conn.cursor()
+        cursor = self.connections['stop_locations_conn'].cursor()
         # Execute query
         cursor.execute(query)
         # Grab first row from result
@@ -100,54 +163,7 @@ class Connection:
     def __exit__(self, exception_type, exception_value, traceback):
         self.close()
 
-    def __init__(self, open_=False, config=None):
-        self.stop_locations = {}
-        if config:
-            self.config = config
-        else:
-            from .environ import config
-            self.config = config
-
-        try:
-            settings = self.settings = config['settings']
-            self.driver = settings['driver']
-            self.username = settings['username']
-            self.password = settings['password']
-            self.host = settings['host']
-        except KeyError as e:
-            print(f'Error: Key ({e.args[0]}) not found in config.json. If this is your first time '
-                  'running this, please setup your config and re-run it.')
-            raise e
-
-        # setup dict key to sql field map and inverted map
-        dbt_sql_map = settings['dbt_sql_map']
-        sql_dbt_map = {}
-        for t in dbt_sql_map:
-            if t not in sql_dbt_map:
-                sql_dbt_map[t] = {}
-            if t == 'actual' or t == 'scheduled':
-                for field in dbt_sql_map[t]:
-                    sql_dbt_map[t][dbt_sql_map[t][field]['name']] = {
-                        'name': field,
-                        'nullable': dbt_sql_map[t][field]['nullable'],
-                        'view': dbt_sql_map[t][field]['view']
-                    }
-            else:
-                sql_dbt_map[t] = dbt_sql_map[t]
-        self.dbt_sql_map = dbt_sql_map
-        self.sql_dbt_map = sql_dbt_map
-
-        self.actual_read_conn = None
-        self.scheduled_read_conn = None
-        self.write_conn = None
-        self.stop_locations_conn = None
-
-        for item in DataFormat:
-            setattr(self, item.name, item)
-        if open_:
-            self.open()
-
-    def read(self, date_: date, format_=DataFormat.RTBD):
+    def read(self, date_: date, format_: DataFormat = DataFormat.RTBD) -> Union[Tuple[Mapping, Mapping], Mapping]:
         # grab queries
         a_query = self.dbt_sql_map['views_tables']['actual']['static']
         s_query = self.dbt_sql_map['views_tables']['scheduled']['static']
@@ -155,9 +171,9 @@ class Connection:
         # a_table = self.dbt_sql_map['views_tables']['actual']['table']
         # sTable = self.dbt_sql_map['views_tables']['scheduled']['table']
         # grab cursors and execute queries
-        a_cursor = self.actual_read_conn.cursor()
+        a_cursor = self.connections['actual_read_conn'].cursor()
         a_cursor.execute(a_query, date_)
-        s_cursor = self.scheduled_read_conn.cursor()
+        s_cursor = self.connections['scheduled_read_conn'].cursor()
         s_cursor.execute(s_query, date)
 
         # (Not only for dbt format)
@@ -278,7 +294,7 @@ class Connection:
             return schedule, avl_dict
 
     def write(self, data_map):
-        cursor = self.write_conn.cursor()
+        cursor = self.connections['write_conn'].cursor()
         cursor.execute(self.dbt_sql_map['view_tables']['output']['static'])
 
     # data_to_write = [ for  ]

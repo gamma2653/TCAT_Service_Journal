@@ -1,0 +1,123 @@
+CHANGES
+=======
+
+* Some changes to the way things are read and written, started on automatic updating on server side
+* Pushing before potential computer reset
+* Added a custom \_\_str\_\_ function to Journal to allow formatted printing. Very readable, and nice to use
+* Added some PythonDocs to the functions and classes in the exisitng framework. Renamed [Days] to [Journal]. Also, replaced all existing string formats with fstrings
+* README.md
+* Updated build and install to use most up-to-date version
+* Cleaned up my own setup.py to include more information
+* Fixed test cases for the Logger
+* Added logs to gitignore, added actual file logs to Logger, working on test cases for Logger. Seem to have a minor bug, working on a fix
+* Now fixed gitignore
+* fixing gitignore
+* Added build egg to gitignore
+* Mostly housekeeping, should now behave like a module should. When a parent module is imported, all submodules are imported. This allows syntax like:
+* Worked more on Bus Sort to facilitate onboard correction
+* Added some post-processing stuff as well as fixed some potential bugs
+* Removed confidence
+* Fixed bug
+* Last push was a directory below
+* Now added runs
+* Added runs
+* Added flags
+* Fixed flagging, maybe
+* Last one continued
+* Fixed issue, will truly be fixed later
+* Fixed prevStop being None
+* Fixed flag deviations
+* Fixing inferStops
+* Fixed flagDeviations iteration
+* Fixed onboards
+* Fixed crossRef
+* Fixed sql statement
+* Fixed number of parameters for write issue
+* Fixed odict\_items do not support indexing
+* Mispelled OrderedDict
+* Typo, forgot colon
+* Fixed another dictionary initialization
+* Fixed dictionary initialization
+* Started looking at inferring stops
+* Added skeleton for post-process
+* Removed print(route)
+* adding route to crossRef
+* Fixed dict
+* debug
+* Write after each day now
+* Fixed import
+* fixed variable names
+* Fixed dates to be ints
+* fix yield
+* Added user friendly methods
+* Date
+* Sched start time fixed?
+* Removed print stmnt
+* Fixed stop\_id typo
+* Casted decimal.Decimal to float
+* Potential fix + debug message
+* Changed to sys.maxsize
+* Moved closes stop outside classdef
+* Fixed clsoestStop prep typo
+* Fixed cursor typo
+* Fixed connection typo
+* Finding closest distance
+* Reverted finiking with
+* Reverted finiking with
+* temp debug
+* Fixed datetime time
+* Fixed sched\_start time stamp
+* fixed times
+* Added commit
+* typo fix
+* typo fix
+* sched\_stop fix
+* added in sched\_stop and actual\_stop times
+* Fixed case where distance is None
+* fixed reference to config
+* Tom caught potential Null-pointer error
+* Added a write\_segments function
+* fixed route and direction in Days
+* typo
+* forgot arguments for addTrip
+* fixed function call argument mismatch
+* fixed date indexing bug
+* connection changes
+* fixed calendar issue
+* forgot to save
+* Fixed inconsistency
+* fixed typo
+* Fixed sql\_dbt\_map
+* debug message
+* 
+* more debug
+* Added debug messages
+* Removed dashes from schedueld date query
+* Fixed some config and code typo
+* Updates to connections and started command\_line tool
+* Dynamic loading does not work, some debug lines for that. Also fixed some config stuff
+* Its actually starting to work, fixing typos and such errors
+* It"s been one heckuva night. Restructured the abstraction
+* Minor changes. About to try a radically new idea
+* Almost working
+* Started on builder, as well as some tweaks to structures and debug. Simplified debugs error handling, added parent protocol for all structures, and have basic skeleton of builder, almost up to comparing individual days
+* Debug fixed up, lots of restructuring after talking with Tom. Should be good to go now!
+* Woops left in lines from when i was testing debug module... ironic
+* Added check for date mismatch
+* Had to add an import, woops
+* Fixed up debug, and Parsing should now be complete! Also robust!!!
+* Adding debug messages
+* Debugging tools added
+* Halfway through parse, and fixed build and install script
+* sql\_to\_dbt fixed!
+* SQL query changes
+* Cleaned gitignore
+* Still Parsing
+* Edited config to add fields discussed in meeting in CTB. Also trying out stop-based approach. Seems so far to simplify a lot. distance stored on a stop basis, and all stops are placed. seen field determines if stop was visited. So far, so good
+* Minor edits, end of day push
+* Some renaming plus packaging
+* Restructured entire project. Now distributable
+* added import, nothing really
+* fixed gitignore to inlcude init file
+* Have exported the libraries into their own repositories
+* init commit, submit
