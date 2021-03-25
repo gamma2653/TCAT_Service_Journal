@@ -1,6 +1,9 @@
 CHANGES
 =======
 
+* Minor changes to debug and some touch-ups
+* Renamed dbt\_classifications to classifications
+* Revamped sql\_handler, fixing dbt\_classes now
 * Some changes to the way things are read and written, started on automatic updating on server side
 * Pushing before potential computer reset
 * Added a custom \_\_str\_\_ function to Journal to allow formatted printing. Very readable, and nice to use

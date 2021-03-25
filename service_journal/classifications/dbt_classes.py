@@ -1,8 +1,8 @@
 # DBT_Classes = Day-Block-Trip classes
-from datetime import date, datetime, timedelta
+from datetime import date
 from typing import Iterable, Mapping
 
-from service_journal.sql_handler.connection import Connection, DataFormat
+from service_journal.sql_handler.connection import Connection
 from service_journal.gen_utils.debug import get_default_logger
 logger = get_default_logger(__name__)
 
@@ -70,6 +70,8 @@ class Journal:
                         elif report['stop_id'] in scheduled_stops:
                             scheduled_stops[report['stop_id']]['seen'] += 1
                             scheduled_stops[report['stop_id']]['confidence_factors'].append(100)
+                        else:
+                            logger.warn('Stop not in schedule, what happened?\nStop_ID: %s', report['stop_id'])
 
                     except ValueError as e:
                         logger.error('Key does not exist in scheduled_stops. These are the keys:\n'

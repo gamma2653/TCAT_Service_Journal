@@ -9,8 +9,8 @@ def read_level_from_args():
     Called when a module wants to get log level using arguments.
     """
     parser = argparse.ArgumentParser()
-    parser.add_argument('-l', '--log', default=logging.INFO)
-    log_level = parser.parse_args().log_level
+    parser.add_argument('-l', '--log', default='INFO', type=str)
+    log_level = parser.parse_args().log
     numeric_level = getattr(logging, log_level.upper(), None)
     if not isinstance(numeric_level, int):
         raise ValueError('Invalid log level: %s' % log_level)
