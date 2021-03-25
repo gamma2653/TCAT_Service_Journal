@@ -1,7 +1,7 @@
 # import sys
 from service_journal.gen_utils import debug
 from service_journal.sql_handler import connection
-# from service_journal.dbt_classifications.dbt_classes import Journal
+# from service_journal.classifications.dbt_classes import Journal
 from datetime import date, timedelta
 
 # TODO: Will just be __init__, change to name
