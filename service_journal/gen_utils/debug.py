@@ -20,6 +20,21 @@ def read_level_from_args():
 default_log_level = read_level_from_args()
 
 
-def get_default_logger(name):
+def get_default_logger(name, format__=format_, filepath='./output.log'):
     logger = logging.getLogger(name)
     logger.setLevel(default_log_level)
+
+    ch = logging.StreamHandler()
+    ch.setLevel(default_log_level)
+
+    fh = logging.FileHandler(filepath)
+    fh.setLevel(logging.INFO)
+
+    formatter = logging.Formatter(format__)
+    ch.setFormatter(formatter)
+    fh.setFormatter(formatter)
+
+    logger.addHandler(ch)
+    logger.addHandler(fh)
+
+    return logger

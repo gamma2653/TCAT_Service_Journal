@@ -1,4 +1,3 @@
-# SQL_handler from scratch for detour_analyzer
 from typing import Dict, Optional, Tuple, Mapping, Set, Union
 from numbers import Number
 import pyodbc
@@ -241,7 +240,8 @@ class Connection:
                 if data['trip_number'] not in block:
                     block['trip_number'] = {
                         'route': data['route'],
-                        'stops': {}
+                        'stops': {},
+                        'seq_tracker': 0,
                     }
                 trip = block['trip_number']
                 if data['stop'] is None or data['stop'] == '0':
@@ -252,6 +252,8 @@ class Connection:
                         'direction': data['direction'],
                         'seen': 0,
                         'bus': None,
+                        'confidence_score': 0,
+                        'confidence_factors': []
                         # 'direction': data['direction'],
                     }
 
@@ -273,6 +275,7 @@ class Connection:
                 if data['trigger_time'] in bus:
                     print('Double time!\nFound another record at same time. Highly uncommon occurrence')
                     input('Press enter to continue.')
+                # Definition of a report
                 bus[data['trigger_time']] = {
                     'lat': data['latitude'],
                     'lon': data['longitude'],

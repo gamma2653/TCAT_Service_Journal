@@ -24,6 +24,13 @@ class Journal:
     def update(self, schedule: Mapping = None, avl_dict: Mapping = None) -> None:
         """
         Updates the schedule and/or avl_dict with the given parameters.
+
+        PARAMETERS
+        --------
+        schedule
+            If given, any entries will be added/updated.
+        avl_dict
+            If given, any entries will be added/updated.
         """
         if schedule is not None:
             self.schedule.update(schedule)
@@ -33,41 +40,53 @@ class Journal:
     def read_days(self, date_range: Iterable[date]) -> None:
         """
         Read date_range from a newly established connection.
+
+        PARAMETERS
+        --------
+        date_range
+            Iterable of date objects to load from the database.
         """
         with Connection() as conn:
             for day in date_range:
                 self.schedule[day], self.avl_dict[day] = conn.read(day, format_=conn.DBT)
 
     def process(self) -> None:
-        # def approx_schedule_trip(schedule, date, block_number, trip, trigger_time)
+        """
+        Freshly processed the data in self.schedule and self.avl_dict and updates the schedule's internal book-keeping
+        values.
+        """
         for date_, day_actual in self.avl_dict.items():
             day_schedule = self.schedule[date_]
 
             for bus, bus_data in day_actual.items():
                 for time_, report in bus_data.items():
-                    scheduled_stops = day_schedule[report['block_number']][report['trip_number']]['stops']
+                    try:
+                        scheduled_stops = day_schedule[report['block_number']][report['trip_number']]['stops']
+                        if report['stop_id'] == 0:
+                            # Time to infer what happened! Magic time.
+                            lat, lon = report['lat'], report['lon']
 
-    # Out of date
-    # def __str__(self, indent: int = 4, tab_char: str = ' '):
-    #     tab = ' ' * indent if tab_char == ' ' else '\t'
-    #     print_out = '[Days]'
-    #     for date_, day in self.root.items():
-    #         print_out += f'{date_}:\n'
-    #         print_out += f'{tab}[Blocks]\n'
-    #         for blockNumber, block in day.items():
-    #             print_out += f'{tab}{blockNumber}:\n'
-    #             print_out += f'{tab * 2}[Trips]\n'
-    #             for tripNumber, trip in block.items():
-    #                 # Did it this disgusting way because I wanted stops printed last.
-    #                 print_out += f'{tab * 2}{tripNumber}:\n'
-    #                 print_out += f'{tab * 3}route: {trip["route"]}\n'
-    #                 print_out += f'{tab * 3}direction: {trip["direction"]}\n'
-    #                 print_out += f'{tab * 3}actual_start: {trip["actual_start"]}\n'
-    #                 print_out += f'{tab * 3}actual_end: {trip["actual_end"]}\n'
-    #                 print_out += f'{tab * 3}flag: {trip["flag"]}\n'
-    #                 print_out += f'{tab * 3}stops:\n'
-    #                 for (stop_id, stop_inst), stop in trip['stops'].items():
-    #                     print_out += f'{tab * 4}{stop_id} / {stop_inst}\n'
-    #                     for key, value in stop.items():
-    #                         print_out += f'{tab * 5}{key}: {value}\n'
-    #     return print_out
+                        # We saw the stop, and know we got there via Avail
+                        elif report['stop_id'] in scheduled_stops:
+                            scheduled_stops[report['stop_id']]['seen'] += 1
+                            scheduled_stops[report['stop_id']]['confidence_factors'].append(100)
+
+                    except ValueError as e:
+                        logger.error('Key does not exist in scheduled_stops. These are the keys:\n'
+                                     'block_number=%s\ntrip_number=%s\nError:\n%s', report['block_number'],
+                                     report['trip_number'], e)
+
+    def post_process(self) -> None:
+        """
+        Updates internal book-keeping that could not be done on first sweep. This includes updating confidence values.
+        """
+        # Calculate confidence scores
+        for date_, day_schedule in self.schedule.items():
+            for block_number, block in day_schedule.items():
+                for trip_number, trip in block.items():
+                    stops = trip['stops']
+                    for stop_id, stop in stops.items():
+                        if stop['seen'] != 0:
+                            stop['confidence_score'] = sum(stop['confidence_factors'])/stop['seen']
+                        else:
+                            stop['confidence_score'] = 0
