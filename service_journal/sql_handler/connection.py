@@ -187,6 +187,7 @@ class Connection:
         s_attr_sql_map = {k: v['name'] for k, v in self.attr_sql_map['scheduled'].items()}
         # grab and format queries
         queries = self.config['settings']['queries']
+        logger.debug('a_attr_sql_map: %s', a_attr_sql_map)
         a_query = queries['actual']['default'].format(**a_attr_sql_map)
         s_query = queries['scheduled']['default'].format(**s_attr_sql_map)
         # grab cursors and execute queries
