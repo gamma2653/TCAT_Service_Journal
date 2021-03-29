@@ -17,9 +17,10 @@ class Journal:
     adding a new day.
     """
 
-    def __init__(self, schedule: Mapping = None, avl_dict: Mapping = None):
+    def __init__(self, schedule: Mapping = None, avl_dict: Mapping = None, connection: Connection = None):
         self.schedule = {} if schedule is None else schedule
         self.avl_dict = {} if avl_dict is None else avl_dict
+        self.connection = connection
 
     def update(self, schedule: Mapping = None, avl_dict: Mapping = None) -> None:
         """
@@ -32,10 +33,30 @@ class Journal:
         avl_dict
             If given, any entries will be added/updated.
         """
+        # TODO: Make sure it does a deep update
         if schedule is not None:
             self.schedule.update(schedule)
         if avl_dict is not None:
             self.avl_dict.update(avl_dict)
+
+    def clear(self, schedule: bool = True, avl_dict: bool = True):
+        if schedule:
+            self.schedule.clear()
+        if avl_dict:
+            self.avl_dict.clear()
+
+    def open(self, config: Mapping = None):
+        self.connection = Connection(config)
+
+    def close(self):
+        self.connection.close()
+
+    def __enter__(self):
+        self.open()
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
 
     def read_days(self, date_range: Iterable[date]) -> None:
         """
@@ -64,12 +85,14 @@ class Journal:
                         scheduled_stops = day_schedule[report['block_number']][report['trip_number']]['stops']
                         if report['stop_id'] == 0:
                             # Time to infer what happened! Magic time.
-                            lat, lon = report['lat'], report['lon']
+                            bus, trip, lat, lon = report['bus'], report['trip_number'], report['lat'], report['lon']
 
                         # We saw the stop, and know we got there via Avail
                         elif report['stop_id'] in scheduled_stops:
                             scheduled_stops[report['stop_id']]['seen'] += 1
                             scheduled_stops[report['stop_id']]['confidence_factors'].append(100)
+                            # TODO: Check to see if going backwards
+                            # day_schedule[report['block_number']][report['trip_number']]['seq_tracker'] =
                         else:
                             logger.warn('Stop not in schedule, what happened?\nStop_ID: %s', report['stop_id'])
 
@@ -92,3 +115,6 @@ class Journal:
                             stop['confidence_score'] = sum(stop['confidence_factors'])/stop['seen']
                         else:
                             stop['confidence_score'] = 0
+    def write(self):
+        pass
+

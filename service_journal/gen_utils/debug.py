@@ -2,6 +2,7 @@ import argparse
 import logging
 
 format_ = '[%(asctime)s] [%(name)s]: [%(levelname)s] %(message)s'
+date_format = '%m-%d-%Y %H:%M:%S'
 
 
 def read_level_from_args():
@@ -30,7 +31,7 @@ def get_default_logger(name, format__=format_, filepath='./output.log'):
     fh = logging.FileHandler(filepath)
     fh.setLevel(logging.INFO)
 
-    formatter = logging.Formatter(format__)
+    formatter = logging.Formatter(format__, datefmt=date_format)
     ch.setFormatter(formatter)
     fh.setFormatter(formatter)
 

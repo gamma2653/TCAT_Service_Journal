@@ -1,7 +1,7 @@
 # import sys
 from service_journal.gen_utils.debug import get_default_logger
 from service_journal.sql_handler import connection
-# from service_journal.classifications.dbt_classes import Journal
+from service_journal.classifications.dbt_classes import Journal
 from datetime import date, timedelta
 
 logger = get_default_logger(__name__)
@@ -12,7 +12,7 @@ def date_range(start_date, end_date):
 		yield start_date + timedelta(n)
 
 
-def run_days(dates_, config=None):
+def run_days(dates_, config=None, hold_data=False):
 	ins = dates_.split('-')
 	_from = ins[0].strip().split()
 	_to = ins[1].strip().split()
@@ -24,13 +24,19 @@ def run_days(dates_, config=None):
 	d2 = int(_to[2].strip())
 	from_date = date(y1, m1, d1)
 	to_date = date(y2, m2, d2)
-	with connection.Connection(config=config) as conn:
-		for day in date_range(from_date, to_date):
-			days = conn.selectAndLoad(day)
-			days.infer_stops()
-			days.flag_deviations()
-			conn.writeDays(days)
-			del days
+	with connection.Connection(config) as conn:
+		journal = Journal()
+		if hold_data:
+			for day in date_range(from_date, to_date):
+				journal.update(*conn.read(day))
+			journal.process()
+			journal.write()
+		else:
+			for day in date_range(from_date, to_date):
+				journal.clear()
+				journal.update(*conn.read(day))
+				journal.process()
+				journal.write()
 
 
 def run():
