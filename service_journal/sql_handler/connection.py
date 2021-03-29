@@ -115,7 +115,7 @@ class Connection:
         pyodbc.Connection
             A connection to the given table.
         """
-        database = self.attr_sql_map["views_tables"][table_config]["database"]
+        database = self.config['settings']["queries"][table_config]["database"]
         logger.debug('Connecting to %(database)s on %(host)s:%(port)s using %(driver)s and the credentials user:%('
                      'user)s pass:****, and the table_config: %(table_config)s', database=database, host=self.host,
                      port=self.port, driver=self.driver, user=self.username, table_config=table_config)
