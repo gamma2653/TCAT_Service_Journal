@@ -250,6 +250,7 @@ class Connection:
             schedule = {}
             row = s_cursor.fetchone()
             logger.debug('Loading schedule in %(format)s', format=format_)
+            logger.debug('s_attr_col_names: %s', s_attr_col_names)
             while row:
                 data = dict(zip(s_attr_col_names, row))
                 date_key = data['date'].strftime(to_date_format)
