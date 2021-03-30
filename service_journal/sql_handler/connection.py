@@ -181,7 +181,7 @@ class Connection:
         # a_xxx refers to "actuals xxx" and s_xxx refers to "scheduled xxx"
         logger.info('Reading from connections.')
         # Grab mappings for actuals and scheduled fields
-        # a_attr_sql_map, s_attr_sql_map = self.attr_sql_map['actual'], self.attr_sql_map['scheduled']
+        a_sql_attr_map, s_sql_attr_map = self.sql_attr_map['actual'], self.sql_attr_map['scheduled']
         a_attr_sql_map = {k: v['name'] for k, v in self.attr_sql_map['actual'].items()}
         s_attr_sql_map = {k: v['name'] for k, v in self.attr_sql_map['scheduled'].items()}
         # grab and format queries
@@ -197,8 +197,8 @@ class Connection:
         s_cursor.execute(s_query, date_)
         # Get column names based on query results
         # This protects against queries that do not have all the attributes, and makes packaging the data easier
-        a_attr_col_names = [a_attr_sql_map[col[0]] for col in a_cursor.description]
-        s_attr_col_names = [s_attr_sql_map[col[0]] for col in s_cursor.description]
+        a_attr_col_names = [a_sql_attr_map[col[0]] for col in a_cursor.description]
+        s_attr_col_names = [s_sql_attr_map[col[0]] for col in s_cursor.description]
         del a_attr_sql_map, s_attr_sql_map
 
         to_date_format = '%Y-%m-%d'
