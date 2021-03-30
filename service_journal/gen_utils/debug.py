@@ -19,6 +19,7 @@ def read_level_from_args():
 
 
 default_log_level = read_level_from_args()
+print(f'Default log level set to: {default_log_level}')
 
 
 def get_default_logger(name, format__=format_, filepath='./output.log'):
