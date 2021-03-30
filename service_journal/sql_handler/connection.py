@@ -116,9 +116,8 @@ class Connection:
             A connection to the given table.
         """
         database = self.config['settings']["queries"][table_config]["database"]
-        logger.debug('Connecting to %(database)s on %(host)s:%(port)s using %(driver)s and the credentials user:%('
-                     'user)s pass:****, and the table_config: %(table_config)s', database=database, host=self.host,
-                     port=self.port, driver=self.driver, user=self.username, table_config=table_config)
+        logger.debug(f'Connecting to {database} on {self.host}:{self.port} using {self.driver} and the credentials user'
+                     f':{self.username} pass:****, and the table_config: {table_config}')
         # noinspection PyArgumentList
         return pyodbc.connect(driver=self.driver, server=self.host + ('' if self.port is None else f',{self.port}'),
                               database=database, uid=self.username, pwd=self.password)
