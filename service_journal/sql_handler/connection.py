@@ -289,6 +289,8 @@ class Connection:
                         'confidence_factors': []
                         # 'direction': data['direction'],
                     }
+                del data
+                row = s_cursor.fetchone()
 
             # Load in actuals
             avl_dict = {}
