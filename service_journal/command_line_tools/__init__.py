@@ -47,7 +47,3 @@ def run():
 		user_in = input('Would you like to continue? (Y/n)')
 		if user_in.strip().lower() == 'n':
 			break
-
-
-if __name__ == '__main__':
-	run()
