@@ -96,7 +96,7 @@ class Journal:
                         else:
                             logger.warning('Stop not in schedule, what happened?\nStop_ID: %s', report['stop_id'])
 
-                    except ValueError as e:
+                    except KeyError as e:
                         logger.error('Key does not exist in scheduled_stops. These are the keys:\n'
                                      'block_number=%s\ntrip_number=%s\nError:\n%s', report['block_number'],
                                      report['trip_number'], e)
