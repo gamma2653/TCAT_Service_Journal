@@ -187,8 +187,8 @@ class Connection:
 
         a_sql_attr_map = pull_out_name(self.sql_attr_map['actual'])
         s_sql_attr_map = pull_out_name(self.sql_attr_map['scheduled'])
-        a_attr_sql_map = pull_out_name(self.attr_sql_map['actual'].items())
-        s_attr_sql_map = pull_out_name(self.attr_sql_map['scheduled'].items())
+        a_attr_sql_map = pull_out_name(self.attr_sql_map['actual'])
+        s_attr_sql_map = pull_out_name(self.attr_sql_map['scheduled'])
 
         # grab and format queries
         queries = self.config['settings']['queries']
