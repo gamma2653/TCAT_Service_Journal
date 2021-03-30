@@ -295,7 +295,7 @@ class Connection:
             # Load in actuals
             avl_dict = {}
             row = a_cursor.fetchone()
-            logger.debug('Loading actuals in %(format)s', format=format_)
+            logger.debug('Loading actuals in %s', format_)
             while row:
 
                 # standardizes references to columns so changes to database only
@@ -309,8 +309,8 @@ class Connection:
                     date_value[data['bus']] = {}
                 bus = date_value[data['bus']]
                 if data['trigger_time'] in bus:
-                    logger.warning('The same trigger time (%(trigger_time)s) was found twice for the same bus.'
-                                   'Highly uncommon occurrence', trigger_time=data['trigger_time'])
+                    logger.warning('The same trigger time (%s) was found twice for the same bus.'
+                                   'Highly uncommon occurrence', data['trigger_time'])
                 # Definition of a report
                 bus[data['trigger_time']] = {
                     'lat': data['latitude'],

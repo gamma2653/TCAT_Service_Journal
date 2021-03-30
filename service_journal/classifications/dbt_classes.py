@@ -94,7 +94,7 @@ class Journal:
                             # TODO: Check to see if going backwards
                             # day_schedule[report['block_number']][report['trip_number']]['seq_tracker'] =
                         else:
-                            logger.warn('Stop not in schedule, what happened?\nStop_ID: %s', report['stop_id'])
+                            logger.warning('Stop not in schedule, what happened?\nStop_ID: %s', report['stop_id'])
 
                     except ValueError as e:
                         logger.error('Key does not exist in scheduled_stops. These are the keys:\n'
