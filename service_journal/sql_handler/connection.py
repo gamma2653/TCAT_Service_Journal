@@ -187,8 +187,8 @@ class Connection:
         # grab and format queries
         queries = self.config['settings']['queries']
         logger.debug('a_attr_sql_map: %s', a_attr_sql_map)
-        a_query = queries['actual']['default'].format(**a_attr_sql_map)
-        s_query = queries['scheduled']['default'].format(**s_attr_sql_map)
+        a_query = queries['actual']['default'].format(**a_attr_sql_map, table_name=queries['actual']['table'])
+        s_query = queries['scheduled']['default'].format(**s_attr_sql_map, table_name=queries['scheduled']['table'])
         # grab cursors and execute queries
         a_cursor = self.connections['actual_read_conn'].cursor()
         s_cursor = self.connections['scheduled_read_conn'].cursor()
