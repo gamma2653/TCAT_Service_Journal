@@ -266,7 +266,7 @@ class Connection:
                 date_key = data['date'].strftime(to_date_format)
                 if data['date'] not in schedule:
                     schedule[date_key] = {}
-                date_value = data[date_key]
+                date_value = schedule[date_key]
                 if data['block_number'] not in date_value:
                     date_value['block_number'] = {}
                 block = date_value['block_number']
