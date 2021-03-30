@@ -180,21 +180,30 @@ class Connection:
         """
         # a_xxx refers to "actuals xxx" and s_xxx refers to "scheduled xxx"
         logger.info('Reading from connections.')
+
         # Grab mappings for actuals and scheduled fields
-        a_sql_attr_map, s_sql_attr_map = self.sql_attr_map['actual'], self.sql_attr_map['scheduled']
-        a_attr_sql_map = {k: v['name'] for k, v in self.attr_sql_map['actual'].items()}
-        s_attr_sql_map = {k: v['name'] for k, v in self.attr_sql_map['scheduled'].items()}
+        def pull_out_name(d):
+            return {k: v['name'] for k, v in d.items()}
+
+        a_sql_attr_map = pull_out_name(self.sql_attr_map['actual'])
+        s_sql_attr_map = pull_out_name(self.sql_attr_map['scheduled'])
+        a_attr_sql_map = pull_out_name(self.attr_sql_map['actual'].items())
+        s_attr_sql_map = pull_out_name(self.attr_sql_map['scheduled'].items())
+
         # grab and format queries
         queries = self.config['settings']['queries']
         logger.debug('a_attr_sql_map: %s', a_attr_sql_map)
         a_query = queries['actual']['default'].format(**a_attr_sql_map, table_name=queries['actual']['table'])
         s_query = queries['scheduled']['default'].format(**s_attr_sql_map, table_name=queries['scheduled']['table'])
+
         # grab cursors and execute queries
         a_cursor = self.connections['actual_read_conn'].cursor()
         s_cursor = self.connections['scheduled_read_conn'].cursor()
+
         # Execute queries
         a_cursor.execute(a_query, date_)
         s_cursor.execute(s_query, date_)
+
         # Get column names based on query results
         # This protects against queries that do not have all the attributes, and makes packaging the data easier
         a_attr_col_names = [a_sql_attr_map[col[0]] for col in a_cursor.description]
@@ -202,6 +211,7 @@ class Connection:
         del a_attr_sql_map, s_attr_sql_map
 
         to_date_format = '%Y-%m-%d'
+
         # Format dictates dictionary structure to generate
         if format_ is DataFormat.RTBD:
             avl_dict = {}
