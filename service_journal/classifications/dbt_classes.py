@@ -87,7 +87,7 @@ class Journal:
                         scheduled_stops = day_schedule[report['block_number']][report['trip_number']]['stops']
                         if report['stop_id'] == 0:
                             # Time to infer what happened! Magic time.
-                            bus, trip, lat, lon = report['bus'], report['trip_number'], report['lat'], report['lon']
+                            trip, lat, lon = report['trip_number'], report['lat'], report['lon']
 
                         # We saw the stop, and know we got there via Avail
                         elif report['stop_id'] in scheduled_stops:
