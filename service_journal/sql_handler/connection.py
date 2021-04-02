@@ -263,6 +263,7 @@ class Connection:
             logger.debug('s_attr_col_names: %s', s_attr_col_names)
             while row:
                 data = dict(zip(s_attr_col_names, row))
+                logger.debug('schedule data: %s', data)
                 date_key = data['date'].strftime(to_date_format)
                 if data['date'] not in schedule:
                     schedule[date_key] = {}

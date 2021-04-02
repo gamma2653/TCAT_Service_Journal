@@ -76,7 +76,9 @@ class Journal:
         Freshly processed the data in self.schedule and self.avl_dict and updates the schedule's internal book-keeping
         values.
         """
+        logger.debug('Processing.\nSchedule: %s\nActuals: %s', self.schedule, self.avl_dict)
         for date_, day_actual in self.avl_dict.items():
+            logger.debug('Getting info for: %s', date_)
             day_schedule = self.schedule[date_]
 
             for bus, bus_data in day_actual.items():
