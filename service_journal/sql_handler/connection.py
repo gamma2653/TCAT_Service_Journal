@@ -263,7 +263,6 @@ class Connection:
             logger.debug('s_attr_col_names: %s', s_attr_col_names)
             while row:
                 data = dict(zip(s_attr_col_names, row))
-                logger.debug('schedule data: %s', data)
                 date_key = data['date'].strftime(to_date_format)
                 if data['date'] not in schedule:
                     schedule[date_key] = {}
@@ -331,6 +330,8 @@ class Connection:
                 del data
                 row = a_cursor.fetchone()
             logger.info('Done reading from connection.')
+            logger.debug(
+                'Returning values with these keys.\nschedule=%s\navl_dict=%s', schedule.keys(), avl_dict.keys())
             return schedule, avl_dict
         else:
             return
