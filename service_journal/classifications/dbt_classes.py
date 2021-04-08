@@ -120,6 +120,7 @@ class Journal:
                             stop['confidence_score'] = sum(stop['confidence_factors'])/stop['seen']
                         else:
                             stop['confidence_score'] = 0
+    
     def write(self):
         self.connection.write(self.schedule, self.avl_dict)
 
