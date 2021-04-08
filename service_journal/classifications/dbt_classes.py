@@ -117,5 +117,5 @@ class Journal:
                         else:
                             stop['confidence_score'] = 0
     def write(self):
-        pass
+        self.connection.write(self.schedule, self.avl_dict)
 

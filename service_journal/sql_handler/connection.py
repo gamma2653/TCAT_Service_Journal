@@ -5,6 +5,7 @@ from enum import Enum
 from datetime import date
 
 from service_journal.gen_utils.debug import get_default_logger
+from service_journal.gen_utils.class_utils import pull_out_name
 
 logger = get_default_logger(__name__)
 
@@ -142,21 +143,24 @@ class Connection:
         """
         logger.info('Loading stop locations.')
         queries = self.config['settings']['queries']
-        # grab query string
-        query = queries['stop_locations']['static']
-        self.stop_locations = {}
+        self.stop_locations = stop_locations = {}
         # Grab cursor object
         cursor = self.connections['stop_locations_conn'].cursor()
+        stop_attr_sql_map = pull_out_name(self.attr_sql_map['stop_locations'])
+        stop_sql_attr_map = pull_out_name(self.sql_attr_map['stop_locations'])
         # Execute query
-        cursor.execute(query)
+        cursor.execute(queries['stop_locations']['default'].format(**stop_attr_sql_map))
         # Grab first row from result
         row = cursor.fetchone()
 
         # get attr_names for each column for abstraction
-        attr_col_names = [self.sql_attr_map['stop_locations'][col[0]]['name'] for col in cursor.description]
+        attr_col_names = [stop_sql_attr_map[col[0]] for col in cursor.description]
         while row:
             data = dict(zip(attr_col_names, row))
-            self.stop_locations[data['stop_num']] = (data['latitude'], data['longitude'])
+            if data['stop_num'] in stop_locations:
+                logger.warning('Overriding stop_num %s, why is there a duplicate?\nOld: %s New: %s', data['stop_num'],
+                               stop_locations[data['stop_num']], (data['latitude'], data['longitude']))
+            stop_locations[data['stop_num']] = (data['latitude'], data['longitude'])
             row = cursor.fetchone()
         logger.info('Stop locations loaded.')
 
@@ -182,9 +186,6 @@ class Connection:
         logger.info('Reading from connections.')
 
         # Grab mappings for actuals and scheduled fields
-        def pull_out_name(d):
-            return {k: v['name'] for k, v in d.items()}
-
         a_sql_attr_map = pull_out_name(self.sql_attr_map['actual'])
         s_sql_attr_map = pull_out_name(self.sql_attr_map['scheduled'])
         a_attr_sql_map = pull_out_name(self.attr_sql_map['actual'])
@@ -332,14 +333,26 @@ class Connection:
             logger.info('Done reading from connection.')
             return schedule, avl_dict
         else:
-            return
+            return {}
 
     def write(self, data_map):
+        """
+        Writes the data from data_map to the table.
+        """
         logger.info('Starting to write to connection source.')
         queries = self.config['settings']['queries']
         cursor = self.connections['write_conn'].cursor()
         output_map = {k: v['name'] for k, v in self.attr_sql_map['output'].items()}
-        cursor.execute(queries['output']['static'].format(**output_map))
+
+        # Wish I could unpack using "*" the values of data_map, but order becomes an issue.
+        def unpack(ordering_, data_map_):
+            return [data_map_[i] for i in ordering_]
+
+        # TODO: This is NOT DRY, refactor later.
+        ordering = ['date', 'bus', 'report_time', 'dir', 'route', 'block_number', 'trip_number', 'operator', 'boards',
+                    'boards', 'alights', 'onboard', 'stop', 'stop_name', 'sched_time', 'seen', 'confidence_score']
+        # format replaces attribute names with sql names, and unpack fills the ?'s with values.
+        cursor.execute(queries['output']['default'].format(**output_map, table_name=queries['output']['table']),
+                       *unpack(ordering, data_map))
         logger.info('Finished writing to connection source.')
 
-    # data_to_write = [ for  ]
