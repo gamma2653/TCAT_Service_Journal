@@ -265,21 +265,21 @@ class Connection:
             while row:
                 data = dict(zip(s_attr_col_names, row))
                 date_key = data['date'].strftime(to_date_format)
-                if data['date'] not in schedule:
+                if date_key not in schedule:
                     schedule[date_key] = {}
                 date_value = schedule[date_key]
                 if data['block_number'] not in date_value:
-                    date_value['block_number'] = {}
-                block = date_value['block_number']
+                    date_value[data['block_number']] = {}
+                block = date_value[data['block_number']]
                 if data['trip_number'] not in block:
-                    block['trip_number'] = {
+                    block[data['trip_number']] = {
                         'route': data['route'],
                         'stops': {},
                         'seq_tracker': 0,
                     }
-                trip = block['trip_number']
+                trip = block[data['trip_number']]
                 if data['stop'] is None or data['stop'] == '0':
-                    print('Got a 0 or NULL stop id')
+                    logger.warning('Got a 0 or NULL stop id in the schedule!')
                 if data['stop'] not in trip['stops']:
                     trip['stops'][data['stop']] = {
                         'sched_time': data['sched_time'],
@@ -303,7 +303,7 @@ class Connection:
                 # have to be changed in config.
                 data = dict(zip(a_attr_col_names, row))
                 date_key = data['date'].strftime(to_date_format)
-                if data['date'] not in avl_dict:
+                if date_key not in avl_dict:
                     avl_dict[date_key] = {}
                 date_value = avl_dict[date_key]
                 if data['bus'] not in date_value:
@@ -331,6 +331,8 @@ class Connection:
                 del data
                 row = a_cursor.fetchone()
             logger.info('Done reading from connection.')
+            logger.debug(
+                'Returning values with these keys.\nschedule=%s\navl_dict=%s', schedule.keys(), avl_dict.keys())
             return schedule, avl_dict
         else:
             return {}

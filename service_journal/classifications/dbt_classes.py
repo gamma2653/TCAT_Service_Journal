@@ -76,7 +76,9 @@ class Journal:
         Freshly processed the data in self.schedule and self.avl_dict and updates the schedule's internal book-keeping
         values.
         """
+        logger.debug('Processing.\nSchedule: %s\nActuals: %s', self.schedule, self.avl_dict)
         for date_, day_actual in self.avl_dict.items():
+            logger.debug('Getting info for: %s', date_)
             day_schedule = self.schedule[date_]
 
             for bus, bus_data in day_actual.items():
@@ -85,7 +87,7 @@ class Journal:
                         scheduled_stops = day_schedule[report['block_number']][report['trip_number']]['stops']
                         if report['stop_id'] == 0:
                             # Time to infer what happened! Magic time.
-                            bus, trip, lat, lon = report['bus'], report['trip_number'], report['lat'], report['lon']
+                            trip, lat, lon = report['trip_number'], report['lat'], report['lon']
 
                         # We saw the stop, and know we got there via Avail
                         elif report['stop_id'] in scheduled_stops:
@@ -94,7 +96,9 @@ class Journal:
                             # TODO: Check to see if going backwards
                             # day_schedule[report['block_number']][report['trip_number']]['seq_tracker'] =
                         else:
-                            logger.warning('Stop not in schedule, what happened?\nStop_ID: %s', report['stop_id'])
+                            logger.warning('Stop not in schedule, what happened?\nStop_ID: %s\nBlock: %s\nTrip: %s\n'
+                                           'Day: %s', report['stop_id'], report['block_number'], report['trip_number'],
+                                           date_)
 
                     except KeyError as e:
                         logger.error('Key does not exist in scheduled_stops. These are the keys:\n'
