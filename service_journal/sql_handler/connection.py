@@ -310,24 +310,29 @@ class Connection:
                     date_value[data['bus']] = {}
                 bus = date_value[data['bus']]
                 if data['trigger_time'] in bus:
-                    logger.warning('The same trigger time (%s) was found twice for the same bus.'
-                                   'Highly uncommon occurrence', data['trigger_time'])
-                # Definition of a report
-                bus[data['trigger_time']] = {
-                    'lat': data['latitude'],
-                    'lon': data['longitude'],
-                    'dir': data['direction'],
-                    'operator': data['operator'],
-                    'depart': data['actual_time'],
-                    'boards': data['boards'],
-                    'alights': data['alights'],
-                    'onboard': data['onboard'],
-                    'stop_id': data['stop'],
-                    'name': data['name'],
-                    'block_number': data['block_number'],
-                    'route': data['route'],
-                    'trip_number': data['trip_number'],
-                }
+                    # Mid-swapping routes
+                    node = bus[data['trigger_time']]
+                    node['route'].add(data['route'])
+                    node['boards'] += data['boards']
+                    node['alights'] += data['alights']
+                    node['onboard'] = max(node['onboard'], data['onboard'])
+                else:
+                    # Definition of a report
+                    bus[data['trigger_time']] = {
+                        'lat': data['latitude'],
+                        'lon': data['longitude'],
+                        'dir': data['direction'],
+                        'operator': data['operator'],
+                        'depart': data['actual_time'],
+                        'boards': data['boards'],
+                        'alights': data['alights'],
+                        'onboard': data['onboard'],
+                        'stop_id': data['stop'],
+                        'name': data['name'],
+                        'block_number': data['block_number'],
+                        'route': set(),
+                        'trip_number': data['trip_number'],
+                    }
                 del data
                 row = a_cursor.fetchone()
             logger.info('Done reading from connection.')
