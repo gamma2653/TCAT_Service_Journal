@@ -7,6 +7,7 @@ from datetime import date
 from service_journal.gen_utils.debug import get_default_logger
 from service_journal.gen_utils.class_utils import pull_out_name, write_ordering, unpack
 
+from pyodbc import ProgrammingError
 logger = get_default_logger(__name__)
 
 
@@ -383,10 +384,13 @@ class Connection:
         # Solved by using write_ordering.
         # TODO: This is NOT DRY, refactor later.
         # format replaces attribute names with sql names, and unpack fills the ?'s with values.
-        cursor.execute(
-            query.format(**output_map, table_name=table_name),
-            *unpack(write_ordering, data_map)
-        )
+        final_query = query.format(**output_map, table_name=table_name)
+        final_params = unpack(write_ordering, data_map)
+        try:
+            cursor.execute(final_query, *final_params)
+        except ProgrammingError as exc:
+            logger.error('Failed to write.\nQuery:\n%s\nParams:\n%s', final_query, final_params)
+            raise exc
         logger.debug('Finished writing a record to connection source.')
         if autocommit:
             self.commit()
