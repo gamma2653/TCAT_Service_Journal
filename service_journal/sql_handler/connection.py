@@ -251,7 +251,8 @@ class Connection:
                     'seen': 0,
                     'bus': None,
                     'confidence_score': 0,
-                    'confidence_factors': []
+                    'confidence_factors': [],
+                    'trigger_time': None
                     # 'direction': data['direction'],
                 }
             del data
