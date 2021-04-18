@@ -22,8 +22,8 @@ default_log_level = read_level_from_args()
 print(f'Default log level set to: {default_log_level}')
 
 
-def get_default_logger(name, format__=format_, filepath='./output.log'):
-    logger = logging.getLogger(name)
+def get_default_logger(name, format__=format_, filepath='./output.log', truncate_name: bool = True):
+    logger = logging.getLogger(name.split('.')[-1] if truncate_name else name)
     logger.setLevel(default_log_level)
 
     ch = logging.StreamHandler()
