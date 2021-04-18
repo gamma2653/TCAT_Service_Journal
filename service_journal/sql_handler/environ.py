@@ -9,9 +9,9 @@ default_config = {
         'username': '',
         'password': '',
         'port': None,
-        '__comment': 'Warning: Stored passwords are unencrypted. For testing purposes only',
+        '_comment': 'Warning: Stored passwords are unencrypted. For testing purposes only',
         'attr_sql_map': {
-            'actual': {
+            'actuals': {
                 'date': {
                     'name': 'service_day',
                     'view': 'v_vehicle_history',
@@ -241,7 +241,7 @@ default_config = {
             }
         },
         'queries': {
-            'actual': {
+            'actuals': {
                 'default': 'SELECT {date}, {block_number}, {trip_number}, {bus}, {trigger_time}, {operator}, '
                            '{actual_time}, {route}, {direction}, {stop}, {name}, {boards}, {alights}, {onboard}, '
                            '{op_status}, {latitude}, {longitude} FROM {table_name} WHERE {date}=? ORDER '

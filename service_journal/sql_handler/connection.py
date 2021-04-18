@@ -1,11 +1,11 @@
-from typing import Dict, Optional, Tuple, Mapping, Set, Union
+from typing import Dict, Optional, Tuple, Mapping, Set, Union, Iterable
 from numbers import Number
 import pyodbc
 from enum import Enum
 from datetime import date
 
 from service_journal.gen_utils.debug import get_default_logger
-from service_journal.gen_utils.class_utils import pull_out_name
+from service_journal.gen_utils.class_utils import pull_out_name, write_ordering, unpack
 
 logger = get_default_logger(__name__)
 
@@ -61,9 +61,9 @@ class Connection:
         self.sql_attr_map = sql_attr_map
 
         self.connections = {
-            'actual_read_conn': None,
-            'scheduled_read_conn': None,
-            'write_conn': None,
+            'actuals_conn': None,
+            'scheduled_conn': None,
+            'output_conn': None,
             'stop_locations_conn': None
         }
 
@@ -130,9 +130,9 @@ class Connection:
         # views_tables = self.attr_sql_map['views_tables']
         logger.info('Opening connections.')
         self.connections = {
-            'actual_read_conn': self._connect('actual'),
-            'scheduled_read_conn': self._connect('scheduled'),
-            'write_conn': self._connect('output'),
+            'actuals_conn': self._connect('actuals'),
+            'scheduled_conn': self._connect('scheduled'),
+            'output_conn': self._connect('output'),
             'stop_locations_conn': self._connect('stop_locations')
         }
         logger.info('Connections opened.')
@@ -171,6 +171,135 @@ class Connection:
     def __exit__(self, exception_type, exception_value, traceback):
         self.close()
 
+    @staticmethod
+    def _read_rtbd(a_cursor, a_attr_col_names, format_, to_date_format):
+        avl_dict = {}
+        row = a_cursor.fetchone()
+        logger.debug('Loading actuals in %(format)s', format=format_)
+        while row:
+            # standardizes references to columns so changes to database only
+            # have to be changed in config.
+            data = dict(zip(a_attr_col_names, row))
+            if data['route'] not in avl_dict:
+                avl_dict[data['route']] = {}
+            route = avl_dict[data['route']]
+            if data['trip_number'] not in route:
+                route[data['trip_number']] = {}
+            trip = route[data['trip_number']]
+            if data['block_number'] not in trip:
+                trip[data['block_number']] = {}
+            block = trip[data['block_number']]
+            # Convert date format
+            date_key = data['date'].strftime(to_date_format)
+            if date_key not in block:
+                block[date_key] = []
+            stops = block[date_key]
+            stops.append({
+                'time': data['trigger_time'],
+                'lat': data['latitude'],
+                'lon': data['longitude'],
+                'dir': data['direction'],
+                'bus': data['bus'],
+                'operator': data['operator'],
+                'depart': data['actual_time'],
+                'boards': data['boards'],
+                'alights': data['alights'],
+                'onboard': data['onboard'],
+                'date_time': data['trigger_time'],
+                'stop_id': data['stop'],
+                # TODO: Currently no SQL record for 'day', ask Tom
+                'day': None
+            })
+            del data
+            row = a_cursor.fetchone()
+        return avl_dict
+
+    @staticmethod
+    def _read_dbt(cursors, col_names, format_, to_date_format):
+        a_cursor, s_cursor = cursors
+        a_attr_col_names, s_attr_col_names = col_names
+        logger.info('Loading schedule in %s', format_)
+        logger.debug('s_attr_col_names: %s', s_attr_col_names)
+
+        schedule = {}
+        row = s_cursor.fetchone()
+        while row:
+            # standardizes references to columns so changes to database only
+            # have to be changed in config.
+            data = dict(zip(s_attr_col_names, row))
+            date_key = data['date'].strftime(to_date_format)
+            if date_key not in schedule:
+                schedule[date_key] = {}
+            date_value = schedule[date_key]
+            if data['block_number'] not in date_value:
+                date_value[data['block_number']] = {}
+            block = date_value[data['block_number']]
+            if data['trip_number'] not in block:
+                block[data['trip_number']] = {
+                    'route': data['route'],
+                    'stops': {},
+                    'seq_tracker': 0,
+                }
+            trip = block[data['trip_number']]
+            if data['stop'] is None or data['stop'] == '0':
+                logger.warning('Got a 0 or NULL stop id in the schedule!')
+            if data['stop'] not in trip['stops']:
+                trip['stops'][data['stop']] = {
+                    'sched_time': data['sched_time'],
+                    'direction': data['direction'],
+                    'seen': 0,
+                    'bus': None,
+                    'confidence_score': 0,
+                    'confidence_factors': []
+                    # 'direction': data['direction'],
+                }
+            del data
+            row = s_cursor.fetchone()
+
+        logger.debug('Loading actuals in %s', format_)
+        avl_dict = {}
+        row = a_cursor.fetchone()
+        while row:
+            data = dict(zip(a_attr_col_names, row))
+            date_key = data['date'].strftime(to_date_format)
+            if date_key not in avl_dict:
+                avl_dict[date_key] = {}
+            date_value = avl_dict[date_key]
+            if data['bus'] not in date_value:
+                date_value[data['bus']] = {}
+            bus = date_value[data['bus']]
+            if data['trigger_time'] in bus:
+                # Mid-swapping routes
+                # TODO: Idk if this is ok or not. Check with Tom later.
+                trigger_time_v = bus[data['trigger_time']]
+                trigger_time_v['route'].add(data['route'])
+                trigger_time_v['boards'] += data['boards']
+                trigger_time_v['alights'] += data['alights']
+                trigger_time_v['onboard'] = max(trigger_time_v['onboard'], data['onboard'])
+            else:
+                # Define a report
+                bus[data['trigger_time']] = {
+                    'lat': data['latitude'],
+                    'lon': data['longitude'],
+                    'dir': data['direction'],
+                    'operator': data['operator'],
+                    'depart': data['actual_time'],
+                    'boards': data['boards'],
+                    'alights': data['alights'],
+                    'onboard': data['onboard'],
+                    'stop_id': data['stop'],
+                    'name': data['name'],
+                    'block_number': data['block_number'],
+                    'route': {data['route']},
+                    'trip_number': data['trip_number'],
+                }
+            del data
+            row = a_cursor.fetchone()
+        logger.info('Done reading from connection.')
+        logger.debug(
+            'Returning values with these keys.\nschedule=%s\navl_dict=%s', schedule.keys(), avl_dict.keys())
+        return schedule, avl_dict
+
     def read(self, date_: date, format_: DataFormat = DataFormat.DBT) -> Union[Tuple[Mapping, Mapping], Mapping]:
         """
         Read from the Connection the given date_ and store in the given format_.
@@ -186,20 +315,20 @@ class Connection:
         logger.info('Reading from connections.')
 
         # Grab mappings for actuals and scheduled fields
-        a_sql_attr_map = pull_out_name(self.sql_attr_map['actual'])
+        a_sql_attr_map = pull_out_name(self.sql_attr_map['actuals'])
         s_sql_attr_map = pull_out_name(self.sql_attr_map['scheduled'])
-        a_attr_sql_map = pull_out_name(self.attr_sql_map['actual'])
+        a_attr_sql_map = pull_out_name(self.attr_sql_map['actuals'])
         s_attr_sql_map = pull_out_name(self.attr_sql_map['scheduled'])
 
         # grab and format queries
         queries = self.config['settings']['queries']
         logger.debug('a_attr_sql_map: %s', a_attr_sql_map)
-        a_query = queries['actual']['default'].format(**a_attr_sql_map, table_name=queries['actual']['table'])
+        a_query = queries['actuals']['default'].format(**a_attr_sql_map, table_name=queries['actuals']['table'])
         s_query = queries['scheduled']['default'].format(**s_attr_sql_map, table_name=queries['scheduled']['table'])
 
         # grab cursors and execute queries
-        a_cursor = self.connections['actual_read_conn'].cursor()
-        s_cursor = self.connections['scheduled_read_conn'].cursor()
+        a_cursor = self.connections['actuals_conn'].cursor()
+        s_cursor = self.connections['scheduled_conn'].cursor()
 
         # Execute queries
         a_cursor.execute(a_query, date_)
@@ -215,151 +344,65 @@ class Connection:
 
         # Format dictates dictionary structure to generate
         if format_ is DataFormat.RTBD:
-            avl_dict = {}
-            row = a_cursor.fetchone()
-            logger.debug('Loading actuals in %(format)s', format=format_)
-            while row:
-                # standardizes references to columns so changes to database only
-                # have to be changed in config.
-                data = dict(zip(a_attr_col_names, row))
-                if data['route'] not in avl_dict:
-                    avl_dict[data['route']] = {}
-                route = avl_dict[data['route']]
-                if data['trip_number'] not in route:
-                    route[data['trip_number']] = {}
-                trip = route[data['trip_number']]
-                if data['block_number'] not in trip:
-                    trip[data['block_number']] = {}
-                block = trip[data['block_number']]
-                # Convert date format
-                date_key = data['date'].strftime(to_date_format)
-                if date_key not in block:
-                    block[date_key] = []
-                stops = block[date_key]
-                stops.append({
-                    'time': data['trigger_time'],
-                    'lat': data['latitude'],
-                    'lon': data['longitude'],
-                    'dir': data['direction'],
-                    'bus': data['bus'],
-                    'operator': data['operator'],
-                    'depart': data['actual_time'],
-                    'boards': data['boards'],
-                    'alights': data['alights'],
-                    'onboard': data['onboard'],
-                    'date_time': data['trigger_time'],
-                    'stop_id': data['stop'],
-                    # TODO: Currently no SQL record for 'day', ask Tom
-                    'day': None
-                })
-                del data
-                row = a_cursor.fetchone()
-
-            return avl_dict
+            return self._read_rtbd(a_cursor, a_attr_col_names, format_, to_date_format)
         elif format_ is DataFormat.DBT:
-            # Load schedule
-            schedule = {}
-            row = s_cursor.fetchone()
-            logger.debug('Loading schedule in %s', format_)
-            logger.debug('s_attr_col_names: %s', s_attr_col_names)
-            while row:
-                data = dict(zip(s_attr_col_names, row))
-                date_key = data['date'].strftime(to_date_format)
-                if date_key not in schedule:
-                    schedule[date_key] = {}
-                date_value = schedule[date_key]
-                if data['block_number'] not in date_value:
-                    date_value[data['block_number']] = {}
-                block = date_value[data['block_number']]
-                if data['trip_number'] not in block:
-                    block[data['trip_number']] = {
-                        'route': data['route'],
-                        'stops': {},
-                        'seq_tracker': 0,
-                    }
-                trip = block[data['trip_number']]
-                if data['stop'] is None or data['stop'] == '0':
-                    logger.warning('Got a 0 or NULL stop id in the schedule!')
-                if data['stop'] not in trip['stops']:
-                    trip['stops'][data['stop']] = {
-                        'sched_time': data['sched_time'],
-                        'direction': data['direction'],
-                        'seen': 0,
-                        'bus': None,
-                        'confidence_score': 0,
-                        'confidence_factors': []
-                        # 'direction': data['direction'],
-                    }
-                del data
-                row = s_cursor.fetchone()
-
-            # Load in actuals
-            avl_dict = {}
-            row = a_cursor.fetchone()
-            logger.debug('Loading actuals in %s', format_)
-            while row:
-
-                # standardizes references to columns so changes to database only
-                # have to be changed in config.
-                data = dict(zip(a_attr_col_names, row))
-                date_key = data['date'].strftime(to_date_format)
-                if date_key not in avl_dict:
-                    avl_dict[date_key] = {}
-                date_value = avl_dict[date_key]
-                if data['bus'] not in date_value:
-                    date_value[data['bus']] = {}
-                bus = date_value[data['bus']]
-                if data['trigger_time'] in bus:
-                    # Mid-swapping routes
-                    node = bus[data['trigger_time']]
-                    node['route'].add(data['route'])
-                    node['boards'] += data['boards']
-                    node['alights'] += data['alights']
-                    node['onboard'] = max(node['onboard'], data['onboard'])
-                else:
-                    # Definition of a report
-                    bus[data['trigger_time']] = {
-                        'lat': data['latitude'],
-                        'lon': data['longitude'],
-                        'dir': data['direction'],
-                        'operator': data['operator'],
-                        'depart': data['actual_time'],
-                        'boards': data['boards'],
-                        'alights': data['alights'],
-                        'onboard': data['onboard'],
-                        'stop_id': data['stop'],
-                        'name': data['name'],
-                        'block_number': data['block_number'],
-                        'route': set(),
-                        'trip_number': data['trip_number'],
-                    }
-                del data
-                row = a_cursor.fetchone()
-            logger.info('Done reading from connection.')
-            logger.debug(
-                'Returning values with these keys.\nschedule=%s\navl_dict=%s', schedule.keys(), avl_dict.keys())
-            return schedule, avl_dict
+            return self._read_dbt((a_cursor, s_cursor), (a_attr_col_names, s_attr_col_names), format_, to_date_format)
         else:
             return {}
 
-    def write(self, data_map):
+    def write(self, data_map: Mapping, autocommit: bool = False):
         """
         Writes the data from data_map to the table.
+
+        PARAMETERS
+        --------
+        data_map
+            A mapping of attribute names to the values to be written to the table.
+        autocommit
+            Tells the function whether to commit changes after completing execution.
         """
-        logger.info('Starting to write to connection source.')
-        queries = self.config['settings']['queries']
-        cursor = self.connections['write_conn'].cursor()
-        output_map = {k: v['name'] for k, v in self.attr_sql_map['output'].items()}
+        logger.debug('Starting to write a record to connection source.')
+        queries = self.config['settings']['queries']['output']
+        query = queries['default']
+        table_name = queries['table']
+        cursor = self.connections['output_conn'].cursor()
+        output_map = pull_out_name(self.attr_sql_map['output'])
+        # TODO: Get all above data from function call. Repeated in read.
 
         # Wish I could unpack using "*" the values of data_map, but order becomes an issue.
-        def unpack(ordering_, data_map_):
-            return [data_map_[i] for i in ordering_]
-
+        # Solved by using write_ordering.
         # TODO: This is NOT DRY, refactor later.
-        ordering = ['date', 'bus', 'report_time', 'dir', 'route', 'block_number', 'trip_number', 'operator', 'boards',
-                    'boards', 'alights', 'onboard', 'stop', 'stop_name', 'sched_time', 'seen', 'confidence_score']
         # format replaces attribute names with sql names, and unpack fills the ?'s with values.
-        cursor.execute(queries['output']['default'].format(**output_map, table_name=queries['output']['table']),
-                       *unpack(ordering, data_map))
-        logger.info('Finished writing to connection source.')
+        cursor.execute(
+            query.format(**output_map, table_name=table_name),
+            *unpack(write_ordering, data_map)
+        )
+        logger.debug('Finished writing a record to connection source.')
+        if autocommit:
+            self.commit()
 
+    def write_many(self, data_maps: Iterable[Mapping], autocommit: bool = True):
+        """
+        Writes a list of record mappings to the table.
+
+        PARAMETERS
+        --------
+        data_maps
+            The mappings to write to the table.
+        autocommit
+            If true, commits after writing all the changes. True by default.
+        """
+        logger.info('Writing many changes to output database.')
+        for data_map in data_maps:
+            self.write(data_map)
+        if autocommit:
+            self.commit()
+        logger.info('Finished writing many changes to output database.')
+
+    def commit(self):
+        """
+        Commits changes to the output database.
+        """
+        logger.debug('Committing written changes.')
+        self.connections['output_conn'].commit()
+        logger.debug('Changes committed.')

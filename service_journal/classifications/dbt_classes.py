@@ -120,7 +120,32 @@ class Journal:
                             stop['confidence_score'] = sum(stop['confidence_factors'])/stop['seen']
                         else:
                             stop['confidence_score'] = 0
-    
-    def write(self):
-        self.connection.write(self.schedule, self.avl_dict)
 
+    def write(self):
+        logger.info('Beginning to write data.')
+        for date_, day_schedule in self.schedule.items():
+            for block_number, block in day_schedule.items():
+                for trip_number, trip in block.items():
+                    stops = trip['stops']
+                    for stop_id, stop in stops.items():
+                        for route in stop['route']:
+                            self.connection.write({
+                                'date': date_,
+                                'bus': stop['bus'],
+                                'report_time': stop['trigger_time'],
+                                'dir': stop['direction'],
+                                'route': route,
+                                'block_number': block_number,
+                                'trip_number': trip_number,
+                                'operator': stop['operator'],
+                                'boards': stop['boards'],
+                                'alights': stop['alights'],
+                                'onboard': stop['onboard'],
+                                'stop': stop_id,
+                                'stop_name': stop['name'],
+                                'sched_time': stop['sched_time'],
+                                'seen': stop['seen'],
+                                'confidence_score': stop['confidence_score']
+                            }, autocommit=False)
+        self.connection.commit()
+        logger.info('Finished writing data.')
