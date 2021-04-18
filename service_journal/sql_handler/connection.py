@@ -252,6 +252,7 @@ class Connection:
                     'bus': None,
                     'confidence_score': 0,
                     'confidence_factors': [],
+                    'operator': None,
                     'trigger_time': None
                     # 'direction': data['direction'],
                 }

@@ -100,7 +100,8 @@ class Journal:
                         elif report['stop_id'] in scheduled_stops:
                             scheduled_stops[report['stop_id']]['seen'] += 1
                             scheduled_stops[report['stop_id']]['confidence_factors'].append(100)
-                            scheduled_stops[report['stop_id']]['trigger_time'] = time_
+                            scheduled_stops[report['stop_id']]['trigger_time'] = time_,
+                            scheduled_stops[report['stop_id']]['operator'] = report['operator']
                             # TODO: Check to see if going backwards
                             # day_schedule[report['block_number']][report['trip_number']]['seq_tracker'] =
                         else:
@@ -144,7 +145,7 @@ class Journal:
                             'route': trip['route'],
                             'block_number': block_number,
                             'trip_number': trip_number,
-                            'operator': trip['operator'],
+                            'operator': stop['operator'],
                             'boards': stop['boards'],
                             'alights': stop['alights'],
                             'onboard': stop['onboard'],
