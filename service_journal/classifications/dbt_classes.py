@@ -110,8 +110,8 @@ class Journal:
 
                     except KeyError as e:
                         logger.error('Key does not exist in scheduled_stops. These are the keys:\n'
-                                     'block_number=%s\ntrip_number=%s\nError:\n%s', report['block_number'],
-                                     report['trip_number'], e)
+                                     'block_number=%s\ntrip_number=%s\nKeys in report: %s\nError:\n%s',
+                                     report['block_number'], report['trip_number'], report.keys(), e)
                         logger.debug('day_schedule: %s', day_schedule)
 
     def post_process(self) -> None:
