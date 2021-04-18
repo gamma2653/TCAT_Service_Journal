@@ -98,10 +98,16 @@ class Journal:
 
                         # We saw the stop, and know we got there via Avail
                         elif report['stop_id'] in scheduled_stops:
-                            scheduled_stops[report['stop_id']]['seen'] += 1
-                            scheduled_stops[report['stop_id']]['confidence_factors'].append(100)
-                            scheduled_stops[report['stop_id']]['trigger_time'] = time_,
-                            scheduled_stops[report['stop_id']]['operator'] = report['operator']
+                            stop_id = report['stop_id']
+                            scheduled_stops[stop_id]['seen'] += 1
+                            scheduled_stops[stop_id]['confidence_factors'].append(100)
+                            scheduled_stops[stop_id]['trigger_time'] = time_,
+                            scheduled_stops[stop_id]['operator'] = report['operator']
+                            scheduled_stops[stop_id]['boards'] += report['boards']
+                            scheduled_stops[stop_id]['alights'] += report['alights']
+                            original_onboard = scheduled_stops[stop_id]['onboard']
+                            scheduled_stops[stop_id]['onboard'] = max(report['onboard'], original_onboard)
+
                             # TODO: Check to see if going backwards
                             # day_schedule[report['block_number']][report['trip_number']]['seq_tracker'] =
                         else:

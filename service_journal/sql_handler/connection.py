@@ -253,7 +253,12 @@ class Connection:
                     'confidence_score': 0,
                     'confidence_factors': [],
                     'operator': None,
-                    'trigger_time': None
+                    'trigger_time': None,
+                    'boards': 0,
+                    'alights': 0,
+                    'onboard': 0,
+                    'name': None
+                    # TODO: Remove name from output
                     # 'direction': data['direction'],
                 }
             del data
