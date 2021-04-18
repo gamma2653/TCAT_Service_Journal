@@ -144,7 +144,7 @@ class Journal:
                             'route': trip['route'],
                             'block_number': block_number,
                             'trip_number': trip_number,
-                            'operator': stop['operator'],
+                            'operator': trip['operator'],
                             'boards': stop['boards'],
                             'alights': stop['alights'],
                             'onboard': stop['onboard'],
