@@ -4,6 +4,7 @@ from typing import Iterable, Mapping
 
 from service_journal.sql_handler.connection import Connection
 from service_journal.gen_utils.debug import get_default_logger
+
 logger = get_default_logger(__name__)
 
 
@@ -86,8 +87,9 @@ class Journal:
                     try:
                         scheduled_stops = day_schedule[report['block_number']][report['trip_number']]['stops']
                         if report['stop_id'] == 0:
+                            pass
                             # Time to infer what happened! Magic time.
-                            trip, lat, lon = report['trip_number'], report['lat'], report['lon']
+                            # trip, lat, lon = report['trip_number'], report['lat'], report['lon']
 
                         # We saw the stop, and know we got there via Avail
                         elif report['stop_id'] in scheduled_stops:
@@ -117,7 +119,7 @@ class Journal:
                     stops = trip['stops']
                     for stop_id, stop in stops.items():
                         if stop['seen'] != 0:
-                            stop['confidence_score'] = sum(stop['confidence_factors'])/stop['seen']
+                            stop['confidence_score'] = sum(stop['confidence_factors']) / stop['seen']
                         else:
                             stop['confidence_score'] = 0
 
@@ -128,24 +130,23 @@ class Journal:
                 for trip_number, trip in block.items():
                     stops = trip['stops']
                     for stop_id, stop in stops.items():
-                        for route in stop['route']:
-                            self.connection.write({
-                                'date': date_,
-                                'bus': stop['bus'],
-                                'report_time': stop['trigger_time'],
-                                'dir': stop['direction'],
-                                'route': route,
-                                'block_number': block_number,
-                                'trip_number': trip_number,
-                                'operator': stop['operator'],
-                                'boards': stop['boards'],
-                                'alights': stop['alights'],
-                                'onboard': stop['onboard'],
-                                'stop': stop_id,
-                                'stop_name': stop['name'],
-                                'sched_time': stop['sched_time'],
-                                'seen': stop['seen'],
-                                'confidence_score': stop['confidence_score']
-                            }, autocommit=False)
+                        self.connection.write({
+                            'date': date_,
+                            'bus': stop['bus'],
+                            'report_time': stop['trigger_time'],
+                            'dir': stop['direction'],
+                            'route': trip['route'],
+                            'block_number': block_number,
+                            'trip_number': trip_number,
+                            'operator': stop['operator'],
+                            'boards': stop['boards'],
+                            'alights': stop['alights'],
+                            'onboard': stop['onboard'],
+                            'stop': stop_id,
+                            'stop_name': stop['name'],
+                            'sched_time': stop['sched_time'],
+                            'seen': stop['seen'],
+                            'confidence_score': stop['confidence_score']
+                        }, autocommit=False)
         self.connection.commit()
         logger.info('Finished writing data.')

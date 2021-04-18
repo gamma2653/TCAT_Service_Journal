@@ -237,6 +237,7 @@ class Connection:
             if data['trip_number'] not in block:
                 block[data['trip_number']] = {
                     'route': data['route'],
+                    # TODO: Check with Tom that a trip can only be one route.
                     'stops': {},
                     'seq_tracker': 0,
                 }
