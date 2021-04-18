@@ -50,6 +50,7 @@ class Journal:
 
     def open(self, config: Mapping = None):
         self.connection = Connection(config if config is not None else self.config)
+        self.connection.open()
 
     def close(self):
         self.connection.close()
