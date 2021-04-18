@@ -101,7 +101,7 @@ class Journal:
                             stop_id = report['stop_id']
                             scheduled_stops[stop_id]['seen'] += 1
                             scheduled_stops[stop_id]['confidence_factors'].append(100)
-                            scheduled_stops[stop_id]['trigger_time'] = time_,
+                            scheduled_stops[stop_id]['trigger_time'] = time_
                             scheduled_stops[stop_id]['operator'] = report['operator']
                             scheduled_stops[stop_id]['boards'] += report['boards']
                             scheduled_stops[stop_id]['alights'] += report['alights']
