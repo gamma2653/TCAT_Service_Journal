@@ -207,7 +207,7 @@ default_config = {
                     'nullable': True,
                 },
                 'sched_time': {
-                    'name': 'scheduled_time',
+                    'name': 'sched_time',
                     'view': '',
                     'nullable': True,
                 },
