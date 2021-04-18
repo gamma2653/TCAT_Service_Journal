@@ -149,7 +149,8 @@ class Connection:
         stop_attr_sql_map = pull_out_name(self.attr_sql_map['stop_locations'])
         stop_sql_attr_map = pull_out_name(self.sql_attr_map['stop_locations'])
         # Execute query
-        cursor.execute(queries['stop_locations']['default'].format(**stop_attr_sql_map))
+        cursor.execute(queries['stop_locations']['default'].format(**stop_attr_sql_map,
+                                                                   table_name=queries['stop_locations']['table_name']))
         # Grab first row from result
         row = cursor.fetchone()
 
@@ -331,8 +332,9 @@ class Connection:
         # grab and format queries
         queries = self.config['settings']['queries']
         logger.debug('a_attr_sql_map: %s', a_attr_sql_map)
-        a_query = queries['actuals']['default'].format(**a_attr_sql_map, table_name=queries['actuals']['table'])
-        s_query = queries['scheduled']['default'].format(**s_attr_sql_map, table_name=queries['scheduled']['table'])
+        a_query = queries['actuals']['default'].format(**a_attr_sql_map, table_name=queries['actuals']['table_name'])
+        s_query = queries['scheduled']['default'].format(
+            **s_attr_sql_map, table_name=queries['scheduled']['table_name'])
 
         # grab cursors and execute queries
         a_cursor = self.connections['actuals_conn'].cursor()
@@ -372,7 +374,7 @@ class Connection:
         logger.debug('Starting to write a record to connection source.')
         queries = self.config['settings']['queries']['output']
         query = queries['default']
-        table_name = queries['table']
+        table_name = queries['table_name']
         cursor = self.connections['output_conn'].cursor()
         output_map = pull_out_name(self.attr_sql_map['output'])
         # TODO: Get all above data from function call. Repeated in read.

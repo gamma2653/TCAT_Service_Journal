@@ -248,7 +248,7 @@ default_config = {
                            'BY {date}, {bus}, {trigger_time} asc',
                 'alternate': None,
                 'static': None,
-                'table': 'v_vehicle_history',
+                'table_name': 'v_vehicle_history',
                 'database': 'TA_ITHACA_ACTUAL_HISTORY',
             },
             'scheduled': {
@@ -256,23 +256,23 @@ default_config = {
                            '{sched_time} FROM {table_name} WHERE {date}=?',
                 'alternate': None,
                 'static': None,
-                'table': 'v_scheduled_stops',
+                'table_name': 'v_scheduled_stops',
                 'database': 'TA_ITHACA_SCHEDULE_HISTORY',
             },
             'output': {
-                'default': 'INSERT INTO {table} ({date}, {bus}, {report_time}, {dir}, {route}, {block_number}, '
+                'default': 'INSERT INTO {table_name} ({date}, {bus}, {report_time}, {dir}, {route}, {block_number}, '
                            '{trip_number}, {operator}, {boards}, {alights}, {onboard}, {stop}, {stop_name}, '
                            '{sched_time}, {seen}, {confidence_score}) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
                 'alternate': None,
                 'static': None,
-                'table': 'service_journal',
+                'table_name': 'service_journal',
                 'database': 'segments',
             },
             'stop_locations': {
-                'default': 'SELECT {stop}, {latitude}, {longitude} FROM {table}',
+                'default': 'SELECT {stop}, {latitude}, {longitude} FROM {table_name}',
                 'alternate': None,
                 'static': None,
-                'table': 'stops',
+                'table_name': 'stops',
                 'database': 'Utilities',
             }
         }
