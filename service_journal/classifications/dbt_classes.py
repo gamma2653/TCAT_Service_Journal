@@ -107,6 +107,7 @@ class Journal:
                             scheduled_stops[stop_id]['alights'] += report['alights']
                             original_onboard = scheduled_stops[stop_id]['onboard']
                             scheduled_stops[stop_id]['onboard'] = max(report['onboard'], original_onboard)
+                            scheduled_stops[stop_id]['bus'] = report['bus']
 
                             # TODO: Check to see if going backwards
                             # day_schedule[report['block_number']][report['trip_number']]['seq_tracker'] =

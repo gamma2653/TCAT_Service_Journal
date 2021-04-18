@@ -28,12 +28,14 @@ def run_days(dates_, config=None, hold_data=False):
 		if hold_data:
 			journal.read_days(date_range=date_range(from_date, to_date))
 			journal.process()
+			journal.post_process()
 			journal.write()
 		else:
 			for day in date_range(from_date, to_date):
 				journal.clear()
 				journal.read_day(day)
 				journal.process()
+				journal.post_process()
 				journal.write()
 
 
