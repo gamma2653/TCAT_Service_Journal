@@ -12,9 +12,9 @@ logger = get_default_logger(__name__)
 
 class DataFormat(Enum):
     # Date-Block/Bus-Trip
-    DBT: str = 'DBT'
+    DBT = 'DBT'
     # Route-Trip-Block-DateKey
-    RTBD: str = 'RTBD'
+    RTBD = 'RTBD'
 
 
 class Connection:

@@ -24,17 +24,15 @@ def run_days(dates_, config=None, hold_data=False):
 	d2 = int(_to[2].strip())
 	from_date = date(y1, m1, d1)
 	to_date = date(y2, m2, d2)
-	with connection.Connection(config) as conn:
-		journal = Journal()
+	with Journal(config) as journal:
 		if hold_data:
-			for day in date_range(from_date, to_date):
-				journal.update(*conn.read(day))
+			journal.read_days(date_range=date_range(from_date, to_date))
 			journal.process()
 			journal.write()
 		else:
 			for day in date_range(from_date, to_date):
 				journal.clear()
-				journal.update(*conn.read(day))
+				journal.read_day(day)
 				journal.process()
 				journal.write()
 

@@ -2,7 +2,7 @@
 from datetime import date
 from typing import Iterable, Mapping
 
-from service_journal.sql_handler.connection import Connection
+from service_journal.sql_handler.connection import Connection, DataFormat
 from service_journal.gen_utils.debug import get_default_logger
 
 logger = get_default_logger(__name__)
@@ -18,10 +18,12 @@ class Journal:
     adding a new day.
     """
 
-    def __init__(self, schedule: Mapping = None, avl_dict: Mapping = None, connection: Connection = None):
+    def __init__(self, schedule: Mapping = None, avl_dict: Mapping = None, connection: Connection = None,
+                 config: Mapping = None):
         self.schedule = {} if schedule is None else schedule
         self.avl_dict = {} if avl_dict is None else avl_dict
         self.connection = connection
+        self.config = config
 
     def update(self, schedule: Mapping = None, avl_dict: Mapping = None) -> None:
         """
@@ -47,7 +49,7 @@ class Journal:
             self.avl_dict.clear()
 
     def open(self, config: Mapping = None):
-        self.connection = Connection(config)
+        self.connection = Connection(config if config is not None else self.config)
 
     def close(self):
         self.connection.close()
@@ -59,6 +61,9 @@ class Journal:
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.close()
 
+    def read_day(self, day):
+        self.update(*self.connection.read(day, format_=DataFormat.DBT))
+
     def read_days(self, date_range: Iterable[date]) -> None:
         """
         Read date_range from a newly established connection.
@@ -68,9 +73,8 @@ class Journal:
         date_range
             Iterable of date objects to load from the database.
         """
-        with Connection() as conn:
-            for day in date_range:
-                self.schedule[day], self.avl_dict[day] = conn.read(day, format_=conn.DBT)
+        for day in date_range:
+            self.update(*self.connection.read(day, format_=DataFormat.DBT))
 
     def process(self) -> None:
         """
