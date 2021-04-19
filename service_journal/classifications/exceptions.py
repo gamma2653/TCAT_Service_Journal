@@ -20,3 +20,7 @@ class BusNotFound(Exception):
 
 class InformationMismatch(Exception):
 	pass
+
+
+class PreconditionError(Exception):
+	pass

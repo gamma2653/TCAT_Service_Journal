@@ -8,6 +8,7 @@ from service_journal.gen_utils.debug import get_default_logger
 from service_journal.gen_utils.class_utils import pull_out_name, write_ordering, unpack
 
 from pyodbc import ProgrammingError
+
 logger = get_default_logger(__name__)
 
 
@@ -48,12 +49,12 @@ class Connection:
                   'running this, please setup your config and re-run it.')
             raise e
 
-        # setup dict key to sql field map and inverted map
         attr_sql_map = settings['attr_sql_map']
+        # Invert attr_sql_map
         sql_attr_map: Mapping[str, Mapping[str, Mapping[str, Union[str, bool]]]] = {
             table_name: {attr_data['name']: {
-                    'name': attr_name, 'nullable': attr_data['nullable'], 'view': attr_data['view']
-                }
+                'name': attr_name, 'nullable': attr_data['nullable'], 'view': attr_data['view']
+            }
                 for attr_name, attr_data in table_data.items()
             } for table_name, table_data in attr_sql_map.items()
         }
@@ -67,10 +68,6 @@ class Connection:
             'output_conn': None,
             'stop_locations_conn': None
         }
-
-        # Hacky way to add DataFormats as attributes to an instance.
-        for item in DataFormat:
-            setattr(self, item.name, item)
         if open_:
             self.open()
 
@@ -124,7 +121,7 @@ class Connection:
         return pyodbc.connect(driver=self.driver, server=self.host + ('' if self.port is None else f',{self.port}'),
                               database=database, uid=self.username, pwd=self.password)
 
-    def open(self) -> None:
+    def open(self):
         """
         Open all the connections to the tables for the config.
         """
@@ -138,7 +135,7 @@ class Connection:
         }
         logger.info('Connections opened.')
 
-    def load_stop_loc(self) -> None:
+    def load_stop_loc(self):
         """
         Load stop locations from database. These are the geo-cords.
         """
@@ -174,7 +171,8 @@ class Connection:
         self.close()
 
     @staticmethod
-    def _read_rtbd(a_cursor, a_attr_col_names, format_, to_date_format):
+    def _read_rtbd(a_cursor: pyodbc.Cursor, a_attr_col_names: Iterable[str], format_: DataFormat,
+                   to_date_format: str) -> Mapping:
         avl_dict = {}
         row = a_cursor.fetchone()
         logger.debug('Loading actuals in %(format)s', format=format_)
@@ -217,7 +215,8 @@ class Connection:
         return avl_dict
 
     @staticmethod
-    def _read_dbt(cursors, col_names, format_, to_date_format):
+    def _read_dbt(cursors: Tuple[pyodbc.Cursor, pyodbc.Cursor], col_names: Tuple[Iterable[str], Iterable[str]],
+                  format_: DataFormat, to_date_format: str) -> Tuple[Mapping, Mapping]:
         a_cursor, s_cursor = cursors
         a_attr_col_names, s_attr_col_names = col_names
         logger.info('Loading schedule in %s', format_)
@@ -359,7 +358,7 @@ class Connection:
         elif format_ is DataFormat.DBT:
             return self._read_dbt((a_cursor, s_cursor), (a_attr_col_names, s_attr_col_names), format_, to_date_format)
         else:
-            return {}
+            raise NotImplementedError(f'The given format, {format_}, is not yet supported.')
 
     def write(self, data_map: Mapping, autocommit: bool = False):
         """
@@ -378,7 +377,7 @@ class Connection:
         table_name = queries['table_name']
         cursor = self.connections['output_conn'].cursor()
         output_map = pull_out_name(self.attr_sql_map['output'])
-        # TODO: Get all above data from function call. Repeated in read.
+        # TODO: Potential to get all above data from function call. Repeated in read.
 
         # Wish I could unpack using "*" the values of data_map, but order becomes an issue.
         # Solved by using write_ordering.

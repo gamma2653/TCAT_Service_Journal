@@ -2,6 +2,7 @@
 from datetime import date
 from typing import Iterable, Mapping
 
+from service_journal.classifications.exceptions import PreconditionError
 from service_journal.sql_handler.connection import Connection, DataFormat
 from service_journal.gen_utils.debug import get_default_logger
 
@@ -25,7 +26,7 @@ class Journal:
         self.connection = connection
         self.config = config
 
-    def update(self, schedule: Mapping = None, avl_dict: Mapping = None) -> None:
+    def update(self, schedule: Mapping = None, avl_dict: Mapping = None):
         """
         Updates the schedule and/or avl_dict with the given parameters.
 
@@ -65,7 +66,7 @@ class Journal:
     def read_day(self, day):
         self.update(*self.connection.read(day, format_=DataFormat.DBT))
 
-    def read_days(self, date_range: Iterable[date]) -> None:
+    def read_days(self, date_range: Iterable[date]):
         """
         Read date_range from a newly established connection.
 
@@ -77,7 +78,7 @@ class Journal:
         for day in date_range:
             self.update(*self.connection.read(day, format_=DataFormat.DBT))
 
-    def process(self) -> None:
+    def process(self):
         """
         Freshly processed the data in self.schedule and self.avl_dict and updates the schedule's internal book-keeping
         values.
@@ -122,7 +123,7 @@ class Journal:
                                      report['block_number'], report['trip_number'], report.keys(), e)
                         logger.debug('day_schedule: %s', day_schedule)
 
-    def post_process(self) -> None:
+    def post_process(self):
         """
         Updates internal book-keeping that could not be done on first sweep. This includes updating confidence values.
         """
@@ -138,6 +139,12 @@ class Journal:
                             stop['confidence_score'] = 0
 
     def write(self):
+        """
+        Writes the stored schedule and avl_dict to the output database. Requires an open connection.
+        """
+        if self.connection is None:
+            raise PreconditionError('The Journal\'s connection object should be opened before trying to write.')
+
         logger.info('Beginning to write data.')
         for date_, day_schedule in self.schedule.items():
             for block_number, block in day_schedule.items():

@@ -280,9 +280,9 @@ default_config = {
 }
 
 
-def init_config():
+def init_config(default_config_):
     with open('config.json', 'w') as f:
-        json.dump(default_config, f, sort_keys=True, indent=4)
+        json.dump(default_config_, f, indent=4)
 
 
 def read_config():
@@ -290,17 +290,18 @@ def read_config():
         with open('config.json', 'r') as f:
             return json.load(f)
     except FileNotFoundError:
-        init_config()
+        init_config(default_config)
         return default_config
 
 
 config = read_config()
 settings = config['settings']
 
+# Set global var and config values to either the config value, or the environment variable if it exists.
 username = settings['username'] = os.environ.get('SQL_USERNAME', settings['username'])
 password = settings['password'] = os.environ.get('SQL_PASSWORD', settings['password'])
 driver = settings['driver'] = os.environ.get('SQL_DRIVER', settings['driver'])
 host = settings['host'] = os.environ.get('SQL_HOST', settings['host'])
 port = settings['port'] = os.environ.get('SQL_PORT', settings['port'])
-# I should simplify the format of dbt_sql_map to make inverting easier.
+
 attr_sql_map = settings['attr_sql_map']
