@@ -35,7 +35,7 @@ def pull_out_name(d: Mapping[str, Mapping]) -> Mapping[str, str]:
     return {k: v['name'] for k, v in d.items()}
 
 
-def unpack(ordering_: Iterable[Any], data_map_: Mapping[Any]) -> Iterable[Any]:
+def unpack(ordering_: Iterable[str], data_map_: Mapping[str, Any]) -> Iterable[Any]:
     """
     Returns the values of the dictionary in the order of the passed in list.
 
