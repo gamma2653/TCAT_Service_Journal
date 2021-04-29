@@ -14,7 +14,7 @@ def read_level_from_args():
     log_level = parser.parse_args().log
     numeric_level = getattr(logging, log_level.upper(), None)
     if not isinstance(numeric_level, int):
-        raise ValueError('Invalid log level: %s' % log_level)
+        raise ValueError(f'Invalid log level: {log_level}')
     return numeric_level
 
 

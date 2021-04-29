@@ -1,4 +1,4 @@
-from typing import Dict, Optional, Tuple, Mapping, Set, Union, Iterable
+from typing import Dict, Optional, Tuple, Mapping, Set, Union, Iterable, Any
 from numbers import Number
 import pyodbc
 from enum import Enum
@@ -10,6 +10,141 @@ from service_journal.gen_utils.class_utils import pull_out_name, write_ordering,
 from pyodbc import ProgrammingError
 
 logger = get_default_logger(__name__)
+_to_date_format = '%Y-%m-%d'
+
+
+def _package_rtbd(data, acc, to_date_format=_to_date_format):
+    if data['route'] not in acc:
+        acc[data['route']] = {}
+    route = acc[data['route']]
+    if data['trip_number'] not in route:
+        route[data['trip_number']] = {}
+    trip = route[data['trip_number']]
+    if data['block_number'] not in trip:
+        trip[data['block_number']] = {}
+    block = trip[data['block_number']]
+    # Convert date format
+    date_key = data['date'].strftime(to_date_format)
+    if date_key not in block:
+        block[date_key] = []
+    stops = block[date_key]
+    stops.append({
+        'time': data['trigger_time'],
+        'lat': data['latitude'],
+        'lon': data['longitude'],
+        'dir': data['direction'],
+        'bus': data['bus'],
+        'operator': data['operator'],
+        'depart': data['actual_time'],
+        'boards': data['boards'],
+        'alights': data['alights'],
+        'onboard': data['onboard'],
+        'date_time': data['trigger_time'],
+        'stop_id': data['stop'],
+        # TODO: Currently no SQL record for 'day', ask Tom
+        'day': None
+    })
+
+
+def _package_dbt_schedule(data, acc, to_date_format=_to_date_format):
+    date_key = data['date'].strftime(to_date_format)
+    if date_key not in acc:
+        acc[date_key] = {}
+    date_value = acc[date_key]
+    if data['block_number'] not in date_value:
+        date_value[data['block_number']] = {}
+    block = date_value[data['block_number']]
+    if data['trip_number'] not in block:
+        block[data['trip_number']] = {
+            'route': data['route'],
+            # TODO: Check with Tom that a trip can only be one route.
+            'stops': {},
+            'seq_tracker': 0,
+        }
+    trip = block[data['trip_number']]
+    if data['stop'] is None or data['stop'] == '0':
+        logger.warning('Got a 0 or NULL stop id in the schedule!')
+    if data['stop'] not in trip['stops']:
+        trip['stops'][data['stop']] = {
+            'sched_time': data['sched_time'],
+            'direction': data['direction'],
+            'seen': 0,
+            'bus': None,
+            'confidence_score': 0,
+            'confidence_factors': [],
+            'operator': None,
+            'trigger_time': None,
+            'boards': 0,
+            'alights': 0,
+            'onboard': 0,
+            'name': None
+            # TODO: Remove name from output
+            # 'direction': data['direction'],
+        }
+
+
+def _package_dbt_actuals(data, acc, to_date_format=_to_date_format):
+    date_key = data['date'].strftime(to_date_format)
+    if date_key not in acc:
+        acc[date_key] = {}
+    date_value = acc[date_key]
+    if data['bus'] not in date_value:
+        date_value[data['bus']] = {}
+    bus = date_value[data['bus']]
+    if data['trigger_time'] in bus:
+        # Mid-swapping routes
+        # TODO: Idk if this is ok or not. Check with Tom later.
+        trigger_time_v = bus[data['trigger_time']]
+        trigger_time_v['route'].add(data['route'])
+        trigger_time_v['boards'] += data['boards']
+        trigger_time_v['alights'] += data['alights']
+        trigger_time_v['onboard'] = max(trigger_time_v['onboard'], data['onboard'])
+    else:
+        # Define a report
+        bus[data['trigger_time']] = {
+            'lat': data['latitude'],
+            'lon': data['longitude'],
+            'dir': data['direction'],
+            'operator': data['operator'],
+            'depart': data['actual_time'],
+            'boards': data['boards'],
+            'alights': data['alights'],
+            'onboard': data['onboard'],
+            'stop_id': data['stop'],
+            'name': data['name'],
+            'block_number': data['block_number'],
+            'route': {data['route']},
+            'trip_number': data['trip_number'],
+        }
+
+
+def _package_stop_locations(data, acc):
+    if data['stop_num'] in acc:
+        logger.warning('Overriding stop_num %s, why is there a duplicate?\nOld: %s New: %s', data['stop_num'],
+                       acc[data['stop_num']], (data['latitude'], data['longitude']))
+    acc[data['stop_num']] = (data['latitude'], data['longitude'])
+
+
+def _package_shapes(data, acc):
+    key = data['from_stop'], data['to_stop']
+    if key in acc:
+        logger.warning('Overriding (%s, %s)\'s shape file.')
+    acc[key] = data['distance_feet'], data['shape']
+
+
+def process_cursor(cursor, sql_attr_map, packager, name=None, **kwargs):
+    if name:
+        logger.info('Processing cursor for %s.', name)
+    acc = {}
+    row = cursor.fetchone()
+    attr_col_names = [sql_attr_map[col[0]] for col in cursor.description]
+    while row:
+        data = dict(zip(attr_col_names, row))
+        packager(data, acc, **kwargs)
+        row = cursor.fetchone()
+    if name:
+        logger.info('Finished processing cursor for %s.', name)
+    return acc
 
 
 class DataFormat(Enum):
@@ -31,7 +166,6 @@ class Connection:
     connections: Dict[str, Optional[pyodbc.Connection]]
 
     def __init__(self, config: Mapping = None, open_: bool = False):
-        self.stop_locations = {}
         if config is not None:
             self.config = config
         else:
@@ -44,6 +178,7 @@ class Connection:
             self.password = settings['password']
             self.host = settings['host']
             self.port = settings['port']
+            self.is_open = False
         except KeyError as e:
             print(f'Error: Key ({e.args[0]}) not found in config.json. If this is your first time '
                   'running this, please setup your config and re-run it.')
@@ -66,7 +201,8 @@ class Connection:
             'actuals_conn': None,
             'scheduled_conn': None,
             'output_conn': None,
-            'stop_locations_conn': None
+            'stop_locations_conn': None,
+            'shapes_conn': None,
         }
         if open_:
             self.open()
@@ -99,6 +235,7 @@ class Connection:
         if errors:
             logger.error('Ran into errors while closing connections. Errors:\n%s', '\n'.join(errors))
         logger.info('Connections closed.')
+        self.is_open = False
         return errors
 
     def _connect(self, table_config: str) -> pyodbc.Connection:
@@ -121,6 +258,18 @@ class Connection:
         return pyodbc.connect(driver=self.driver, server=self.host + ('' if self.port is None else f',{self.port}'),
                               database=database, uid=self.username, pwd=self.password)
 
+    def _exc_query(self, conn_name, query_name, type_='default'):
+        logger.info('Executing query (%s) on connection (%s).', query_name, conn_name)
+        queries = self.config['settings']['queries']
+        cursor = self.connections[conn_name].cursor()
+        attr_sql_map = pull_out_name(self.attr_sql_map[query_name])
+        sql_attr_map = pull_out_name(self.sql_attr_map[query_name])
+        # attr_sql_map and queries are from config, and therefore trusted
+        cursor.execute(queries[query_name][type_].format(**attr_sql_map, table_name=queries[query_name]['table_name']))
+
+        logger.info('Finished executing query (%s) on connection (%s).', query_name, conn_name)
+        return (attr_sql_map, sql_attr_map), cursor
+
     def open(self):
         """
         Open all the connections to the tables for the config.
@@ -131,37 +280,24 @@ class Connection:
             'actuals_conn': self._connect('actuals'),
             'scheduled_conn': self._connect('scheduled'),
             'output_conn': self._connect('output'),
-            'stop_locations_conn': self._connect('stop_locations')
+            'stop_locations_conn': self._connect('stop_locations'),
+            'shapes_conn': self._connect('shapes')
         }
+        self.is_open = True
         logger.info('Connections opened.')
 
-    def load_stop_loc(self):
+    def load_stop_loc(self) -> Mapping[str, Tuple[Number, Number]]:
         """
         Load stop locations from database. These are the geo-cords.
         """
-        logger.info('Loading stop locations.')
-        queries = self.config['settings']['queries']
-        self.stop_locations = stop_locations = {}
-        # Grab cursor object
-        cursor = self.connections['stop_locations_conn'].cursor()
-        stop_attr_sql_map = pull_out_name(self.attr_sql_map['stop_locations'])
-        stop_sql_attr_map = pull_out_name(self.sql_attr_map['stop_locations'])
-        # Execute query
-        cursor.execute(queries['stop_locations']['default'].format(**stop_attr_sql_map,
-                                                                   table_name=queries['stop_locations']['table_name']))
-        # Grab first row from result
-        row = cursor.fetchone()
+        (stop_attr_sql_map, stop_sql_attr_map), cursor = self._exc_query('stop_locations_conn', 'stop_locations')
+        return process_cursor(cursor, stop_sql_attr_map, _package_stop_locations)
 
-        # get attr_names for each column for abstraction
-        attr_col_names = [stop_sql_attr_map[col[0]] for col in cursor.description]
-        while row:
-            data = dict(zip(attr_col_names, row))
-            if data['stop_num'] in stop_locations:
-                logger.warning('Overriding stop_num %s, why is there a duplicate?\nOld: %s New: %s', data['stop_num'],
-                               stop_locations[data['stop_num']], (data['latitude'], data['longitude']))
-            stop_locations[data['stop_num']] = (data['latitude'], data['longitude'])
-            row = cursor.fetchone()
-        logger.info('Stop locations loaded.')
+    def load_shapes(self) -> Mapping[Tuple[int, int], Tuple]:
+        # Execute query
+        (attr_sql_map, sql_attr_map), cursor = self._exc_query('shapes_conn', 'shapes')
+
+        return process_cursor(cursor, sql_attr_map, _package_shapes)
 
     def __enter__(self):
         self.open()
@@ -169,145 +305,6 @@ class Connection:
 
     def __exit__(self, exception_type, exception_value, traceback):
         self.close()
-
-    @staticmethod
-    def _read_rtbd(a_cursor: pyodbc.Cursor, a_attr_col_names: Iterable[str], format_: DataFormat,
-                   to_date_format: str) -> Mapping:
-        avl_dict = {}
-        row = a_cursor.fetchone()
-        logger.debug('Loading actuals in %(format)s', format=format_)
-        while row:
-            # standardizes references to columns so changes to database only
-            # have to be changed in config.
-            data = dict(zip(a_attr_col_names, row))
-            if data['route'] not in avl_dict:
-                avl_dict[data['route']] = {}
-            route = avl_dict[data['route']]
-            if data['trip_number'] not in route:
-                route[data['trip_number']] = {}
-            trip = route[data['trip_number']]
-            if data['block_number'] not in trip:
-                trip[data['block_number']] = {}
-            block = trip[data['block_number']]
-            # Convert date format
-            date_key = data['date'].strftime(to_date_format)
-            if date_key not in block:
-                block[date_key] = []
-            stops = block[date_key]
-            stops.append({
-                'time': data['trigger_time'],
-                'lat': data['latitude'],
-                'lon': data['longitude'],
-                'dir': data['direction'],
-                'bus': data['bus'],
-                'operator': data['operator'],
-                'depart': data['actual_time'],
-                'boards': data['boards'],
-                'alights': data['alights'],
-                'onboard': data['onboard'],
-                'date_time': data['trigger_time'],
-                'stop_id': data['stop'],
-                # TODO: Currently no SQL record for 'day', ask Tom
-                'day': None
-            })
-            del data
-            row = a_cursor.fetchone()
-        return avl_dict
-
-    @staticmethod
-    def _read_dbt(cursors: Tuple[pyodbc.Cursor, pyodbc.Cursor], col_names: Tuple[Iterable[str], Iterable[str]],
-                  format_: DataFormat, to_date_format: str) -> Tuple[Mapping, Mapping]:
-        a_cursor, s_cursor = cursors
-        a_attr_col_names, s_attr_col_names = col_names
-        logger.info('Loading schedule in %s', format_)
-        logger.debug('s_attr_col_names: %s', s_attr_col_names)
-
-        schedule = {}
-        row = s_cursor.fetchone()
-        while row:
-            # standardizes references to columns so changes to database only
-            # have to be changed in config.
-            data = dict(zip(s_attr_col_names, row))
-            date_key = data['date'].strftime(to_date_format)
-            if date_key not in schedule:
-                schedule[date_key] = {}
-            date_value = schedule[date_key]
-            if data['block_number'] not in date_value:
-                date_value[data['block_number']] = {}
-            block = date_value[data['block_number']]
-            if data['trip_number'] not in block:
-                block[data['trip_number']] = {
-                    'route': data['route'],
-                    # TODO: Check with Tom that a trip can only be one route.
-                    'stops': {},
-                    'seq_tracker': 0,
-                }
-            trip = block[data['trip_number']]
-            if data['stop'] is None or data['stop'] == '0':
-                logger.warning('Got a 0 or NULL stop id in the schedule!')
-            if data['stop'] not in trip['stops']:
-                trip['stops'][data['stop']] = {
-                    'sched_time': data['sched_time'],
-                    'direction': data['direction'],
-                    'seen': 0,
-                    'bus': None,
-                    'confidence_score': 0,
-                    'confidence_factors': [],
-                    'operator': None,
-                    'trigger_time': None,
-                    'boards': 0,
-                    'alights': 0,
-                    'onboard': 0,
-                    'name': None
-                    # TODO: Remove name from output
-                    # 'direction': data['direction'],
-                }
-            del data
-            row = s_cursor.fetchone()
-
-        logger.debug('Loading actuals in %s', format_)
-        avl_dict = {}
-        row = a_cursor.fetchone()
-        while row:
-            data = dict(zip(a_attr_col_names, row))
-            date_key = data['date'].strftime(to_date_format)
-            if date_key not in avl_dict:
-                avl_dict[date_key] = {}
-            date_value = avl_dict[date_key]
-            if data['bus'] not in date_value:
-                date_value[data['bus']] = {}
-            bus = date_value[data['bus']]
-            if data['trigger_time'] in bus:
-                # Mid-swapping routes
-                # TODO: Idk if this is ok or not. Check with Tom later.
-                trigger_time_v = bus[data['trigger_time']]
-                trigger_time_v['route'].add(data['route'])
-                trigger_time_v['boards'] += data['boards']
-                trigger_time_v['alights'] += data['alights']
-                trigger_time_v['onboard'] = max(trigger_time_v['onboard'], data['onboard'])
-            else:
-                # Define a report
-                bus[data['trigger_time']] = {
-                    'lat': data['latitude'],
-                    'lon': data['longitude'],
-                    'dir': data['direction'],
-                    'operator': data['operator'],
-                    'depart': data['actual_time'],
-                    'boards': data['boards'],
-                    'alights': data['alights'],
-                    'onboard': data['onboard'],
-                    'stop_id': data['stop'],
-                    'name': data['name'],
-                    'block_number': data['block_number'],
-                    'route': {data['route']},
-                    'trip_number': data['trip_number'],
-                }
-            del data
-            row = a_cursor.fetchone()
-        logger.info('Done reading from connection.')
-        logger.debug(
-            'Returning values with these keys.\nschedule=%s\navl_dict=%s', schedule.keys(), avl_dict.keys())
-        return schedule, avl_dict
 
     def read(self, date_: date, format_: DataFormat = DataFormat.DBT) -> Union[Tuple[Mapping, Mapping], Mapping]:
         """
@@ -323,40 +320,16 @@ class Connection:
         # a_xxx refers to "actuals xxx" and s_xxx refers to "scheduled xxx"
         logger.info('Reading from connections.')
 
-        # Grab mappings for actuals and scheduled fields
-        a_sql_attr_map = pull_out_name(self.sql_attr_map['actuals'])
-        s_sql_attr_map = pull_out_name(self.sql_attr_map['scheduled'])
-        a_attr_sql_map = pull_out_name(self.attr_sql_map['actuals'])
-        s_attr_sql_map = pull_out_name(self.attr_sql_map['scheduled'])
-
-        # grab and format queries
-        queries = self.config['settings']['queries']
-        logger.debug('a_attr_sql_map: %s', a_attr_sql_map)
-        a_query = queries['actuals']['default'].format(**a_attr_sql_map, table_name=queries['actuals']['table_name'])
-        s_query = queries['scheduled']['default'].format(
-            **s_attr_sql_map, table_name=queries['scheduled']['table_name'])
-
-        # grab cursors and execute queries
-        a_cursor = self.connections['actuals_conn'].cursor()
-        s_cursor = self.connections['scheduled_conn'].cursor()
-
         # Execute queries
-        a_cursor.execute(a_query, date_)
-        s_cursor.execute(s_query, date_)
-
-        # Get column names based on query results
-        # This protects against queries that do not have all the attributes, and makes packaging the data easier
-        a_attr_col_names = [a_sql_attr_map[col[0]] for col in a_cursor.description]
-        s_attr_col_names = [s_sql_attr_map[col[0]] for col in s_cursor.description]
-        del a_attr_sql_map, s_attr_sql_map
-
-        to_date_format = '%Y-%m-%d'
+        (a_attr_sql_map, a_sql_attr_map), a_cursor = self._exc_query('actuals_conn', 'actuals')
+        (s_attr_sql_map, s_sql_attr_map), s_cursor = self._exc_query('scheduled_conn', 'scheduled')
 
         # Format dictates dictionary structure to generate
         if format_ is DataFormat.RTBD:
-            return self._read_rtbd(a_cursor, a_attr_col_names, format_, to_date_format)
+            return process_cursor(a_cursor, a_sql_attr_map, _package_rtbd, 'avl_dict')
         elif format_ is DataFormat.DBT:
-            return self._read_dbt((a_cursor, s_cursor), (a_attr_col_names, s_attr_col_names), format_, to_date_format)
+            return process_cursor(s_cursor, s_sql_attr_map, _package_dbt_schedule, 'scheduled'), process_cursor(
+                a_cursor, a_sql_attr_map, _package_dbt_actuals, 'actuals')
         else:
             raise NotImplementedError(f'The given format, {format_}, is not yet supported.')
 
@@ -377,13 +350,11 @@ class Connection:
         table_name = queries['table_name']
         cursor = self.connections['output_conn'].cursor()
         output_map = pull_out_name(self.attr_sql_map['output'])
-        # TODO: Potential to get all above data from function call. Repeated in read.
 
-        # Wish I could unpack using "*" the values of data_map, but order becomes an issue.
-        # Solved by using write_ordering.
-        # TODO: This is NOT DRY, refactor later.
-        # format replaces attribute names with sql names, and unpack fills the ?'s with values.
+        # format replaces attribute names with sql names, and unpack safely fills the ?'s with values.
+        # NOTE: output_map and table_name are trusted values.
         final_query = query.format(**output_map, table_name=table_name)
+        # NOTE: final_params is NOT trusted.
         final_params = unpack(write_ordering, data_map)
         try:
             cursor.execute(final_query, *final_params)

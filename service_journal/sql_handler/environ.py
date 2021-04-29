@@ -238,6 +238,33 @@ default_config = {
                     'view': 'stop_locations',
                     'nullable': False,
                 }
+            },
+            'shapes': {
+                'from_stop': {
+                    'name': 'fr_stop_num',
+                    'view': 'shapes',
+                    'nullable': False
+                },
+                'to_stop': {
+                    'name': 'to_stop_num',
+                    'view': 'shapes',
+                    'nullable': False
+                },
+                'date_created': {
+                    'name': 'ini_date',
+                    'view': 'shapes',
+                    'nullable': False
+                },
+                'distance_feet': {
+                    'name': 'dist_ft',
+                    'view': 'shapes',
+                    'nullable': False
+                },
+                'shape': {
+                    'name': 'seg_path',
+                    'view': 'shapes',
+                    'nullable': False
+                }
             }
         },
         'queries': {
@@ -253,7 +280,8 @@ default_config = {
             },
             'scheduled': {
                 'default': 'SELECT {date}, {block_number}, {trip_number}, {route}, {direction}, {stop}, {next_stop}, '
-                           '{sched_time} FROM {table_name} WHERE {date}=?',
+                           '{sched_time} FROM {table_name} ORDER BY {date}, {block_number}, {trip_number}, {sched_time}'
+                           ' WHERE {date}=?',
                 'alternate': None,
                 'static': None,
                 'table_name': 'v_scheduled_stops',
@@ -274,6 +302,14 @@ default_config = {
                 'static': None,
                 'table_name': 'stops',
                 'database': 'Utilities',
+            },
+            'shapes': {
+                'default': 'SELECT {from_stop}, {to_stop}, {date_created}, {distance_feet}, {shape} FROM {table_name} '
+                           'ORDER BY {date_created}',
+                'alternate': None,
+                'static': None,
+                'table_name': 'segment_dist',
+                'database': 'TA_ITHACA_SCHEDULE_HISTORY'
             }
         }
     }

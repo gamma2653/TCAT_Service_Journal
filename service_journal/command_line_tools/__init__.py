@@ -112,20 +112,7 @@ def run_days(config: bool = None, hold_data: bool = False, use_argparse: bool = 
     """
     from_date, to_date = input_days(use_argparse=use_argparse)
     with Journal(config) as journal:
-        if hold_data:
-            journal.read_days(date_range=date_range(from_date, to_date))
-            journal.process()
-            if post_process:
-                journal.post_process()
-            journal.write()
-        else:
-            for day in date_range(from_date, to_date):
-                journal.clear()
-                journal.read_day(day)
-                journal.process()
-                if post_process:
-                    journal.post_process()
-                journal.write()
+        journal.process_dates_batch(from_date, to_date, hold_data, post_process)
 
 
 def run(use_argparse: bool = False):
