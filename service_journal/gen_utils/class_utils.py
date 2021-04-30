@@ -1,9 +1,61 @@
+from datetime import datetime, date, timedelta
 from enum import Enum
 from typing import Mapping, Iterable, Any, Callable
 from service_journal.gen_utils.debug import get_default_logger
 
 
 logger = get_default_logger(__name__)
+
+
+def date_range(start_date: date, end_date: date) -> Iterable[date]:
+    """
+    Yields a generator of dates starting with start_date and ending just before end_date.
+
+    PARAMETERS
+    ---------
+    start_date
+        The first date to yield
+    end_date
+        The day after the last day to yield
+
+    RETURNS
+    --------
+    Iterable[date]
+        A generator that yields the days between start and end date.
+    """
+    # TODO: Ask if want end_date to be inclusive, just swap for loop for this:
+    # for n in range(int((end_date - start_date).days)+1):
+    for n in range(int((end_date - start_date).days)):
+        yield start_date + timedelta(n)
+
+
+def interpret_date(str_: str, formats_: Iterable[str] = ('%m/%d/%Y', '%Y-%m-%d', '%m-%d-%Y')) -> date:
+    """
+    Interprets the passed in string as a date object. Cycles through all possible formats and returns first valid one.
+
+    PARAMETERS
+    --------
+    str_
+        String to interpret as a date.
+    formats_
+        Iterable of strings that are potential formats.
+
+    RETURNS
+    --------
+    date
+        A date object represented by the passed in string.
+    """
+    result = None
+    for format_ in formats_:
+        try:
+            result = datetime.strptime(str_, format_)
+            break
+        except ValueError:
+            continue
+    if result is None:
+        logger.error('No format matches for %s. Formats: %s', str_, formats_)
+        raise ValueError('No provided formats matched for provided value. See logs.')
+    return result.date()
 
 
 def pull_out_name(d: Mapping[str, Mapping]) -> Mapping[str, str]:
@@ -65,7 +117,7 @@ DATE_BUS_TIME = OrganizeOrder.DATE_BUS_TIME
 
 def _block_2_bus(mapping: Mapping) -> Mapping:
     result = {}
-    for date, date_value in mapping.items():
+    for date_key, date_value in mapping.items():
         for block, block_value in date_value.items():
             for trip, trip_value in block_value.items():
                 for stop in trip_value:
@@ -74,11 +126,11 @@ def _block_2_bus(mapping: Mapping) -> Mapping:
                     if bus is None or trigger_time is None:
                         logger.warning('Bus or trigger time is None, this should not happen.\nBus:%s\nTrigger Time:%s',
                                        bus, trigger_time)
-                    if date not in result:
-                        result[date] = {}
-                    if bus not in result[date]:
-                        result[date][bus] = {}
-                    result[date][bus][trigger_time] = {
+                    if date_key not in result:
+                        result[date_key] = {}
+                    if bus not in result[date_key]:
+                        result[date_key][bus] = {}
+                    result[date_key][bus][trigger_time] = {
                         'lat': stop.get('lat', None),
                         'lon': stop.get('lon', None),
                         'dir': stop.get('dir', None),
@@ -98,18 +150,18 @@ def _block_2_bus(mapping: Mapping) -> Mapping:
 
 def _bus_2_block(mapping: Mapping) -> Mapping:
     result = {}
-    for date, date_value in mapping.items():
+    for date_key, date_value in mapping.items():
         for bus, bus_value in date_value.items():
             for trigger, trigger_value in bus_value.items():
                 block = trigger_value['block_number']
                 trip = trigger_value['trip_number']
-                if date not in result:
-                    result[date] = {}
-                if block not in result[date]:
-                    result[date][block] = {}
-                if trigger not in result[date][block]:
-                    result[date][block][trigger] = []
-                result[date][block][trip].append({
+                if date_key not in result:
+                    result[date_key] = {}
+                if block not in result[date_key]:
+                    result[date_key][block] = {}
+                if trigger not in result[date_key][block]:
+                    result[date_key][block][trigger] = []
+                result[date_key][block][trip].append({
                     'alights': trigger_value.get('alights', 0),
                     'boards': trigger_value.get('boards', 0),
                     'onboard': trigger_value.get('onboard', 0),
