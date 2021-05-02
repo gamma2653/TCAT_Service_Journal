@@ -328,7 +328,7 @@ class Connection:
         logger.info('Reading from connections.')
 
         # Init params
-        params = [date_]
+        params = [date_.strftime(_to_date_format)]
 
         # Execute queries
         (a_attr_sql_map, a_sql_attr_map), a_cursor = self._exc_query('actuals_conn', 'actuals', params=params)
