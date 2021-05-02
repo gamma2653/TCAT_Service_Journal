@@ -267,8 +267,12 @@ class Connection:
         attr_sql_map = pull_out_name(self.attr_sql_map[query_name])
         sql_attr_map = pull_out_name(self.sql_attr_map[query_name])
         # attr_sql_map and queries are from config, and therefore trusted
-        cursor.execute(queries[query_name][type_].format(**attr_sql_map, table_name=queries[query_name]['table_name']))
-
+        query = queries[query_name][type_].format(**attr_sql_map, table_name=queries[query_name]['table_name'])
+        try:
+            cursor.execute(query)
+        except pyodbc.Error as exc:
+            logger.error('Pyodbc error, see raised exception. Query being run:\n%s', query)
+            raise exc
         logger.info('Finished executing query (%s) on connection (%s).', query_name, conn_name)
         return (attr_sql_map, sql_attr_map), cursor
 
