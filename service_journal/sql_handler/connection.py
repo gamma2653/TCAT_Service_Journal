@@ -260,8 +260,9 @@ class Connection:
         return pyodbc.connect(driver=self.driver, server=self.host + ('' if self.port is None else f',{self.port}'),
                               database=database, uid=self.username, pwd=self.password)
 
-    def _exc_query(self, conn_name, query_name, type_='default'):
+    def _exc_query(self, conn_name, query_name, params=None, type_='default'):
         logger.info('Executing query (%s) on connection (%s).', query_name, conn_name)
+        params = [] if None else params
         queries = self.config['settings']['queries']
         cursor = self.connections[conn_name].cursor()
         attr_sql_map = pull_out_name(self.attr_sql_map[query_name])
@@ -269,7 +270,7 @@ class Connection:
         # attr_sql_map and queries are from config, and therefore trusted
         query = queries[query_name][type_].format(**attr_sql_map, table_name=queries[query_name]['table_name'])
         try:
-            cursor.execute(query)
+            cursor.execute(query, *params)
         except pyodbc.Error as exc:
             logger.error('Pyodbc error, see raised exception. Query being run:\n%s', query)
             raise exc
@@ -326,9 +327,12 @@ class Connection:
         # a_xxx refers to "actuals xxx" and s_xxx refers to "scheduled xxx"
         logger.info('Reading from connections.')
 
+        # Init params
+        params = [date_]
+
         # Execute queries
-        (a_attr_sql_map, a_sql_attr_map), a_cursor = self._exc_query('actuals_conn', 'actuals')
-        (s_attr_sql_map, s_sql_attr_map), s_cursor = self._exc_query('scheduled_conn', 'scheduled')
+        (a_attr_sql_map, a_sql_attr_map), a_cursor = self._exc_query('actuals_conn', 'actuals', params=params)
+        (s_attr_sql_map, s_sql_attr_map), s_cursor = self._exc_query('scheduled_conn', 'scheduled', params=params)
 
         # Format dictates dictionary structure to generate
         if format_ is DataFormat.RTBD:
@@ -350,24 +354,8 @@ class Connection:
         autocommit
             Tells the function whether to commit changes after completing execution.
         """
-        logger.debug('Starting to write a record to connection source.')
-        queries = self.config['settings']['queries']['output']
-        query = queries['default']
-        table_name = queries['table_name']
-        cursor = self.connections['output_conn'].cursor()
-        output_map = pull_out_name(self.attr_sql_map['output'])
-
-        # format replaces attribute names with sql names, and unpack safely fills the ?'s with values.
-        # NOTE: output_map and table_name are trusted values.
-        final_query = query.format(**output_map, table_name=table_name)
-        # NOTE: final_params is NOT trusted.
         final_params = unpack(write_ordering, data_map)
-        try:
-            cursor.execute(final_query, *final_params)
-        except ProgrammingError as exc:
-            logger.error('Failed to write.\nQuery:\n%s\nParams:\n%s', final_query, final_params)
-            raise exc
-        logger.debug('Finished writing a record to connection source.')
+        self._exc_query('output_conn', 'output', params=final_params)
         if autocommit:
             self.commit()
 
