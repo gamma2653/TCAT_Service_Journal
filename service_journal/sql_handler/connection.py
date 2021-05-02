@@ -12,6 +12,8 @@ from pyodbc import ProgrammingError
 logger = get_default_logger(__name__)
 _to_date_format = '%Y-%m-%d'
 
+# TODO: Add a schema file that defines all the keys for each data source.
+
 
 def _package_rtbd(data, acc, to_date_format=_to_date_format):
     if data['route'] not in acc:
@@ -119,10 +121,10 @@ def _package_dbt_actuals(data, acc, to_date_format=_to_date_format):
 
 
 def _package_stop_locations(data, acc):
-    if data['stop_num'] in acc:
+    if data['stop'] in acc:
         logger.warning('Overriding stop_num %s, why is there a duplicate?\nOld: %s New: %s', data['stop_num'],
                        acc[data['stop_num']], (data['latitude'], data['longitude']))
-    acc[data['stop_num']] = (data['latitude'], data['longitude'])
+    acc[data['stop']] = (data['latitude'], data['longitude'])
 
 
 def _package_shapes(data, acc):
