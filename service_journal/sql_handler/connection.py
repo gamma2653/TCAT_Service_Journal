@@ -272,7 +272,7 @@ class Connection:
         try:
             cursor.execute(query, *params)
         except pyodbc.Error as exc:
-            logger.error('Pyodbc error, see raised exception. Query being run:\n%s', query)
+            logger.error('Pyodbc error, see raised exception. Query being run:\n%s\nParams: %s', query, params)
             raise exc
         logger.info('Finished executing query (%s) on connection (%s).', query_name, conn_name)
         return (attr_sql_map, sql_attr_map), cursor
