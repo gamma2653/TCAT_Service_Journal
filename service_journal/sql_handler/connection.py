@@ -127,11 +127,11 @@ def _package_stop_locations(data, acc):
     acc[data['stop']] = (data['latitude'], data['longitude'])
 
 
-def _package_shapes(data, acc):
+def _package_shapes(data, acc, shape_str=True):
     key = data['from_stop'], data['to_stop']
     if key in acc:
         logger.warning('Overriding (%s, %s)\'s shape file.')
-    acc[key] = data['distance_feet'], data['shape']
+    acc[key] = data['distance_feet'], data['shape_str' if shape_str else 'shape']
 
 
 def process_cursor(cursor, sql_attr_map, packager, name=None, **kwargs):
