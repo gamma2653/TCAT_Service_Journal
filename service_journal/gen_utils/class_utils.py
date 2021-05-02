@@ -82,6 +82,16 @@ def interpret_linestring(line_str: str) -> Iterable[Tuple[float, float]]:
         raise ValueError(f'Could not convert {line_str} to list of coordinates') from exc
 
 
+def sep_shapes_distances(shapes_and_lengths: Mapping[Tuple[int, int], Tuple[float, Iterable[Tuple[float, float]]]]):
+    i = 0
+    shapes = {}
+    shape_distances = {}
+    for key, value in shapes_and_lengths.items():
+        shapes[str(i)] = value[1]
+        shape_distances[str(i)] = key, value[0]
+    return shapes, shape_distances
+
+
 def pull_out_name(d: Mapping[str, Mapping]) -> Mapping[str, str]:
     """
     Turns a mapping of:

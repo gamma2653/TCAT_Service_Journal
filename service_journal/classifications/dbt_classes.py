@@ -5,7 +5,8 @@ from typing import Iterable, Mapping
 from service_journal.classifications.exceptions import PreconditionError
 from service_journal.sql_handler.connection import Connection, DataFormat
 from service_journal.gen_utils.debug import get_default_logger
-from service_journal.gen_utils.class_utils import reorganize_map, DATE_BLOCK_TRIP, DATE_BUS_TIME, date_range
+from service_journal.gen_utils.class_utils import reorganize_map, DATE_BLOCK_TRIP, DATE_BUS_TIME, date_range, \
+    sep_shapes_distances
 
 from detour_analyzer.trip_analyzer.segments import track_intervals
 from detour_analyzer.trip_analyzer.data_processing import expand_shape_dict
@@ -96,11 +97,6 @@ class Journal:
     def read_shapes(self):
         self._raise_if_not_open()
         self.update(shapes=self.connection.load_shapes())
-        # Print one value to know types
-        for key, value in self.shapes.items():
-            print(value)
-            print(type(value[0]), type(value[1]))
-            break
 
     def read_day_independent(self):
         self.read_stops_locations()
@@ -130,7 +126,8 @@ class Journal:
         """
         # TODO: 1. Get shapes 2. Expand them 3. Convert actuals to Date-Block-Trip 4. Call track_intervals
         converted_actuals = reorganize_map[DATE_BUS_TIME][DATE_BLOCK_TRIP](self.avl_dict)
-        expanded_shapes = expand_shape_dict(self.shapes)
+        shapes, _ = sep_shapes_distances(self.shapes)
+        expanded_shapes = expand_shape_dict(shapes)
         self.intervals_not_visited = track_intervals(expanded_shapes, self.stop_locations, converted_actuals)
 
     def process(self):
