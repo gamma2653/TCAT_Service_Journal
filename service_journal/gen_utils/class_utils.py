@@ -1,6 +1,6 @@
 from datetime import datetime, date, timedelta
 from enum import Enum
-from typing import Mapping, Iterable, Any, Callable
+from typing import Mapping, Iterable, Any, Callable, Tuple
 from service_journal.gen_utils.debug import get_default_logger
 
 
@@ -58,7 +58,7 @@ def interpret_date(str_: str, formats_: Iterable[str] = ('%m/%d/%Y', '%Y-%m-%d',
     return result.date()
 
 
-def str_2_coord_tuple(coord_str):
+def str_2_coord_tuple(coord_str: str) -> Tuple[float, float]:
     try:
         lat, lon = coord_str.split()
         return float(lat), float(lon)
@@ -67,11 +67,14 @@ def str_2_coord_tuple(coord_str):
         raise ValueError(f'Malformed coordinate: ({coord_str})') from exc
 
 
-def interpret_linestring(line_str: str):
+def interpret_linestring(line_str: str) -> Iterable[Tuple[float, float]]:
     acc = []
     if line_str is None:
         return acc
+    # Cuts off "LINESTRING (" and ")"
     line_str = line_str[12:-1]
+    # Alternatively, more robust:
+    # line_str = line_str.strip()[10:].strip()[1:-1]
     try:
         return list(map(str_2_coord_tuple, line_str.split(', ')))
     except ValueError as exc:
