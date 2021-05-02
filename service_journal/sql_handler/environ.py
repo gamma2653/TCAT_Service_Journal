@@ -287,8 +287,8 @@ default_config = {
             },
             'scheduled': {
                 'default': 'SELECT {date}, {block_number}, {trip_number}, {route}, {direction}, {stop}, {next_stop}, '
-                           '{sched_time} FROM {table_name} ORDER BY {date}, {block_number}, {trip_number}, {sched_time}'
-                           ' WHERE {date}=?',
+                           '{sched_time} FROM {table_name} WHERE {date}=? ORDER BY {date}, {block_number}, '
+                           '{trip_number}, {sched_time}',
                 'alternate': None,
                 'static': None,
                 'table_name': 'v_scheduled_stops',
