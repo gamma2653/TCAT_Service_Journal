@@ -5,7 +5,7 @@ from enum import Enum
 from datetime import date
 
 from service_journal.gen_utils.debug import get_default_logger
-from service_journal.gen_utils.class_utils import pull_out_name, write_ordering, unpack
+from service_journal.gen_utils.class_utils import pull_out_name, write_ordering, unpack, interpret_linestring
 
 from pyodbc import ProgrammingError
 
@@ -131,7 +131,12 @@ def _package_shapes(data, acc, shape_str=True):
     key = data['from_stop'], data['to_stop']
     if key in acc:
         logger.warning('Overriding (%s, %s)\'s shape file.')
-    acc[key] = data['distance_feet'], data['shape_str' if shape_str else 'shape']
+    distance = data['distance_feet']
+    if shape_str:
+        path = interpret_linestring(data['shape_str'])
+    else:
+        path = data.get('shape', [])
+    acc[key] = distance, path
 
 
 def process_cursor(cursor, sql_attr_map, packager, name=None, **kwargs):

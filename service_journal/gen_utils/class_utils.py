@@ -58,6 +58,27 @@ def interpret_date(str_: str, formats_: Iterable[str] = ('%m/%d/%Y', '%Y-%m-%d',
     return result.date()
 
 
+def str_2_coord_tuple(coord_str):
+    try:
+        lat, lon = coord_str.split()
+        return float(lat), float(lon)
+    except ValueError as exc:
+        logger.error('Malformed coordinate: (%s)', coord_str)
+        raise ValueError(f'Malformed coordinate: ({coord_str})') from exc
+
+
+def interpret_linestring(line_str: str):
+    acc = []
+    if line_str is None:
+        return acc
+    line_str = line_str[12:-1]
+    try:
+        return list(map(str_2_coord_tuple, line_str.split(', ')))
+    except ValueError as exc:
+        logger.error('Failed to interpret linestring')
+        raise ValueError(f'Could not convert {line_str} to list of coordinates') from exc
+
+
 def pull_out_name(d: Mapping[str, Mapping]) -> Mapping[str, str]:
     """
     Turns a mapping of:
