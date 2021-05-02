@@ -1,6 +1,8 @@
 import os
 import json
 
+# TODO: Restructure config, combining queries and attr_sql_map.
+
 default_config = {
     'settings': {
         # The host driver, as list of these can be found on the pyodbc library readme on github
@@ -261,7 +263,7 @@ default_config = {
                     'nullable': False
                 },
                 'shape': {
-                    'name': 'seg_path',
+                    'name': 'CAST(seg_path AS NVARCHAR(4000)) AS seg_path_str',
                     'view': 'shapes',
                     'nullable': False
                 }
