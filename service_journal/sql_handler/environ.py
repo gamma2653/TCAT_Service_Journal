@@ -263,7 +263,12 @@ default_config = {
                     'nullable': False
                 },
                 'shape': {
-                    'name': 'CAST(seg_path AS NVARCHAR(4000)) AS seg_path_str',
+                    'name': 'seg_path',
+                    'view': 'shapes',
+                    'nullable': False
+                },
+                'shape_str': {
+                    'name': 'seg_path_str',
                     'view': 'shapes',
                     'nullable': False
                 }
@@ -306,8 +311,8 @@ default_config = {
                 'database': 'Utilities',
             },
             'shapes': {
-                'default': 'SELECT {from_stop}, {to_stop}, {date_created}, {distance_feet}, {shape} FROM {table_name} '
-                           'ORDER BY {date_created}',
+                'default': 'SELECT {from_stop}, {to_stop}, {date_created}, {distance_feet}, CAST({shape} AS '
+                           'NVARCHAR(4000)) AS {shape_str} FROM {table_name} ORDER BY {date_created}',
                 'alternate': None,
                 'static': None,
                 'table_name': 'segment_dist',
