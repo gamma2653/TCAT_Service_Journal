@@ -262,7 +262,7 @@ class Connection:
 
     def _exc_query(self, conn_name, query_name, params=None, type_='default'):
         logger.info('Executing query (%s) on connection (%s).', query_name, conn_name)
-        params = [] if None else params
+        params = [] if params is None else params
         queries = self.config['settings']['queries']
         cursor = self.connections[conn_name].cursor()
         attr_sql_map = pull_out_name(self.attr_sql_map[query_name])
