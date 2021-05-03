@@ -183,7 +183,6 @@ class Journal:
 
     def process_dates_batch(self, from_date, to_date, hold_data: bool = False, types_=DEFAULT_PROCESSOR_TYPES):
         self.read_day_independent()
-        logger.debug('Checking if shape 10005 to 1353 exists: %s', (10005, 1353) in self.shapes)
         if hold_data:
             self.read_days(date_range_=date_range(from_date, to_date))
             self.process_all(types_=types_)
