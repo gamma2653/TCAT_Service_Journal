@@ -5,11 +5,7 @@ from typing import Iterable, Mapping
 from service_journal.classifications.exceptions import PreconditionError
 from service_journal.sql_handler.connection import Connection, DataFormat
 from service_journal.gen_utils.debug import get_default_logger
-from service_journal.gen_utils.class_utils import reorganize_map, DATE_BLOCK_TRIP, DATE_BUS_TIME, date_range, \
-    sep_shapes_distances
-
-from detour_analyzer.trip_analyzer.segments import track_intervals
-from detour_analyzer.trip_analyzer.data_processing import expand_shape_dict
+from service_journal.gen_utils.class_utils import date_range, get_deflt_processors, DEFAULT_PROCESSOR_TYPES
 
 logger = get_default_logger(__name__)
 
@@ -34,6 +30,7 @@ class Journal:
         self.intervals_not_visited = {} if intervals_not_visited is None else intervals_not_visited
         self.connection = connection
         self.config = config
+        self.processors = get_deflt_processors()
 
     def _raise_if_not_open(self):
         if not self.connection.is_open:
@@ -119,98 +116,37 @@ class Journal:
         for day in date_range_:
             self.update(*self.connection.read(day, format_=DataFormat.DBT))
 
-    def preprocess(self):
-        """
-        Code to be run before the primary processing of data. This includes running the data through Jonathan's code
-        so that those results can be pulled from when compiling the final service journal.
-        """
-        # TODO: 1. Get shapes 2. Expand them 3. Convert actuals to Date-Block-Trip 4. Call track_intervals
-        converted_actuals = reorganize_map[DATE_BUS_TIME][DATE_BLOCK_TRIP](self.avl_dict)
-        shapes, _ = sep_shapes_distances(self.shapes)
-        expanded_shapes = expand_shape_dict(shapes)
-        self.intervals_not_visited = track_intervals(expanded_shapes, self.stop_locations, converted_actuals)
+    def add_processor(self, type_, processor):
+        if type_ not in self.processors:
+            self.processors[type_] = []
+        self.processors[type_].append(processor)
 
-    def process(self):
-        """
-        Freshly processed the data in self.schedule and self.avl_dict and updates the schedule's internal book-keeping
-        values.
-        """
-        logger.debug('Processing.\nSchedule: %s\nActuals: %s', self.schedule, self.avl_dict)
-        for date_, day_actual in self.avl_dict.items():
-            logger.debug('Getting info for: %s', date_)
-            day_schedule = self.schedule[date_]
+    def clear_processors(self, type_=None):
+        if type_ is None:
+            self.processors = get_deflt_processors()
+        else:
+            self.processors[type_].clear()
 
-            for bus, bus_data in day_actual.items():
-                for time_, report in bus_data.items():
-                    try:
-                        scheduled_stops = day_schedule[report['block_number']][report['trip_number']]['stops']
-                        if report['stop_id'] == 0:
-                            pass
-                            # Time to infer what happened! Magic time.
-                            # trip, lat, lon = report['trip_number'], report['lat'], report['lon']
+    def install_processor_preset(self, processors):
+        self.processors = processors
 
-                        # We saw the stop, and know we got there via Avail
-                        elif report['stop_id'] in scheduled_stops:
-                            stop_id = report['stop_id']
-                            scheduled_stops[stop_id]['seen'] += 1
-                            scheduled_stops[stop_id]['confidence_factors'].append(100)
-                            scheduled_stops[stop_id]['trigger_time'] = time_
-                            scheduled_stops[stop_id]['operator'] = report['operator']
-                            scheduled_stops[stop_id]['boards'] += report['boards']
-                            scheduled_stops[stop_id]['alights'] += report['alights']
-                            original_onboard = scheduled_stops[stop_id]['onboard']
-                            scheduled_stops[stop_id]['onboard'] = max(report['onboard'], original_onboard)
-                            scheduled_stops[stop_id]['bus'] = bus
+    def process(self, type_):
+        for processor in self.processors[type_]:
+            processor(self)
 
-                            # TODO: Check to see if going backwards
-                            # day_schedule[report['block_number']][report['trip_number']]['seq_tracker'] =
-                        else:
-                            logger.warning('Stop not in schedule, what happened?\nStop_ID: %s\nBlock: %s\nTrip: %s\n'
-                                           'Day: %s', report['stop_id'], report['block_number'], report['trip_number'],
-                                           date_)
-
-                    except KeyError as e:
-                        logger.error('Key does not exist in scheduled_stops. These are the keys:\n'
-                                     'block_number=%s\ntrip_number=%s\nKeys in report: %s\nError:\n%s',
-                                     report['block_number'], report['trip_number'], report.keys(), e)
-                        logger.debug('day_schedule: %s', day_schedule)
-
-    def post_process(self):
-        """
-        Updates internal book-keeping that could not be done on first sweep. This includes updating confidence values.
-        """
-        # Calculate confidence scores
-        for date_, day_schedule in self.schedule.items():
-            for block_number, block in day_schedule.items():
-                for trip_number, trip in block.items():
-                    stops = trip['stops']
-                    for stop_id, stop in stops.items():
-                        if stop['seen'] != 0:
-                            stop['confidence_score'] = sum(stop['confidence_factors']) / stop['seen']
-                        else:
-                            stop['confidence_score'] = 0
-
-    def process_all(self, preprocess: bool = True, process: bool = True, post_process: bool = True):
+    def process_all(self, types_=DEFAULT_PROCESSOR_TYPES):
         """
         Convenience method for running preprocess, process, and post_process in that order.
 
-        Runs preprocess, process, and post_process according to the parameters (all True by default).
+        Runs processors according to the parameters (all by default).
 
         PARAMETERS
         --------
-        preprocess
-            Runs the preprocess method.
-        process
-            Runs the process method.
-        post_process
-            Runs the post_process method.
+        types_
+            Types of prep to run. 'prep', 'main', and 'post' by default.
         """
-        if preprocess:
-            self.preprocess()
-        if process:
-            self.process()
-        if post_process:
-            self.post_process()
+        for type_ in types_:
+            self.process(type_)
 
     def write(self):
         """
@@ -245,16 +181,16 @@ class Journal:
         self.connection.commit()
         logger.info('Finished writing data.')
 
-    def process_dates_batch(self, from_date, to_date, hold_data: bool = False, post_process: bool = True):
+    def process_dates_batch(self, from_date, to_date, hold_data: bool = False, types_=DEFAULT_PROCESSOR_TYPES):
         self.read_day_independent()
         if hold_data:
             self.read_days(date_range_=date_range(from_date, to_date))
-            self.process_all(post_process=post_process)
+            self.process_all(types_=types_)
             self.write()
         else:
             for day in date_range(from_date, to_date):
                 self.clear()
                 self.read_day(day)
-                self.process_all(post_process=post_process)
+                self.process_all(types_=types_)
                 self.write()
 

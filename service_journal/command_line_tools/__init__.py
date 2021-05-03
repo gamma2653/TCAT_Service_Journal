@@ -2,7 +2,8 @@
 from typing import Tuple
 import argparse
 
-from service_journal.gen_utils.class_utils import interpret_date
+from service_journal.classifications.processors import MAIN_PRESET
+from service_journal.gen_utils.class_utils import interpret_date, DEFAULT_PROCESSOR_TYPES
 from service_journal.gen_utils.debug import get_default_logger
 from service_journal.classifications.dbt_classes import Journal
 from datetime import date
@@ -42,7 +43,8 @@ def input_days(use_argparse: bool = False) -> Tuple[date, date]:
     return interpret_date(start_date_str), interpret_date(end_date_str)
 
 
-def run_days(config: bool = None, hold_data: bool = False, use_argparse: bool = False, post_process: bool = True):
+def run_days(config: bool = None, hold_data: bool = False, use_argparse: bool = False, preset=MAIN_PRESET,
+             types_=DEFAULT_PROCESSOR_TYPES):
     """
     Acquires the date range via input_days, then proceeds to read, process, post_process (if post_process is True), and
     write the results to the output connection in journal.
@@ -57,12 +59,15 @@ def run_days(config: bool = None, hold_data: bool = False, use_argparse: bool = 
     use_argparse
         If True, it will attempt to use command line arguments for the start and end date. Otherwise, it will only rely
         on prompting the user for start and end dates.
-    post_process
-        If True, it will run the post_process method after running the process method.
+    preset
+        Preset to install
+    types_
+        Processors to use
     """
     from_date, to_date = input_days(use_argparse=use_argparse)
     with Journal(config) as journal:
-        journal.process_dates_batch(from_date, to_date, hold_data, post_process)
+        journal.install_processor_preset(preset)
+        journal.process_dates_batch(from_date, to_date, hold_data, types_)
 
 
 def run(use_argparse: bool = False):

@@ -1,6 +1,7 @@
+from collections import OrderedDict
 from datetime import datetime, date, timedelta
 from enum import Enum
-from typing import Mapping, Iterable, Any, Callable, Tuple
+from typing import Mapping, Iterable, Any, Callable, Tuple, Sized
 from service_journal.gen_utils.debug import get_default_logger
 
 
@@ -90,6 +91,23 @@ def sep_shapes_distances(shapes_and_lengths: Mapping[Tuple[int, int], Tuple[floa
         shapes[str(i)] = value[1]
         shape_distances[str(i)] = key, value[0]
     return shapes, shape_distances
+
+
+def get_shape_trip(stops: list[int], shapes: Mapping[Tuple[int, int], Iterable[int]]):
+    """
+    Gives shapes along stops on a given trip. [stops] only
+
+    PARAMETERS
+    --------
+    stops
+        Contains stops on a given trip and is ordered.
+    shapes
+        Mapping of from stop to stop that gives an iterable of coordinates that define a shape.
+    """
+    trip_shapes = []
+    for i in range(len(stops)-1):
+        trip_shapes.extend(shapes[(stops[i], stops[i+1])])
+    return trip_shapes
 
 
 def pull_out_name(d: Mapping[str, Mapping]) -> Mapping[str, str]:
@@ -229,3 +247,9 @@ reorganize_map: Mapping[OrganizeOrder, Mapping[OrganizeOrder, Callable[[Mapping]
 # Default ordering for the output data.
 write_ordering = ['date', 'bus', 'report_time', 'dir', 'route', 'block_number', 'trip_number', 'operator', 'boards',
                   'alights', 'onboard', 'stop', 'stop_name', 'sched_time', 'seen', 'confidence_score']
+
+DEFAULT_PROCESSOR_TYPES = ('prep', 'main', 'post')
+
+
+def get_deflt_processors():
+    return {k: [] for k in DEFAULT_PROCESSOR_TYPES}

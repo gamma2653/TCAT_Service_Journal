@@ -1,3 +1,4 @@
+from collections import OrderedDict
 from typing import Dict, Optional, Tuple, Mapping, Set, Union, Iterable, Any
 from numbers import Number
 import pyodbc
@@ -60,7 +61,7 @@ def _package_dbt_schedule(data, acc, to_date_format=_to_date_format):
         block[data['trip_number']] = {
             'route': data['route'],
             # TODO: Check with Tom that a trip can only be one route.
-            'stops': {},
+            'stops': OrderedDict(),
             'seq_tracker': 0,
         }
     trip = block[data['trip_number']]
