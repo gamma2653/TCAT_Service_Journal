@@ -104,6 +104,7 @@ def get_shape_trip(stops: List[int], shapes: Mapping[Tuple[int, int], Iterable[i
     shapes
         Mapping of from stop to stop that gives an iterable of coordinates that define a shape.
     """
+    logger.info('get_shape_trip on stops: %s', stops)
     trip_shapes = []
     for i in range(len(stops)-1):
         trip_shapes.extend(shapes[(stops[i], stops[i+1])])
