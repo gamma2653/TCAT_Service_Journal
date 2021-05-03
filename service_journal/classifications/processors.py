@@ -17,6 +17,7 @@ def prep_segment_analysis(journal):
     converted_actuals = reorganize_map[DATE_BUS_TIME][DATE_BLOCK_TRIP](journal.avl_dict)
     shapes, _ = sep_shapes_distances(journal.shapes)
     expanded_shapes = expand_shape_dict(shapes)
+    logger.debug('Checking if shape 10005 to 1353 exists in EXPANDED SHAPES: %s', (10005, 1353) in expanded_shapes)
     # Go through trips and call track_intervals
     journal.intervals_not_visited = tracked_intervals = {}
     for date_key, date_value in journal.schedule.items():
