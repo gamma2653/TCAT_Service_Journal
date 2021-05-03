@@ -32,12 +32,12 @@ def input_days(use_argparse: bool = False) -> Tuple[date, date]:
         parser = argparse.ArgumentParser()
         parser.add_argument('-sd', '--start_day', default=None, type=interpret_date)
         parser.add_argument('-ed', '--end_day', default=None, type=interpret_date)
-        args = parser.parse_args()
-        if args.start_day is not None and args.end_day is not None:
-            return args.start_day, args.end_day
-        else:
+        args, _ = parser.parse_known_args()
+        if args.start_day is None or args.end_day is None:
             logger.warning('use_argparse is %s, but the requested arguments cannot be found. Switching to manual.',
                            use_argparse)
+        else:
+            return args.start_day, args.end_day
     start_date_str = input('Please input the start date in a typical format.\n')
     end_date_str = input('Please input the end date in a typical format.\n')
     return interpret_date(start_date_str), interpret_date(end_date_str)
