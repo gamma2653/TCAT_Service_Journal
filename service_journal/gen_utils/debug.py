@@ -11,7 +11,8 @@ def read_level_from_args():
     """
     parser = argparse.ArgumentParser()
     parser.add_argument('-l', '--log', default='INFO', type=str)
-    log_level = parser.parse_args().log
+    args, _ = parser.parse_known_args()
+    log_level = args.log
     numeric_level = getattr(logging, log_level.upper(), None)
     if not isinstance(numeric_level, int):
         raise ValueError(f'Invalid log level: {log_level}')
