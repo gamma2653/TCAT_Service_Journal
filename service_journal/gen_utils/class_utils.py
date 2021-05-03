@@ -1,7 +1,7 @@
 from collections import OrderedDict
 from datetime import datetime, date, timedelta
 from enum import Enum
-from typing import Mapping, Iterable, Any, Callable, Tuple, Sized
+from typing import Mapping, Iterable, Any, Callable, Tuple, Sized, List
 from service_journal.gen_utils.debug import get_default_logger
 
 
@@ -93,7 +93,7 @@ def sep_shapes_distances(shapes_and_lengths: Mapping[Tuple[int, int], Tuple[floa
     return shapes, shape_distances
 
 
-def get_shape_trip(stops: list[int], shapes: Mapping[Tuple[int, int], Iterable[int]]):
+def get_shape_trip(stops: List[int], shapes: Mapping[Tuple[int, int], Iterable[int]]):
     """
     Gives shapes along stops on a given trip. [stops] only
 
