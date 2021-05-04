@@ -84,12 +84,21 @@ def interpret_linestring(line_str: str) -> Iterable[Tuple[float, float]]:
 
 
 def sep_shapes_distances(shapes_and_lengths: Mapping[Tuple[int, int], Tuple[float, Iterable[Tuple[float, float]]]]):
-    i = 0
-    shapes = {}
-    shape_distances = {}
+    # i = 0
+    # shapes = {}
+    # shape_distances = {}
+    # for key, value in shapes_and_lengths.items():
+    #     shapes[str(i)] = value[1]
+    #     shape_distances[str(i)] = key, value[0]
+    # return shapes, shape_distances
+    # or
+    # return dict(map(lambda x: (x[0], x[1][1]), shapes_and_lengths.lengths)) , ... similar for distance
+    # or
+    # ids, dist_shape = zip(*shapes_and_lengths.items())
+    # distances, shapes = zip(*dist_shape)
+    shapes, shape_distances = {}, {}
     for key, value in shapes_and_lengths.items():
-        shapes[str(i)] = value[1]
-        shape_distances[str(i)] = key, value[0]
+        shape_distances[key], shapes[key] = value
     return shapes, shape_distances
 
 
