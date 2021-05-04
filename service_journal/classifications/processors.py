@@ -25,6 +25,8 @@ def prep_segment_analysis(journal):
         for block_key, block_value in date_value.items():
             for trip_key, trip_value in block_value.items():
                 stops = list(trip_value['stops'].keys())
+                _stop_locations = journal.stop_locations
+                stop_locations = [_stop_locations[stop] for stop in stops]
                 if date_key not in tracked_intervals:
                     tracked_intervals[date_key] = {}
                 tracked_intervals_d = tracked_intervals[date_key]
@@ -32,7 +34,7 @@ def prep_segment_analysis(journal):
                     tracked_intervals_d[block_key] = {}
                 tracked_intervals_db = tracked_intervals_d[block_key]
                 trip_shapes = get_shape_trip(stops, expanded_shapes)
-                tracked_intervals_db[trip_key] = track_intervals(trip_shapes, journal.stop_locations,
+                tracked_intervals_db[trip_key] = track_intervals(trip_shapes, stop_locations,
                                                                  [(ping['lat'], ping['lon']) for ping in
                                                                   converted_actuals[date_key][block_key][trip_key]])
 
