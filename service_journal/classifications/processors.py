@@ -26,7 +26,7 @@ def prep_segment_analysis(journal):
             for trip_key, trip_value in block_value.items():
                 stops = list(trip_value['stops'].keys())
                 _stop_locations = journal.stop_locations
-                stop_locations = [_stop_locations[stop] for stop in stops]
+                stop_locations = [(stop, _stop_locations[stop]) for stop in stops]
                 if date_key not in tracked_intervals:
                     tracked_intervals[date_key] = {}
                 tracked_intervals_d = tracked_intervals[date_key]
