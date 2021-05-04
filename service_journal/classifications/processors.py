@@ -32,7 +32,9 @@ def prep_segment_analysis(journal):
                     tracked_intervals_d[block_key] = {}
                 tracked_intervals_db = tracked_intervals_d[block_key]
                 trip_shapes = get_shape_trip(stops, expanded_shapes)
-                tracked_intervals_db[trip_key] = track_intervals(trip_shapes, journal.stop_locations, converted_actuals)
+                tracked_intervals_db[trip_key] = track_intervals(trip_shapes, journal.stop_locations,
+                                                                 [(ping['lat'], ping['lon']) for ping in
+                                                                  converted_actuals[date_key][block_key][trip_key]])
 
 
 def process_take1(journal):

@@ -221,7 +221,7 @@ def _bus_2_block(mapping: Mapping) -> Mapping:
                     result[date_key] = {}
                 if block not in result[date_key]:
                     result[date_key][block] = {}
-                if trigger not in result[date_key][block]:
+                if trip not in result[date_key][block]:
                     result[date_key][block][trip] = []
                 result[date_key][block][trip].append({
                     'alights': trigger_value.get('alights', 0),
