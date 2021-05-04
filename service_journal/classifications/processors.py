@@ -1,4 +1,4 @@
-from detour_analyzer.flat_read import expand_shape_dict
+from detour_analyzer.trip_analyzer.data_processing import expand_shape_dict
 from detour_analyzer.trip_analyzer.segments import track_intervals
 
 from service_journal.gen_utils.class_utils import reorganize_map, DATE_BUS_TIME, DATE_BLOCK_TRIP, \
