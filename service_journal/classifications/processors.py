@@ -24,6 +24,7 @@ def prep_segment_analysis(journal):
     for date_key, date_value in journal.schedule.items():
         for block_key, block_value in date_value.items():
             for trip_key, trip_value in block_value.items():
+                dbt = date_key, block_key, trip_key
                 stops = list(trip_value['stops'].keys())
                 # This is for trips with a single stop. Because this happens. Eg. deadheads
                 if len(stops) < 2:
@@ -36,16 +37,20 @@ def prep_segment_analysis(journal):
                 if block_key not in tracked_intervals_d:
                     tracked_intervals_d[block_key] = {}
                 tracked_intervals_db = tracked_intervals_d[block_key]
-                trip_shapes = get_shape_trip(stops, expanded_shapes)
+                trip_shapes = []
+                try:
+                    trip_shapes = get_shape_trip(stops, expanded_shapes)
+                except KeyError as exc:
+                    logger.error('Ran into a key error on trip: [%s][%s][%s]\n Probably no shape. See next error', *dbt)
+                    logger.error('Error: %s', exc)
                 if date_key not in converted_actuals or block_key not in converted_actuals[date_key] or \
                         trip_key not in converted_actuals[date_key][block_key]:
-                    logger.info('Missed entire trip: [%s][%s][%s]', date_key, block_key, trip_key)
+                    logger.info('Missed entire trip: [%s][%s][%s]', *dbt)
                     continue
                 if not converted_actuals[date_key][block_key][trip_key]:
-                    logger.warning('converted_actuals for [%s][%s][%s] are empty!', date_key, block_key, trip_key)
+                    logger.warning('converted_actuals for [%s][%s][%s] are empty!', *dbt)
                 if not trip_shapes:
-                    logger.warning('trip_shapes for [%s][%s][%s] are empty! Stops: %s', date_key, block_key, trip_key,
-                                   stops)
+                    logger.warning('trip_shapes for [%s][%s][%s] are empty! Stops: %s', *dbt, stops)
                 tracked_intervals_db[trip_key] = track_intervals(trip_shapes, stop_locations,
                                                                  [(ping['lat'], ping['lon']) for ping in
                                                                   converted_actuals[date_key][block_key][trip_key]])

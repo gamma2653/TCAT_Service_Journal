@@ -102,7 +102,7 @@ def sep_shapes_distances(shapes_and_lengths: Mapping[Tuple[int, int], Tuple[floa
     return shapes, shape_distances
 
 
-def get_shape_trip(stops: List[int], shapes: Mapping[Tuple[int, int], Iterable[int]]):
+def get_shape_trip(stops: List[int], shapes: Mapping[Tuple[int, int], Iterable[int]]) -> Iterable[int]:
     """
     Gives shapes along stops on a given trip. [stops] only
 
