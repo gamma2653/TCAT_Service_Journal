@@ -25,6 +25,9 @@ def prep_segment_analysis(journal):
         for block_key, block_value in date_value.items():
             for trip_key, trip_value in block_value.items():
                 stops = list(trip_value['stops'].keys())
+                # This is for trips with a single stop. Because this happens. Eg. deadheads
+                if len(stops) < 2:
+                    continue
                 _stop_locations = journal.stop_locations
                 stop_locations = [(stop, _stop_locations[stop]) for stop in stops]
                 if date_key not in tracked_intervals:
