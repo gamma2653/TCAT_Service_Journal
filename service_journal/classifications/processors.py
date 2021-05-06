@@ -37,7 +37,8 @@ def prep_segment_analysis(journal):
                 if not converted_actuals[date_key][block_key][trip_key]:
                     logger.warning('converted_actuals for [%s][%s][%s] are empty!', date_key, block_key, trip_key)
                 if not trip_shapes:
-                    logger.warning('trip_shapes for [%s][%s][%s] are empty!', date_key, block_key, trip_key)
+                    logger.warning('trip_shapes for [%s][%s][%s] are empty! Stops: %s', date_key, block_key, trip_key,
+                                   stops)
                 tracked_intervals_db[trip_key] = track_intervals(trip_shapes, stop_locations,
                                                                  [(ping['lat'], ping['lon']) for ping in
                                                                   converted_actuals[date_key][block_key][trip_key]])
