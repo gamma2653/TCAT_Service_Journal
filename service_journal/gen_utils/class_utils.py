@@ -237,7 +237,6 @@ def _bus_2_block(mapping: Mapping) -> Mapping:
                     'operator': trigger_value.get('operator', None),
                     'stop_id': trigger_value.get('stop_id', None),
                     'time': trigger,
-
                 })
     return result
 
