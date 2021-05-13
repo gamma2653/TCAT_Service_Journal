@@ -1,3 +1,5 @@
+from multiprocessing import Pool
+
 from detour_analyzer.trip_analyzer.data_processing import expand_shape_dict
 from detour_analyzer.trip_analyzer.segments import track_intervals
 
@@ -21,42 +23,52 @@ def prep_segment_analysis(journal):
     logger.debug('Checking if shape 10005 to 1353 exists in EXPANDED SHAPES: %s', (10005, 1353) in expanded_shapes)
     # Go through trips and call track_intervals
     journal.intervals_not_visited = tracked_intervals = {}
-    for date_key, date_value in journal.schedule.items():
-        for block_key, block_value in date_value.items():
-            for trip_key, trip_value in block_value.items():
-                dbt = date_key, block_key, trip_key
-                stops = list(trip_value['stops'].keys())
-                # This is for trips with a single stop. Because this happens. Eg. deadheads
-                if len(stops) < 2:
-                    continue
-                _stop_locations = journal.stop_locations
-                stop_locations = [(stop, _stop_locations[stop]) for stop in stops]
-                if date_key not in tracked_intervals:
-                    tracked_intervals[date_key] = {}
-                tracked_intervals_d = tracked_intervals[date_key]
-                if block_key not in tracked_intervals_d:
-                    tracked_intervals_d[block_key] = {}
+    with Pool(processes=4) as pool:
+        for date_key, date_value in journal.schedule.items():
+            for block_key, block_value in date_value.items():
+                for trip_key, trip_value in block_value.items():
+                    dbt = date_key, block_key, trip_key
+                    stops = list(trip_value['stops'].keys())
+                    # This is for trips with a single stop. Because this happens. Eg. deadheads
+                    if len(stops) < 2:
+                        continue
+                    _stop_locations = journal.stop_locations
+                    stop_locations = [(stop, _stop_locations[stop]) for stop in stops]
+                    if date_key not in tracked_intervals:
+                        tracked_intervals[date_key] = {}
+                    tracked_intervals_d = tracked_intervals[date_key]
+                    if block_key not in tracked_intervals_d:
+                        tracked_intervals_d[block_key] = {}
+                    tracked_intervals_db = tracked_intervals_d[block_key]
+                    try:
+                        trip_shapes = get_shape_trip(stops, expanded_shapes)
+                    except KeyError as exc:
+                        logger.error('Ran into a key error on trip: [%s][%s][%s]\n Probably no shape. See next error',
+                                     *dbt)
+                        logger.error('Error: %s', exc)
+                        continue
+                    if date_key not in converted_actuals or block_key not in converted_actuals[date_key] or \
+                            trip_key not in converted_actuals[date_key][block_key]:
+                        logger.info('Missed entire trip: [%s][%s][%s]', *dbt)
+                        continue
+                    if not converted_actuals[date_key][block_key][trip_key]:
+                        logger.warning('converted_actuals for [%s][%s][%s] are empty!', *dbt)
+                        continue
+                    if not trip_shapes:
+                        logger.warning('trip_shapes for [%s][%s][%s] are empty! Stops: %s', *dbt, stops)
+                        continue
+                    tracked_intervals_db[trip_key] = pool.apply_async(track_intervals, (trip_shapes, stop_locations,
+                                                                                        [(ping['lat'], ping['lon']) for
+                                                                                         ping in
+                                                                                         converted_actuals[date_key][
+                                                                                             block_key][trip_key]]))
+        for date_key, date_value in tracked_intervals:
+            tracked_intervals_d = tracked_intervals[date_key]
+            for block_key, block_value in date_value.items():
                 tracked_intervals_db = tracked_intervals_d[block_key]
-                trip_shapes = []
-                try:
-                    trip_shapes = get_shape_trip(stops, expanded_shapes)
-                except KeyError as exc:
-                    logger.error('Ran into a key error on trip: [%s][%s][%s]\n Probably no shape. See next error', *dbt)
-                    logger.error('Error: %s', exc)
-                    continue
-                if date_key not in converted_actuals or block_key not in converted_actuals[date_key] or \
-                        trip_key not in converted_actuals[date_key][block_key]:
-                    logger.info('Missed entire trip: [%s][%s][%s]', *dbt)
-                    continue
-                if not converted_actuals[date_key][block_key][trip_key]:
-                    logger.warning('converted_actuals for [%s][%s][%s] are empty!', *dbt)
-                    continue
-                if not trip_shapes:
-                    logger.warning('trip_shapes for [%s][%s][%s] are empty! Stops: %s', *dbt, stops)
-                    continue
-                tracked_intervals_db[trip_key] = track_intervals(trip_shapes, stop_locations,
-                                                                 [(ping['lat'], ping['lon']) for ping in
-                                                                  converted_actuals[date_key][block_key][trip_key]])
+                for trip_key, trip_value in block_value.items():
+                    tracked_intervals_db[trip_key] = trip_value.get()
+
 
 
 def process_take1(journal):
