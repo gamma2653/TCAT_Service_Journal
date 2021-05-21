@@ -1,11 +1,12 @@
 # DBT_Classes = Day-Block-Trip classes
 from datetime import date
-from typing import Iterable, Mapping
+from typing import Iterable, Mapping, Optional, List
 
 from service_journal.classifications.exceptions import PreconditionError
+from service_journal.classifications.processors import get_deflt_processors
 from service_journal.sql_handler.connection import Connection, DataFormat
 from service_journal.gen_utils.debug import get_default_logger
-from service_journal.gen_utils.class_utils import date_range, get_deflt_processors, DEFAULT_PROCESSOR_TYPES
+from service_journal.gen_utils.class_utils import date_range
 
 logger = get_default_logger(__name__)
 
@@ -20,9 +21,10 @@ class Journal:
     adding a new day.
     """
 
-    def __init__(self, schedule: Mapping = None, avl_dict: Mapping = None, stop_locations: Mapping = None,
-                 shapes: Mapping = None, intervals_not_visited: Mapping = None, connection: Connection = None,
-                 config: Mapping = None):
+    def __init__(self, schedule: Optional[Mapping] = None, avl_dict: Optional[Mapping] = None,
+                 stop_locations: Optional[Mapping] = None, shapes: Optional[Mapping] = None,
+                 intervals_not_visited: Optional[Mapping] = None, connection: Optional[Connection] = None,
+                 config: Mapping = None, processors: Optional[Mapping[str, List]] = None):
         self.schedule = {} if schedule is None else schedule
         self.avl_dict = {} if avl_dict is None else avl_dict
         self.stop_locations = {} if stop_locations is None else stop_locations
@@ -30,7 +32,7 @@ class Journal:
         self.intervals_not_visited = {} if intervals_not_visited is None else intervals_not_visited
         self.connection = connection
         self.config = config
-        self.processors = get_deflt_processors()
+        self.processors = get_deflt_processors() if processors is None else processors
 
     def _raise_if_not_open(self):
         if not self.connection.is_open:
@@ -88,22 +90,27 @@ class Journal:
         self.close()
 
     def read_stops_locations(self):
+        logger.debug('Reading stop_locations.')
         self._raise_if_not_open()
         self.update(stop_locations=self.connection.load_stop_loc())
 
     def read_shapes(self):
+        logger.debug('Reading shapes.')
         self._raise_if_not_open()
         self.update(shapes=self.connection.load_shapes())
 
     def read_day_independent(self):
+        logger.debug('Reading data that is independent from date.')
         self.read_stops_locations()
         self.read_shapes()
+        logger.debug('Done reading data that is independent from date.')
 
     def read_day(self, day):
+        logger.debug('Reading [%s] from connection.', day)
         self._raise_if_not_open()
-        self.update(*self.connection.read(day, format_=DataFormat.DBT))
+        self.update(*self.connection.read(day))
 
-    def read_days(self, date_range_: Iterable[date]):
+    def read_days(self, date_range_: Iterable[date], block: Optional[int] = None):
         """
         Read date_range from a newly established connection.
 
@@ -111,30 +118,47 @@ class Journal:
         --------
         date_range_
             Iterable of date objects to load from the database.
+        block
+            Block to read. Defaults to all blocks
         """
+        logger.debug('Initiating read_days for date_range: %s for block: %s', date_range, block)
         self._raise_if_not_open()
-        for day in date_range_:
-            self.update(*self.connection.read(day, format_=DataFormat.DBT))
+        if block is None:
+            for day in date_range_:
+                logger.info('Reading in data for: %s', day)
+                self.update(*self.connection.read(day))
+        else:
+            for day in date_range_:
+                logger.info('Reading in data for: %s for block: %s', day, block)
+                self.update(*self.connection.read(day, type_='alternate', params=[block]))
 
     def add_processor(self, type_, processor):
+        logger.debug('Adding %s to the %s layer of processors.', processor, type_)
         if type_ not in self.processors:
             self.processors[type_] = []
         self.processors[type_].append(processor)
+        logger.debug('Processor loaded.')
 
     def clear_processors(self, type_=None):
+        logger.debug('Clearing processors.')
         if type_ is None:
             self.processors = get_deflt_processors()
         else:
             self.processors[type_].clear()
+        logger.debug('All processors cleared.')
 
     def install_processor_preset(self, processors):
+        logger.debug('Installing processor preset.')
         self.processors = processors
+        logger.debug('Processor preset installed.')
 
     def process(self, type_):
+        logger.debug('Processing layer: %s', type_)
         for processor in self.processors[type_]:
+            logger.debug('Running processor: %s', processor)
             processor(self)
 
-    def process_all(self, types_=DEFAULT_PROCESSOR_TYPES):
+    def process_all(self, types_: Optional[Iterable[str]] = None):
         """
         Convenience method for running preprocess, process, and post_process in that order.
 
@@ -143,8 +167,11 @@ class Journal:
         PARAMETERS
         --------
         types_
-            Types of prep to run. 'prep', 'main', and 'post' by default.
+            Iterable of strings that are keys to installed processors. eg) defaults are prep, main, post. Defaults to
+            all installed processors.
         """
+        logger.debug('Processing all processors: %s', self.processors)
+        types_ = self.processors.keys() if types_ is None else types_
         for type_ in types_:
             self.process(type_)
 
@@ -181,10 +208,14 @@ class Journal:
         self.connection.commit()
         logger.info('Finished writing data.')
 
-    def process_dates_batch(self, from_date, to_date, hold_data: bool = False, types_=DEFAULT_PROCESSOR_TYPES):
+    def process_dates_batch(self, from_date, to_date, hold_data: bool = False, types_: Optional[Iterable[str]] = None,
+                            block: Optional[int] = None):
+        types_ = self.processors.keys() if types_ is None else types_
+        logger.info('Processing a batch of days from %s to %s. hold_data=%s types_=%s block=block')
         self.read_day_independent()
+        logger.debug('Day independent data has been loaded.')
         if hold_data:
-            self.read_days(date_range_=date_range(from_date, to_date))
+            self.read_days(date_range_=date_range(from_date, to_date), block=block)
             self.process_all(types_=types_)
             self.write()
         else:
@@ -193,4 +224,3 @@ class Journal:
                 self.read_day(day)
                 self.process_all(types_=types_)
                 self.write()
-

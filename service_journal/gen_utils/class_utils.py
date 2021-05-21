@@ -1,7 +1,6 @@
-from collections import OrderedDict
 from datetime import datetime, date, timedelta
 from enum import Enum
-from typing import Mapping, Iterable, Any, Callable, Tuple, Sized, List
+from typing import Mapping, Iterable, Any, Callable, Tuple, List
 from service_journal.gen_utils.debug import get_default_logger
 
 
@@ -256,9 +255,3 @@ reorganize_map: Mapping[OrganizeOrder, Mapping[OrganizeOrder, Callable[[Mapping]
 # Default ordering for the output data.
 write_ordering = ['date', 'bus', 'report_time', 'dir', 'route', 'block_number', 'trip_number', 'operator', 'boards',
                   'alights', 'onboard', 'stop', 'stop_name', 'sched_time', 'seen', 'confidence_score']
-
-DEFAULT_PROCESSOR_TYPES = ('prep', 'main', 'post')
-
-
-def get_deflt_processors():
-    return {k: [] for k in DEFAULT_PROCESSOR_TYPES}

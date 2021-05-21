@@ -289,7 +289,9 @@ default_config = {
                 'default': 'SELECT {date}, {block_number}, {trip_number}, {route}, {direction}, {stop}, {next_stop}, '
                            '{sched_time} FROM {table_name} WHERE {date}=? ORDER BY {date}, {block_number}, '
                            '{trip_number}, {sched_time}',
-                'alternate': None,
+                'alternate': 'SELECT {date}, {block_number}, {trip_number}, {route}, {direction}, {stop}, {next_stop}, '
+                             '{sched_time} FROM {table_name} WHERE {date}=? AND {block_number}=? ORDER BY {date}, '
+                             '{block_number}, {trip_number}, {sched_time}',
                 'static': None,
                 'table_name': 'v_scheduled_stops',
                 'database': 'TA_ITHACA_SCHEDULE_HISTORY',

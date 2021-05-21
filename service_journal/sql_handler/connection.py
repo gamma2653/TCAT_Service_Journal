@@ -1,5 +1,5 @@
 from collections import OrderedDict
-from typing import Dict, Optional, Tuple, Mapping, Set, Union, Iterable, Any
+from typing import Dict, Optional, Tuple, Mapping, Set, Union, Iterable, List
 from numbers import Number
 import pyodbc
 from enum import Enum
@@ -7,8 +7,6 @@ from datetime import date
 
 from service_journal.gen_utils.debug import get_default_logger
 from service_journal.gen_utils.class_utils import pull_out_name, write_ordering, unpack, interpret_linestring
-
-from pyodbc import ProgrammingError
 
 logger = get_default_logger(__name__)
 _to_date_format = '%Y-%m-%d'
@@ -319,7 +317,8 @@ class Connection:
     def __exit__(self, exception_type, exception_value, traceback):
         self.close()
 
-    def read(self, date_: date, format_: DataFormat = DataFormat.DBT) -> Union[Tuple[Mapping, Mapping], Mapping]:
+    def read(self, date_: date, format_: DataFormat = DataFormat.DBT, type_: str = 'default',
+             params: Optional[List] = None) -> Union[Tuple[Mapping, Mapping], Mapping]:
         """
         Read from the Connection the given date_ and store in the given format_.
 
@@ -329,16 +328,23 @@ class Connection:
             The date object that defines the date from which to pull the schedule and avl_data.
         format_
             The DataFormat which should be used to store the data pulled from the Connection.
+        type_
+            The type of query being done
+        params
+            Parameters to pass to executed query.
         """
         # a_xxx refers to "actuals xxx" and s_xxx refers to "scheduled xxx"
         logger.info('Reading from connections.')
-
         # Init params
-        params = [date_.strftime(_to_date_format)]
+        if params is None:
+            params = []
+        params.append(date_.strftime(_to_date_format))
 
         # Execute queries
-        (a_attr_sql_map, a_sql_attr_map), a_cursor = self._exc_query('actuals_conn', 'actuals', params=params)
-        (s_attr_sql_map, s_sql_attr_map), s_cursor = self._exc_query('scheduled_conn', 'scheduled', params=params)
+        (a_attr_sql_map, a_sql_attr_map), a_cursor = self._exc_query('actuals_conn', 'actuals', params=params,
+                                                                     type_=type_)
+        (s_attr_sql_map, s_sql_attr_map), s_cursor = self._exc_query('scheduled_conn', 'scheduled', params=params,
+                                                                     type_=type_)
 
         # Format dictates dictionary structure to generate
         if format_ is DataFormat.RTBD:

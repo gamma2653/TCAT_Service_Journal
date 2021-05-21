@@ -2,8 +2,8 @@
 from typing import Tuple
 import argparse
 
-from service_journal.classifications.processors import MAIN_PRESET
-from service_journal.gen_utils.class_utils import interpret_date, DEFAULT_PROCESSOR_TYPES
+from service_journal.classifications.processors import MAIN_PRESET, DEFAULT_PROCESSOR_TYPES
+from service_journal.gen_utils.class_utils import interpret_date
 from service_journal.gen_utils.debug import get_default_logger
 from service_journal.classifications.dbt_classes import Journal
 from datetime import date
@@ -11,7 +11,14 @@ from datetime import date
 logger = get_default_logger(__name__)
 
 
-def input_days(use_argparse: bool = False) -> Tuple[date, date]:
+def input_int(prompt=''):
+    try:
+        return int(input(prompt))
+    except ValueError:
+        return input_int(prompt)
+
+
+def input_days(use_argparse: bool = False) -> Tuple[date, date, int]:
     """
     Gets the start and end dates either via argparse or command line. Unless argparse is True, it will prompt the user
     to input a start and end date. It will then return a tuple of these dates interpreted using interpret_date.
@@ -32,15 +39,18 @@ def input_days(use_argparse: bool = False) -> Tuple[date, date]:
         parser = argparse.ArgumentParser()
         parser.add_argument('-sd', '--start_day', default=None, type=interpret_date)
         parser.add_argument('-ed', '--end_day', default=None, type=interpret_date)
+        parser.add_argument('-b', '--block', default=None, type=int)
         args, _ = parser.parse_known_args()
         if args.start_day is None or args.end_day is None:
             logger.warning('use_argparse is %s, but the requested arguments cannot be found. Switching to manual.',
                            use_argparse)
         else:
-            return args.start_day, args.end_day
+            return args.start_day, args.end_day, args.block
     start_date_str = input('Please input the start date in a typical format.\n')
     end_date_str = input('Please input the end date in a typical format.\n')
-    return interpret_date(start_date_str), interpret_date(end_date_str)
+
+    block = int(input('Please enter the block to process, or press enter to process the entire day.\n'))
+    return interpret_date(start_date_str), interpret_date(end_date_str), block
 
 
 def run_days(config: bool = None, hold_data: bool = False, use_argparse: bool = False, preset=MAIN_PRESET,
@@ -64,10 +74,10 @@ def run_days(config: bool = None, hold_data: bool = False, use_argparse: bool = 
     types_
         Processors to use
     """
-    from_date, to_date = input_days(use_argparse=use_argparse)
+    from_date, to_date, block = input_days(use_argparse=use_argparse)
     with Journal(config) as journal:
         journal.install_processor_preset(preset)
-        journal.process_dates_batch(from_date, to_date, hold_data, types_)
+        journal.process_dates_batch(from_date, to_date, hold_data, types_, block=block)
 
 
 def run(use_argparse: bool = False):
