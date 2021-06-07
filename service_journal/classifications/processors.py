@@ -1,4 +1,3 @@
-from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from detour_analyzer.trip_analyzer.data_processing import expand_shape_dict
@@ -14,7 +13,7 @@ if TYPE_CHECKING:
 logger = get_default_logger(__name__)
 
 
-def prep_segment_analysis(journal: Journal):
+def prep_segment_analysis(journal: 'Journal'):
     """
     Code to be run before the primary processing of data. This includes running the data through Jonathan's code so that
      those results can be pulled from when compiling the final service journal.
@@ -66,7 +65,7 @@ def prep_segment_analysis(journal: Journal):
         logger.info('Finished prepping segment analysis for %s', date_key)
 
 
-def process_take1(journal: Journal):
+def process_take1(journal: 'Journal'):
     """
     Freshly processed the data in self.schedule and self.avl_dict and updates the schedule's internal book-keeping
     values.
@@ -113,7 +112,7 @@ def process_take1(journal: Journal):
                     logger.debug('day_schedule: %s', day_schedule)
 
 
-def calculate_confidence(journal: Journal):
+def calculate_confidence(journal: 'Journal'):
     """
     Updates internal book-keeping that could not be done on first sweep. This includes updating confidence values.
     """
@@ -130,7 +129,7 @@ def calculate_confidence(journal: Journal):
                         stop['confidence_score'] = 0
 
 
-def cross_ref_tracked_intervals(journal: Journal):
+def cross_ref_tracked_intervals(journal: 'Journal'):
     for date_, day_schedule in journal.schedule.items():
         logger.info('Cross referencing %s.', date_)
         intervals_not_seen_d = journal.intervals_not_visited[date_]

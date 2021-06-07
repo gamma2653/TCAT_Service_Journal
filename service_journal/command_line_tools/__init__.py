@@ -18,7 +18,7 @@ def input_int(prompt=''):
         return input_int(prompt)
 
 
-def input_days(use_argparse: bool = False) -> Tuple[date, date, int]:
+def input_(use_argparse: bool = False) -> Tuple[date, date, int]:
     """
     Gets the start and end dates either via argparse or command line. Unless argparse is True, it will prompt the user
     to input a start and end date. It will then return a tuple of these dates interpreted using interpret_date.
@@ -74,7 +74,7 @@ def run_days(config: bool = None, hold_data: bool = False, use_argparse: bool = 
     types_
         Processors to use
     """
-    from_date, to_date, block = input_days(use_argparse=use_argparse)
+    from_date, to_date, block = input_(use_argparse=use_argparse)
     with Journal(config) as journal:
         journal.install_processor_preset(preset)
         journal.process_dates_batch(from_date, to_date, hold_data, types_, block=block)

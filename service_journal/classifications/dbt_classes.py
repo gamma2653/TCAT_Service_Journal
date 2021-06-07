@@ -4,7 +4,7 @@ from typing import Iterable, Mapping, Optional, List
 
 from service_journal.classifications.exceptions import PreconditionError
 from service_journal.classifications.processors import get_deflt_processors
-from service_journal.sql_handler.connection import Connection, DataFormat
+from service_journal.sql_handler.connection import Connection
 from service_journal.gen_utils.debug import get_default_logger
 from service_journal.gen_utils.class_utils import date_range
 
@@ -105,10 +105,13 @@ class Journal:
         self.read_shapes()
         logger.debug('Done reading data that is independent from date.')
 
-    def read_day(self, day):
+    def read_day(self, day, block=None):
         logger.debug('Reading [%s] from connection.', day)
         self._raise_if_not_open()
-        self.update(*self.connection.read(day))
+        if block is None:
+            self.update(*self.connection.read(day))
+        else:
+            self.update(*self.connection.read(day, type_='alternate', params=[block]))
 
     def read_days(self, date_range_: Iterable[date], block: Optional[int] = None):
         """
@@ -211,7 +214,8 @@ class Journal:
     def process_dates_batch(self, from_date, to_date, hold_data: bool = False, types_: Optional[Iterable[str]] = None,
                             block: Optional[int] = None):
         types_ = self.processors.keys() if types_ is None else types_
-        logger.info('Processing a batch of days from %s to %s. hold_data=%s types_=%s block=block')
+        logger.info('Processing a batch of days from %s to %s. hold_data=%s types_=%s block=%s', from_date, to_date,
+                    hold_data, types_, block)
         self.read_day_independent()
         logger.debug('Day independent data has been loaded.')
         if hold_data:
@@ -221,6 +225,6 @@ class Journal:
         else:
             for day in date_range(from_date, to_date):
                 self.clear()
-                self.read_day(day)
+                self.read_day(day, block=block)
                 self.process_all(types_=types_)
                 self.write()
