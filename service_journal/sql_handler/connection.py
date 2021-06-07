@@ -144,12 +144,14 @@ def process_cursor(cursor, sql_attr_map, packager, name=None, **kwargs):
     acc = {}
     row = cursor.fetchone()
     attr_col_names = [sql_attr_map[col[0]] for col in cursor.description]
+    record_count = 0
     while row:
         data = dict(zip(attr_col_names, row))
         packager(data, acc, **kwargs)
         row = cursor.fetchone()
+        record_count += 1
     if name:
-        logger.info('Finished processing cursor for %s.', name)
+        logger.info('Finished processing cursor for %s. Processed %s records.', name, record_count)
     return acc
 
 
@@ -265,7 +267,7 @@ class Connection:
                               database=database, uid=self.username, pwd=self.password)
 
     def _exc_query(self, conn_name, query_name, params=None, type_='default'):
-        logger.info('Executing query (%s) on connection (%s).', query_name, conn_name)
+        logger.info('Executing query (%s:%s) on connection (%s).', query_name, type_, conn_name)
         params = [] if params is None else params
         queries = self.config['settings']['queries']
         cursor = self.connections[conn_name].cursor()
@@ -338,7 +340,7 @@ class Connection:
         # Init params
         if params is None:
             params = []
-        params.append(date_.strftime(_to_date_format))
+        params.insert(0, date_.strftime(_to_date_format))
 
         # Execute queries
         (a_attr_sql_map, a_sql_attr_map), a_cursor = self._exc_query('actuals_conn', 'actuals', params=params,

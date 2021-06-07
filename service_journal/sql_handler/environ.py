@@ -280,7 +280,10 @@ default_config = {
                            '{actual_time}, {route}, {direction}, {stop}, {name}, {boards}, {alights}, {onboard}, '
                            '{op_status}, {latitude}, {longitude} FROM {table_name} WHERE {date}=? ORDER '
                            'BY {date}, {bus}, {trigger_time} asc',
-                'alternate': None,
+                'alternate': 'SELECT {date}, {block_number}, {trip_number}, {bus}, {trigger_time}, {operator}, '
+                             '{actual_time}, {route}, {direction}, {stop}, {name}, {boards}, {alights}, {onboard}, '
+                             '{op_status}, {latitude}, {longitude} FROM {table_name} WHERE {date}=? AND {block_number}='
+                             '? ORDER BY {date}, {bus}, {trigger_time} asc',
                 'static': None,
                 'table_name': 'v_vehicle_history',
                 'database': 'TA_ITHACA_ACTUAL_HISTORY',
