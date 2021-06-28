@@ -1,9 +1,14 @@
 import os
 import json
+import sys
+
+
+DEFAULT_CONFIG_NAME = 'config.json'
+
 
 # TODO: Restructure config, combining queries and attr_sql_map.
 
-default_config = {
+DEFAULT_CONFIG = {
     'settings': {
         # The host driver, as list of these can be found on the pyodbc library readme on github
         'driver': '{ODBC Driver 11 for SQL Server}',
@@ -329,27 +334,30 @@ default_config = {
 
 
 def init_config(default_config_):
-    with open('config.json', 'w') as f:
+    with open(DEFAULT_CONFIG_NAME, 'w') as f:
         json.dump(default_config_, f, indent=4)
 
 
-def read_config():
+def read_config(config_name_: str = DEFAULT_CONFIG_NAME):
     try:
-        with open('config.json', 'r') as f:
+        with open(config_name_, 'r') as f:
             return json.load(f)
     except FileNotFoundError:
-        init_config(default_config)
-        return default_config
+        init_config(DEFAULT_CONFIG)
+        print(f'Config initialized as {DEFAULT_CONFIG_NAME}. Please edit the config with the appropriate information '
+              f'and restart.')
+        sys.exit(1)
 
 
-config = read_config()
+config_name = os.environ.get('JOURNAL_CONFIG_NAME', DEFAULT_CONFIG_NAME)
+config = read_config(config_name)
 settings = config['settings']
 
 # Set global var and config values to either the config value, or the environment variable if it exists.
-username = settings['username'] = os.environ.get('SQL_USERNAME', settings['username'])
-password = settings['password'] = os.environ.get('SQL_PASSWORD', settings['password'])
-driver = settings['driver'] = os.environ.get('SQL_DRIVER', settings['driver'])
-host = settings['host'] = os.environ.get('SQL_HOST', settings['host'])
-port = settings['port'] = os.environ.get('SQL_PORT', settings['port'])
+username = settings['username'] = os.environ.get('JOURNAL_SQL_USERNAME', settings['username'])
+password = settings['password'] = os.environ.get('JOURNAL_SQL_PASSWORD', settings['password'])
+driver = settings['driver'] = os.environ.get('JOURNAL_SQL_DRIVER', settings['driver'])
+host = settings['host'] = os.environ.get('JOURNAL_SQL_HOST', settings['host'])
+port = settings['port'] = os.environ.get('JOURNAL_SQL_PORT', settings['port'])
 
 attr_sql_map = settings['attr_sql_map']

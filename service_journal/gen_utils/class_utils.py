@@ -1,6 +1,11 @@
 from datetime import datetime, date, timedelta
 from enum import Enum
-from typing import Mapping, Iterable, Any, Callable, Tuple, List
+from collections import defaultdict
+from typing import Mapping, Iterable, Any, Callable, Tuple, List, Set, Sequence, Generator
+
+from shapely.geometry import Point, LineString
+from shapely.ops import split as shapely_split, nearest_points
+
 from service_journal.gen_utils.debug import get_default_logger
 
 
@@ -27,6 +32,13 @@ def date_range(start_date: date, end_date: date) -> Iterable[date]:
     # for n in range(int((end_date - start_date).days)+1):
     for n in range(int((end_date - start_date).days)):
         yield start_date + timedelta(n)
+
+
+def def_dict():
+    """
+    Creates a default dictionary with default dictionaries as values
+    """
+    return defaultdict(def_dict)
 
 
 def interpret_date(str_: str, formats_: Iterable[str] = ('%m/%d/%Y', '%Y-%m-%d', '%m-%d-%Y')) -> date:
@@ -67,6 +79,7 @@ def str_2_coord_tuple(coord_str: str) -> Tuple[float, float]:
         raise ValueError(f'Malformed coordinate: ({coord_str})') from exc
 
 
+# TODO: Use shapely.wkt to load LineStrings. eg) shapely.wkt.loads(string_here)
 def interpret_linestring(line_str: str) -> Iterable[Tuple[float, float]]:
     acc = []
     if line_str is None:
@@ -101,22 +114,18 @@ def sep_shapes_distances(shapes_and_lengths: Mapping[Tuple[int, int], Tuple[floa
     return shapes, shape_distances
 
 
-def get_shape_trip(stops: List[int], shapes: Mapping[Tuple[int, int], Iterable[int]]) -> Iterable[int]:
+def _check_for_dups(path: List[Tuple[float, float]]) -> Set[Tuple[float, float]]:
     """
-    Gives shapes along stops on a given trip. [stops] only
-
-    PARAMETERS
-    --------
-    stops
-        Contains stops on a given trip and is ordered.
-    shapes
-        Mapping of from stop to stop that gives an iterable of coordinates that define a shape.
+    Utility function for testing only. Checks to see if there are back-to-back repeated points in a path.
     """
-    logger.info('get_shape_trip on stops: %s', stops)
-    trip_shapes = []
-    for i in range(len(stops)-1):
-        trip_shapes.extend(shapes[(stops[i], stops[i+1])])
-    return trip_shapes
+    last_point = None
+    dups = set()
+    for point in path:
+        print(f'Comparing {point} and {last_point}, getting {point==last_point}')
+        if point == last_point:
+            dups.add(point)
+        last_point = point
+    return dups
 
 
 def pull_out_name(d: Mapping[str, Mapping]) -> Mapping[str, str]:
@@ -255,3 +264,100 @@ reorganize_map: Mapping[OrganizeOrder, Mapping[OrganizeOrder, Callable[[Mapping]
 # Default ordering for the output data.
 write_ordering = ['date', 'bus', 'report_time', 'dir', 'route', 'block_number', 'trip_number', 'operator', 'boards',
                   'alights', 'onboard', 'stop', 'stop_name', 'sched_time', 'seen', 'confidence_score']
+
+
+def get_shape_trip(stops: List[int], shapes: Mapping[Tuple[int, int], Sequence[Tuple[float, float]]]) -> \
+        Sequence[Tuple[Tuple[int, int], Tuple[float, float]]]:
+    """
+    Gives shapes along stops on a given trip.
+
+    PARAMETERS
+    --------
+    stops
+        Contains stops on a given trip and is ordered.
+    shapes
+        Mapping of from stop to stop that gives an iterable of coordinates that define a shape.
+    """
+    logger.info('get_shape_trip on stops: %s', stops)
+    trip_shapes = []
+    last_point = None
+    for i in range(len(stops)-1):
+        try:
+            stop2stop_key = stops[i], stops[i+1]
+            stop2stop = list(shapes[stop2stop_key])
+            if last_point == stop2stop[0]:
+                trip_shapes.extend([(stop2stop_key, shape) for shape in stop2stop[1:]])
+            else:
+                trip_shapes.extend([(stop2stop_key, shape) for shape in stop2stop])
+            last_point = stop2stop[-1]
+        except IndexError:
+            continue
+    return trip_shapes
+
+
+def build_paths(trips_stops: Mapping[int, List[int]], paths: Mapping[Tuple[int, int], Sequence[Tuple[float, float]]]) \
+        -> Generator[Tuple[int, LineString]]:
+    """
+    Yields the LineString path/shapes of each sequence of stops given.
+    """
+    for trip, stops in trips_stops.items():
+        yield trip, LineString(get_shape_trip(stops, paths))
+
+
+# Take 1. Considering changing for something that uses shapely.ops.nearest_points
+def sort_corners(line: LineString, point: Point) -> Sequence[Tuple[int, float, Point]]:
+    sorted_points = []
+    for i, coord in enumerate(line.coords):
+        coord = Point(coord)
+        sorted_points.append((i, point.distance(coord), coord))
+    sorted_points.sort(key=lambda k: k[1])
+    return sorted_points
+
+
+# Take 2.
+def get_current_distance_on_trip(point: Point, line: LineString, current_distance: float):
+    _, remaining_line = shapely_split(line, line.interpolate(current_distance))
+    _, point_on_line = nearest_points(point, remaining_line)
+    completed, _ = shapely_split(line, point_on_line)
+    return completed.length
+
+
+# TODO: I suspect that on loops, it may sometimes get confuse the first and last stop.
+# FIXME: Potential fix would be to have special case when prev_index < 3ish. Talk to Tom about it.
+def crawl_trip0(report, built_paths, prev_index):
+    sorted_points = sort_corners(built_paths[report['trip_number']], Point(report['lon'], report['lat']))
+    # i represents index in terms of sequential corners reached
+    i, _, _ = sorted_points[0]
+    # idx represents index in the sorted list, eg. the next nearest corner
+    idx = 1
+    while i < prev_index:
+        i, _, _ = sorted_points[idx]
+        idx += 1
+    return i
+
+
+def crawl_trip1(report, built_paths, prev_distance):
+    return get_current_distance_on_trip(
+        Point(report['lon'], report['lat']),
+        built_paths[report['trip_number']],
+        prev_distance
+    )
+
+
+# def get_progress(scheduled_stops, )
+
+
+def crawl_trip(report, built_paths, prev_index):
+    """
+    Returns where we currently are on the LineString of the trip, based on the prev_index.
+
+    PARAMETERS
+    --------
+    report
+        stop report
+    built_paths
+        path to path
+    prev_index
+        last index that was observed
+    """
+    return crawl_trip1(report, built_paths, prev_index)

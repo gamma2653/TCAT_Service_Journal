@@ -1,10 +1,4 @@
 from typing import TYPE_CHECKING
-
-from detour_analyzer.trip_analyzer.data_processing import expand_shape_dict
-from detour_analyzer.trip_analyzer.segments import track_intervals
-
-from service_journal.gen_utils.class_utils import reorganize_map, DATE_BUS_TIME, DATE_BLOCK_TRIP, \
-    sep_shapes_distances, get_shape_trip
 from service_journal.gen_utils.debug import get_default_logger
 
 if TYPE_CHECKING:
@@ -13,56 +7,17 @@ if TYPE_CHECKING:
 logger = get_default_logger(__name__)
 
 
-def prep_segment_analysis(journal: 'Journal'):
+def build_trip_shapes(journal: 'Journal'):
+    journal.trip_shapes = {}
+
+
+def post_segment_analysis(journal: 'Journal'):
     """
     Code to be run before the primary processing of data. This includes running the data through Jonathan's code so that
      those results can be pulled from when compiling the final service journal.
     """
     # TODO: 1. Get shapes 2. Expand them 3. Convert actuals to Date-Block-Trip 4. Call track_intervals
-    converted_actuals = reorganize_map[DATE_BUS_TIME][DATE_BLOCK_TRIP](journal.avl_dict)
-    shapes, _ = sep_shapes_distances(journal.shapes)
-    expanded_shapes = expand_shape_dict(shapes)
-    # Go through trips and call track_intervals
-    journal.intervals_not_visited = tracked_intervals = {}
-    for date_key, date_value in journal.schedule.items():
-        logger.info('Prepping segment analysis for day: %s.', date_key)
-        for block_key, block_value in date_value.items():
-            logger.debug('Prepping segment analysis for block: %s.', block_key)
-            for trip_key, trip_value in block_value.items():
-                logger.debug('Prepping segment analysis for trip: %s.', trip_key)
-                dbt = date_key, block_key, trip_key
-                stops = list(trip_value['stops'].keys())
-                # This is for trips with a single stop. Because this happens. Eg. deadheads
-                if len(stops) < 2:
-                    continue
-                _stop_locations = journal.stop_locations
-                stop_locations = [(stop, _stop_locations[stop]) for stop in stops]
-                if date_key not in tracked_intervals:
-                    tracked_intervals[date_key] = {}
-                tracked_intervals_d = tracked_intervals[date_key]
-                if block_key not in tracked_intervals_d:
-                    tracked_intervals_d[block_key] = {}
-                tracked_intervals_db = tracked_intervals_d[block_key]
-                try:
-                    trip_shapes = get_shape_trip(stops, expanded_shapes)
-                except KeyError as exc:
-                    logger.error('Ran into a key error on trip: [%s][%s][%s]\n Probably no shape. See next error', *dbt)
-                    logger.error('Error: %s', exc)
-                    continue
-                if date_key not in converted_actuals or block_key not in converted_actuals[date_key] or \
-                        trip_key not in converted_actuals[date_key][block_key]:
-                    logger.info('Missed entire trip: [%s][%s][%s]', *dbt)
-                    continue
-                if not converted_actuals[date_key][block_key][trip_key]:
-                    logger.warning('converted_actuals for [%s][%s][%s] are empty!', *dbt)
-                    continue
-                if not trip_shapes:
-                    logger.warning('trip_shapes for [%s][%s][%s] are empty! Stops: %s', *dbt, stops)
-                    continue
-                tracked_intervals_db[trip_key] = track_intervals(trip_shapes, stop_locations,
-                                                                 [(ping['lat'], ping['lon']) for ping in
-                                                                  converted_actuals[date_key][block_key][trip_key]])
-        logger.info('Finished prepping segment analysis for %s', date_key)
+    pass
 
 
 def process_take1(journal: 'Journal'):
@@ -130,30 +85,31 @@ def calculate_confidence(journal: 'Journal'):
 
 
 def cross_ref_tracked_intervals(journal: 'Journal'):
-    for date_, day_schedule in journal.schedule.items():
-        logger.info('Cross referencing %s.', date_)
-        intervals_not_seen_d = journal.intervals_not_visited[date_]
-        for block_number, block in day_schedule.items():
-            intervals_not_seen_db = intervals_not_seen_d[block_number]
-            for trip_number, trip in block.items():
-                stops = trip['stops']
-                intervals_not_seen_dbt = intervals_not_seen_db[trip_number]
-                for stop_id, stop in stops.items():
-                    tracked_was_visited = stop_id not in intervals_not_seen_dbt
-                    processed_was_visited = stop['seen'] > 0
-                    if tracked_was_visited and not processed_was_visited:
-                        logger.debug('stop_id: %s\nintervals_not_seen_dbt: %s\ntracked_was_visited: %s\n'
-                                     'processed_was_visited: %s', stop_id, intervals_not_seen_dbt, tracked_was_visited,
-                                     processed_was_visited)
-                        stop['seen'] += 1
-                        stop['confidence_factors'].append(50)
+    return
+    # for date_, day_schedule in journal.schedule.items():
+    #     logger.info('Cross referencing %s.', date_)
+    #     intervals_not_seen_d = journal.intervals_not_visited.get(date_, {})
+    #     for block_number, block in day_schedule.items():
+    #         intervals_not_seen_db = intervals_not_seen_d[block_number]
+    #         for trip_number, trip in block.items():
+    #             stops = trip['stops']
+    #             intervals_not_seen_dbt = intervals_not_seen_db[trip_number]
+    #             for stop_id, stop in stops.items():
+    #                 tracked_was_visited = stop_id not in intervals_not_seen_dbt
+    #                 processed_was_visited = stop['seen'] > 0
+    #                 if tracked_was_visited and not processed_was_visited:
+    #                     logger.debug('stop_id: %s\nintervals_not_seen_dbt: %s\ntracked_was_visited: %s\n'
+    #                                  'processed_was_visited: %s', stop_id, intervals_not_seen_dbt, tracked_was_visited,
+    #                                  processed_was_visited)
+    #                     stop['seen'] += 1
+    #                     stop['confidence_factors'].append(50)
 
 
 # TODO: make Jonathan code just run in post.
 MAIN_PRESET = {
-    'prep': [prep_segment_analysis],
+    'prep': [],
     'main': [process_take1],
-    'post': [cross_ref_tracked_intervals, calculate_confidence]
+    'post': [post_segment_analysis, cross_ref_tracked_intervals, calculate_confidence]
 }
 
 DEFAULT_PROCESSOR_TYPES = MAIN_PRESET.keys()

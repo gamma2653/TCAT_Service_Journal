@@ -1,29 +1,34 @@
 from collections import OrderedDict
-from typing import Dict, Optional, Tuple, Mapping, Set, Union, Iterable, List
+from typing import Dict, Optional, Tuple, Mapping, Set, Union, Iterable, List, MutableMapping, Callable, DefaultDict
 from numbers import Number
 import pyodbc
 from enum import Enum
 from datetime import date
 
 from service_journal.gen_utils.debug import get_default_logger
-from service_journal.gen_utils.class_utils import pull_out_name, write_ordering, unpack, interpret_linestring
+from service_journal.gen_utils.class_utils import pull_out_name, write_ordering, unpack, interpret_linestring, def_dict
 
 logger = get_default_logger(__name__)
-_to_date_format = '%Y-%m-%d'
+DATE_FORMAT = '%Y-%m-%d'
 
 # TODO: Add a schema file that defines all the keys for each data source.
 
 
-def _package_rtbd(data, acc, to_date_format=_to_date_format):
-    if data['route'] not in acc:
-        acc[data['route']] = {}
-    route = acc[data['route']]
-    if data['trip_number'] not in route:
-        route[data['trip_number']] = {}
-    trip = route[data['trip_number']]
-    if data['block_number'] not in trip:
-        trip[data['block_number']] = {}
-    block = trip[data['block_number']]
+def _package_rtbd(data: Mapping, acc: DefaultDict, to_date_format: str = DATE_FORMAT):
+    """
+    Packages single entry of actual data into route-trip-block data hierarchical format (acc).
+    PARAMETERS
+    --------
+    data
+        Single record mapping of data to insert into acc.
+    acc
+        The dictionary to insert data into.
+    to_date_format
+        The string pattern to format the date field to. See date.strftime() for more information. Default value is
+        defined above.
+    """
+
+    block = acc[data['route']][data['trip_number']][data['block_number']]
     # Convert date format
     date_key = data['date'].strftime(to_date_format)
     if date_key not in block:
@@ -47,14 +52,21 @@ def _package_rtbd(data, acc, to_date_format=_to_date_format):
     })
 
 
-def _package_dbt_schedule(data, acc, to_date_format=_to_date_format):
+def _package_dbt_schedule(data: Mapping, acc: DefaultDict, to_date_format: str = DATE_FORMAT):
+    """
+    Packages single entry of schedule data into date-block-trip data hierarchical format (acc).
+    PARAMETERS
+    --------
+    data
+        Single record mapping of data to insert into acc.
+    acc
+        The dictionary to insert data into.
+    to_date_format
+        The string pattern to format the date field to. See date.strftime() for more information. Default value is
+        defined above.
+    """
     date_key = data['date'].strftime(to_date_format)
-    if date_key not in acc:
-        acc[date_key] = {}
-    date_value = acc[date_key]
-    if data['block_number'] not in date_value:
-        date_value[data['block_number']] = {}
-    block = date_value[data['block_number']]
+    block = acc[date_key][data['block_number']]
     if data['trip_number'] not in block:
         block[data['trip_number']] = {
             'route': data['route'],
@@ -84,14 +96,21 @@ def _package_dbt_schedule(data, acc, to_date_format=_to_date_format):
         }
 
 
-def _package_dbt_actuals(data, acc, to_date_format=_to_date_format):
+def _package_dbt_actuals(data: Mapping, acc: DefaultDict, to_date_format: str = DATE_FORMAT):
+    """
+    Packages single entry of actual data into date-block-bus data hierarchical format (acc).
+    PARAMETERS
+    --------
+    data
+        Single record mapping of data to insert into acc.
+    acc
+        The dictionary to insert data into.
+    to_date_format
+        The string pattern to format the date field to. See date.strftime() for more information. Default value is
+        defined above.
+    """
     date_key = data['date'].strftime(to_date_format)
-    if date_key not in acc:
-        acc[date_key] = {}
-    date_value = acc[date_key]
-    if data['bus'] not in date_value:
-        date_value[data['bus']] = {}
-    bus = date_value[data['bus']]
+    bus = acc[date_key][data['bus']]
     if data['trigger_time'] in bus:
         # Mid-swapping routes
         # TODO: Idk if this is ok or not. Check with Tom later.
@@ -115,18 +134,42 @@ def _package_dbt_actuals(data, acc, to_date_format=_to_date_format):
             'name': data['name'],
             'block_number': data['block_number'],
             'route': {data['route']},
-            'trip_number': data['trip_number'],
+            'trip_number': [data['trip_number']],
         }
 
 
-def _package_stop_locations(data, acc):
+def _package_stop_locations(data: Mapping, acc: MutableMapping):
+    """
+    Packages single entry of stop_location data into a hierarchical format (acc).
+    PARAMETERS
+    --------
+    data
+        Single record mapping of data to insert into acc.
+    acc
+        The dictionary to insert data into.
+    """
     if data['stop'] in acc:
         logger.warning('Overriding stop_num %s, why is there a duplicate?\nOld: %s New: %s', data['stop_num'],
                        acc[data['stop_num']], (data['latitude'], data['longitude']))
     acc[data['stop']] = (data['latitude'], data['longitude'])
 
 
-def _package_shapes(data, acc, shape_str=True):
+def _package_shapes(data: Mapping, acc: MutableMapping[Tuple[int, int], Tuple[float, Iterable[Tuple[float, float]]]],
+                    shape_str: bool = True):
+    """
+    Packages single entry of shape data into a hierarchical format (acc).
+    PARAMETERS
+    --------
+    data
+        Single record mapping of data to insert into acc.
+    acc
+        The dictionary to insert data into.
+    shape_str
+        Whether the shape is stored in shape_str or shape. The specifics of what this means is somewhat lost on me. I
+        believe the reason a difference exists is because pyodbc would sometimes store it one way, or another depending
+        whether there was a shape or not; hence the default parameter in the case when shape_str is false and the
+        interpret_linestring for when shape_str is true.
+    """
     key = data['from_stop'], data['to_stop']
     if key in acc:
         logger.warning('Overriding (%s, %s)\'s shape file.')
@@ -138,10 +181,24 @@ def _package_shapes(data, acc, shape_str=True):
     acc[key] = distance, path
 
 
-def process_cursor(cursor, sql_attr_map, packager, name=None, **kwargs):
+def process_cursor(cursor: pyodbc.Cursor, sql_attr_map: Mapping, packager: Callable, name=None, **kwargs):
+    """
+    Uses the cursor and packager to load the data and returns it.
+    PARAMETERS
+    --------
+    cursor
+        A pyodbc cursor which has already executed a query and is pointing to the start of the data you wish to read
+        data from.
+    sql_attr_map
+        One of the parameters returned by Connection._exc_query(), used to bind SQL data to a dictionary.
+    packager
+        One of the packagers which takes a single record from the SQL table, and inserts it into a dictionary.
+    name
+        Used for the logger, just the option to have a name associated to this packaging process.
+    """
     if name:
         logger.info('Processing cursor for %s.', name)
-    acc = {}
+    acc = def_dict()
     row = cursor.fetchone()
     attr_col_names = [sql_attr_map[col[0]] for col in cursor.description]
     record_count = 0
@@ -267,6 +324,20 @@ class Connection:
                               database=database, uid=self.username, pwd=self.password)
 
     def _exc_query(self, conn_name, query_name, params=None, type_='default'):
+        """
+        Executes a single query defined in the config.
+
+        PARAMETERS
+        --------
+        conn_name
+            The name of the connection as defined in Connection.
+        query_name
+            The name of the query in the config.
+        params
+            The parameters to be passed to the SQL statement.
+        type_
+            The type of query as defined in the config.
+        """
         logger.info('Executing query (%s:%s) on connection (%s).', query_name, type_, conn_name)
         params = [] if params is None else params
         queries = self.config['settings']['queries']
@@ -307,6 +378,9 @@ class Connection:
         return process_cursor(cursor, stop_sql_attr_map, _package_stop_locations)
 
     def load_shapes(self) -> Mapping[Tuple[int, int], Tuple]:
+        """
+        Load shapes from database. These are the coordinated of every vertices on the path between every stop.
+        """
         # Execute query
         (attr_sql_map, sql_attr_map), cursor = self._exc_query('shapes_conn', 'shapes')
 
@@ -340,7 +414,7 @@ class Connection:
         # Init params
         if params is None:
             params = []
-        params.insert(0, date_.strftime(_to_date_format))
+        params.insert(0, date_.strftime(DATE_FORMAT))
 
         # Execute queries
         (a_attr_sql_map, a_sql_attr_map), a_cursor = self._exc_query('actuals_conn', 'actuals', params=params,

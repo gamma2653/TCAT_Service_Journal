@@ -20,16 +20,14 @@ class Journal:
     TODO: Fix this problem, or figure out if I was making a silly mistake when
     adding a new day.
     """
-
     def __init__(self, schedule: Optional[Mapping] = None, avl_dict: Optional[Mapping] = None,
                  stop_locations: Optional[Mapping] = None, shapes: Optional[Mapping] = None,
-                 intervals_not_visited: Optional[Mapping] = None, connection: Optional[Connection] = None,
-                 config: Mapping = None, processors: Optional[Mapping[str, List]] = None):
+                 connection: Optional[Connection] = None, config: Mapping = None,
+                 processors: Optional[Mapping[str, List]] = None):
         self.schedule = {} if schedule is None else schedule
         self.avl_dict = {} if avl_dict is None else avl_dict
         self.stop_locations = {} if stop_locations is None else stop_locations
         self.shapes = {} if shapes is None else shapes
-        self.intervals_not_visited = {} if intervals_not_visited is None else intervals_not_visited
         self.connection = connection
         self.config = config
         self.processors = get_deflt_processors() if processors is None else processors
@@ -39,7 +37,7 @@ class Journal:
             raise PreconditionError('To use this method, the journal\'s connection must be open.')
 
     def update(self, schedule: Mapping = None, avl_dict: Mapping = None, stop_locations: Mapping = None,
-               shapes: Mapping = None, intervals_not_visited: Mapping = None):
+               shapes: Mapping = None):
         """
         Updates the schedule and/or avl_dict with the given parameters.
         """
@@ -52,11 +50,9 @@ class Journal:
             self.stop_locations.update(stop_locations)
         if shapes is not None:
             self.shapes.update(shapes)
-        if intervals_not_visited is not None:
-            self.intervals_not_visited.update(intervals_not_visited)
 
-    def clear(self, schedule: bool = True, avl_dict: bool = True, intervals_not_visited: bool = True,
-              shapes: bool = False, stop_locations: bool = False):
+    def clear(self, schedule: bool = True, avl_dict: bool = True, stop_locations: bool = False,
+              shapes: bool = False):
         """
         Clears out the internal dictionaries. By default clears the data that is date dependent.
         """
@@ -64,8 +60,6 @@ class Journal:
             self.schedule.clear()
         if avl_dict:
             self.avl_dict.clear()
-        if intervals_not_visited:
-            self.intervals_not_visited.clear()
         if stop_locations:
             self.stop_locations.clear()
         if shapes:
@@ -183,7 +177,7 @@ class Journal:
         Writes the stored schedule and avl_dict to the output database. Requires an open connection.
         """
         self._raise_if_not_open()
-
+        # TODO: Use "packager" system in this writing
         logger.info('Beginning to write data.')
         for date_, day_schedule in self.schedule.items():
             for block_number, block in day_schedule.items():
