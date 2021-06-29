@@ -5,8 +5,12 @@ import pyodbc
 from enum import Enum
 from datetime import date
 
+from shapely.geometry import LineString
+from shapely.geometry.base import BaseGeometry
+from shapely.wkt import loads as wkt_loads
+
 from service_journal.gen_utils.debug import get_default_logger
-from service_journal.gen_utils.class_utils import pull_out_name, write_ordering, unpack, interpret_linestring, def_dict
+from service_journal.gen_utils.class_utils import pull_out_name, write_ordering, unpack, def_dict
 
 logger = get_default_logger(__name__)
 DATE_FORMAT = '%Y-%m-%d'
@@ -154,7 +158,7 @@ def _package_stop_locations(data: Mapping, acc: MutableMapping):
     acc[data['stop']] = (data['latitude'], data['longitude'])
 
 
-def _package_shapes(data: Mapping, acc: MutableMapping[Tuple[int, int], Tuple[float, Iterable[Tuple[float, float]]]],
+def _package_shapes(data: Mapping, acc: MutableMapping[Tuple[int, int], Tuple[float, BaseGeometry]],
                     shape_str: bool = True):
     """
     Packages single entry of shape data into a hierarchical format (acc).
@@ -175,9 +179,9 @@ def _package_shapes(data: Mapping, acc: MutableMapping[Tuple[int, int], Tuple[fl
         logger.warning('Overriding (%s, %s)\'s shape file.')
     distance = data['distance_feet']
     if shape_str:
-        path = interpret_linestring(data['shape_str'])
+        path = wkt_loads(data['shape_str'])
     else:
-        path = data.get('shape', [])
+        path = data.get('shape', LineString())
     acc[key] = distance, path
 
 

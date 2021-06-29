@@ -1,10 +1,11 @@
 from datetime import datetime, date, timedelta
 from enum import Enum
 from collections import defaultdict
-from typing import Mapping, Iterable, Any, Callable, Tuple, List, Set, Sequence, Generator
+from typing import Mapping, Iterable, Any, Callable, Tuple, List, Set, Sequence
 
 from shapely.geometry import Point, LineString
-from shapely.ops import split as shapely_split, nearest_points
+from shapely.geometry.base import BaseGeometry
+from shapely.ops import split as shapely_split, nearest_points, linemerge
 
 from service_journal.gen_utils.debug import get_default_logger
 
@@ -79,38 +80,11 @@ def str_2_coord_tuple(coord_str: str) -> Tuple[float, float]:
         raise ValueError(f'Malformed coordinate: ({coord_str})') from exc
 
 
-# TODO: Use shapely.wkt to load LineStrings. eg) shapely.wkt.loads(string_here)
-def interpret_linestring(line_str: str) -> Iterable[Tuple[float, float]]:
-    acc = []
-    if line_str is None:
-        return acc
-    # Cuts off "LINESTRING (" and ")"
-    line_str = line_str[12:-1]
-    # Alternatively, more robust:
-    # line_str = line_str.strip()[10:].strip()[1:-1]
-    try:
-        return list(map(str_2_coord_tuple, line_str.split(', ')))
-    except ValueError as exc:
-        logger.error('Failed to interpret linestring')
-        raise ValueError(f'Could not convert {line_str} to list of coordinates') from exc
-
-
-def sep_shapes_distances(shapes_and_lengths: Mapping[Tuple[int, int], Tuple[float, Iterable[Tuple[float, float]]]]):
-    # i = 0
-    # shapes = {}
-    # shape_distances = {}
-    # for key, value in shapes_and_lengths.items():
-    #     shapes[str(i)] = value[1]
-    #     shape_distances[str(i)] = key, value[0]
-    # return shapes, shape_distances
-    # or
-    # return dict(map(lambda x: (x[0], x[1][1]), shapes_and_lengths.lengths)) , ... similar for distance
-    # or
-    # ids, dist_shape = zip(*shapes_and_lengths.items())
-    # distances, shapes = zip(*dist_shape)
+def sep_shapes_distances(shapes_and_lengths: Mapping[Tuple[int, int], Tuple[float, BaseGeometry]]):
+    # TODO: Use zip and dict constructor
     shapes, shape_distances = {}, {}
-    for key, value in shapes_and_lengths.items():
-        shape_distances[key], shapes[key] = value
+    for key, (distance, shape) in shapes_and_lengths.items():
+        shape_distances[key], shapes[key] = distance, shape
     return shapes, shape_distances
 
 
@@ -266,8 +240,8 @@ write_ordering = ['date', 'bus', 'report_time', 'dir', 'route', 'block_number', 
                   'alights', 'onboard', 'stop', 'stop_name', 'sched_time', 'seen', 'confidence_score']
 
 
-def get_shape_trip(stops: List[int], shapes: Mapping[Tuple[int, int], Sequence[Tuple[float, float]]]) -> \
-        Sequence[Tuple[Tuple[int, int], Tuple[float, float]]]:
+def get_shape_trip(stops: Sequence[int], shapes: Mapping[Tuple[int, int], BaseGeometry]) -> \
+        Tuple[Sequence[Tuple[int, int]], LineString, Sequence[BaseGeometry]]:
     """
     Gives shapes along stops on a given trip.
 
@@ -279,85 +253,49 @@ def get_shape_trip(stops: List[int], shapes: Mapping[Tuple[int, int], Sequence[T
         Mapping of from stop to stop that gives an iterable of coordinates that define a shape.
     """
     logger.info('get_shape_trip on stops: %s', stops)
-    trip_shapes = []
-    last_point = None
+    trip_line_strings = []
+    stop2stops = []
     for i in range(len(stops)-1):
         try:
             stop2stop_key = stops[i], stops[i+1]
-            stop2stop = list(shapes[stop2stop_key])
-            if last_point == stop2stop[0]:
-                trip_shapes.extend([(stop2stop_key, shape) for shape in stop2stop[1:]])
-            else:
-                trip_shapes.extend([(stop2stop_key, shape) for shape in stop2stop])
-            last_point = stop2stop[-1]
+            stop2stops.append(stop2stop_key)
+            trip_line_strings.append(shapes[stop2stop_key])
         except IndexError:
             continue
-    return trip_shapes
+    merged_line = linemerge(trip_line_strings)
+    # Check orientation of merged line, and if backwards flip
+    if merged_line.coords[0] != trip_line_strings[0].coords[0]:
+        merged_line = LineString(merged_line.coords[::-1])
+    return stop2stops, merged_line, trip_line_strings
 
 
-def build_paths(trips_stops: Mapping[int, List[int]], paths: Mapping[Tuple[int, int], Sequence[Tuple[float, float]]]) \
-        -> Generator[Tuple[int, LineString]]:
-    """
-    Yields the LineString path/shapes of each sequence of stops given.
-    """
-    for trip, stops in trips_stops.items():
-        yield trip, LineString(get_shape_trip(stops, paths))
-
-
-# Take 1. Considering changing for something that uses shapely.ops.nearest_points
-def sort_corners(line: LineString, point: Point) -> Sequence[Tuple[int, float, Point]]:
-    sorted_points = []
-    for i, coord in enumerate(line.coords):
-        coord = Point(coord)
-        sorted_points.append((i, point.distance(coord), coord))
-    sorted_points.sort(key=lambda k: k[1])
-    return sorted_points
-
-
-# Take 2.
-def get_current_distance_on_trip(point: Point, line: LineString, current_distance: float):
+def get_current_distance_on_trip(point: Point, line: LineString, current_distance: float) -> float:
     _, remaining_line = shapely_split(line, line.interpolate(current_distance))
     _, point_on_line = nearest_points(point, remaining_line)
     completed, _ = shapely_split(line, point_on_line)
     return completed.length
 
 
-# TODO: I suspect that on loops, it may sometimes get confuse the first and last stop.
-# FIXME: Potential fix would be to have special case when prev_index < 3ish. Talk to Tom about it.
-def crawl_trip0(report, built_paths, prev_index):
-    sorted_points = sort_corners(built_paths[report['trip_number']], Point(report['lon'], report['lat']))
-    # i represents index in terms of sequential corners reached
-    i, _, _ = sorted_points[0]
-    # idx represents index in the sorted list, eg. the next nearest corner
-    idx = 1
-    while i < prev_index:
-        i, _, _ = sorted_points[idx]
-        idx += 1
-    return i
-
-
-def crawl_trip1(report, built_paths, prev_distance):
-    return get_current_distance_on_trip(
-        Point(report['lon'], report['lat']),
-        built_paths[report['trip_number']],
-        prev_distance
-    )
-
-
 # def get_progress(scheduled_stops, )
 
 
-def crawl_trip(report, built_paths, prev_index):
+def crawl_trip(scheduled_stops: Sequence[int], report: Mapping[str, Any],
+               shapes: Mapping[Tuple[int, int], BaseGeometry], prev_distance: float):
     """
     Returns where we currently are on the LineString of the trip, based on the prev_index.
 
     PARAMETERS
     --------
+    scheduled_stops
+        Scheduled stops
     report
         stop report
-    built_paths
+    shapes
         path to path
-    prev_index
+    prev_distance
         last index that was observed
     """
-    return crawl_trip1(report, built_paths, prev_index)
+
+    point = Point(report['lon'], report['lat'])
+    stop2stops, merged_line, trip_line_strings = get_shape_trip(scheduled_stops, shapes)
+    return get_current_distance_on_trip(point, merged_line, prev_distance)
