@@ -1,11 +1,14 @@
 from datetime import datetime, date, timedelta
 from enum import Enum
 from collections import defaultdict
-from typing import Mapping, Iterable, Any, Callable, Tuple, List, Set, Sequence
+from typing import Mapping, Iterable, Any, Callable, Tuple, List, Set, Sequence, MutableMapping
 
 from shapely.geometry import Point, LineString
 from shapely.geometry.base import BaseGeometry
 from shapely.ops import split as shapely_split, nearest_points, linemerge
+import geopy.distance
+from geopy.distance import distance as geo_distance
+
 
 from service_journal.gen_utils.debug import get_default_logger
 
@@ -150,6 +153,14 @@ def unpack(ordering_: Iterable[str], data_map_: Mapping[str, Any]) -> Iterable[A
     return (data_map_[i] for i in ordering_)
 
 
+DEFAULT_VALUES = {[], 0, None}
+
+
+def replace_if_default(map_: MutableMapping, key, value):
+    if key in map_ and map_[key] in DEFAULT_VALUES:
+        map_[key] = value
+
+
 class OrganizeOrder(Enum):
     DATE_BLOCK_TRIP = 'DATE_BLOCK_TRIP'
     DATE_BUS_TIME = 'DATE_BUS_TIME'
@@ -269,33 +280,44 @@ def get_shape_trip(stops: Sequence[int], shapes: Mapping[Tuple[int, int], BaseGe
     return stop2stops, merged_line, trip_line_strings
 
 
-def get_current_distance_on_trip(point: Point, line: LineString, current_distance: float) -> float:
-    _, remaining_line = shapely_split(line, line.interpolate(current_distance))
+def get_current_distance_on_trip(point: Point, line: LineString, current_shape_progress: float) -> \
+        Tuple[float, geopy.distance.distance]:
+    _, remaining_line = shapely_split(line, line.interpolate(current_shape_progress))
     _, point_on_line = nearest_points(point, remaining_line)
     completed, _ = shapely_split(line, point_on_line)
-    return completed.length
+    return completed.length, geo_distance(point.coords, point_on_line.coords)
 
 
-# def get_progress(scheduled_stops, )
+def get_segment_length(line: LineString) -> geopy.distance.distance:
+    points = line.coords
+    sum_distance = geo_distance((0, 0), (0, 0))
+    if len(points) < 2:
+        return sum_distance
+    for i in range(len(points)-1):
+        sum_distance += geo_distance(points[i].coords, points[i+1].coords)
+    return sum_distance
 
 
-def crawl_trip(scheduled_stops: Sequence[int], report: Mapping[str, Any],
-               shapes: Mapping[Tuple[int, int], BaseGeometry], prev_distance: float):
+def get_trip_progress(stop2stops: Sequence[Tuple[int, int]], trip_line_strings, progress):
+    for i, segment in enumerate(trip_line_strings):
+        if progress-segment.length < 0:
+            return stop2stops[i]
+        progress -= segment.length
+    logger.warning('get_progress got a distance that was longer than all of the shapes put together.')
+
+
+def get_distance_on_segment_from_report(report: Mapping[str, Any], trip_shape: LineString,
+                                        prev_shape_progress: float = 0.0) -> Tuple[float, geopy.distance.distance]:
     """
     Returns where we currently are on the LineString of the trip, based on the prev_index.
 
     PARAMETERS
     --------
-    scheduled_stops
-        Scheduled stops
     report
         stop report
-    shapes
+    trip_shape
         path to path
-    prev_distance
+    prev_shape_progress
         last index that was observed
     """
-
-    point = Point(report['lon'], report['lat'])
-    stop2stops, merged_line, trip_line_strings = get_shape_trip(scheduled_stops, shapes)
-    return get_current_distance_on_trip(point, merged_line, prev_distance)
+    return get_current_distance_on_trip(Point(report['lon'], report['lat']), trip_shape, prev_shape_progress)
