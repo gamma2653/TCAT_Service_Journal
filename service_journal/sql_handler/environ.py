@@ -349,15 +349,25 @@ def read_config(config_name_: str = DEFAULT_CONFIG_NAME):
         sys.exit(1)
 
 
-config_name = os.environ.get('JOURNAL_CONFIG_NAME', DEFAULT_CONFIG_NAME)
-config = read_config(config_name)
-settings = config['settings']
+config_name, config, settings, username, password, driver, host, port, attr_sql_map = (None, None, None, None, None,
+                                                                                       None, None, None, None)
 
-# Set global var and config values to either the config value, or the environment variable if it exists.
-username = settings['username'] = os.environ.get('JOURNAL_SQL_USERNAME', settings['username'])
-password = settings['password'] = os.environ.get('JOURNAL_SQL_PASSWORD', settings['password'])
-driver = settings['driver'] = os.environ.get('JOURNAL_SQL_DRIVER', settings['driver'])
-host = settings['host'] = os.environ.get('JOURNAL_SQL_HOST', settings['host'])
-port = settings['port'] = os.environ.get('JOURNAL_SQL_PORT', settings['port'])
 
-attr_sql_map = settings['attr_sql_map']
+def setup():
+    global config_name, config, settings, username, password, driver, host, port, attr_sql_map
+    config_name = os.environ.get('JOURNAL_CONFIG_NAME', DEFAULT_CONFIG_NAME)
+    config = read_config(config_name)
+    settings = config['settings']
+
+    # Set global var and config values to either the config value, or the environment variable if it exists.
+    username = settings['username'] = os.environ.get('JOURNAL_SQL_USERNAME', settings['username'])
+    password = settings['password'] = os.environ.get('JOURNAL_SQL_PASSWORD', settings['password'])
+    driver = settings['driver'] = os.environ.get('JOURNAL_SQL_DRIVER', settings['driver'])
+    host = settings['host'] = os.environ.get('JOURNAL_SQL_HOST', settings['host'])
+    port = settings['port'] = os.environ.get('JOURNAL_SQL_PORT', settings['port'])
+
+    attr_sql_map = settings['attr_sql_map']
+
+
+if __name__ == '__main__':
+    setup()
