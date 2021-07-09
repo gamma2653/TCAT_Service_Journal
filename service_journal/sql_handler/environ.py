@@ -19,314 +19,272 @@ DEFAULT_CONFIG = {
         '_comment': 'Warning: Stored passwords are unencrypted. For testing purposes only',
         'attr_sql_map': {
             'actuals': {
-                'date': {
-                    'name': 'service_day',
-                    'view': 'v_vehicle_history',
-                    'nullable': True,
+                'fields': {
+                    'date': {
+                        'name': 'service_day',
+                        'nullable': True,
+                    },
+                    'block_number': {
+                        'name': 'block',
+                        'nullable': True,
+                    },
+                    'trip_number': {
+                        'name': 'trip26',
+                        'nullable': True,
+                    },
+                    'bus': {
+                        'name': 'bus',
+                        'nullable': True,
+                    },
+                    'trigger_time': {
+                        'name': 'Time',
+                        'nullable': True,
+                    },
+                    'operator': {
+                        'name': 'Operator_Record_Id',
+                        'nullable': True,
+                    },
+                    'actual_time': {
+                        'name': 'Departure_Time',
+                        'nullable': True,
+                    },
+                    'route': {
+                        'name': 'Route',
+                        'nullable': True,
+                    },
+                    'direction': {
+                        'name': 'dir',
+                        'nullable': True,
+                    },
+                    'stop': {
+                        'name': 'Stop_Id',
+                        'nullable': True,
+                    },
+                    'name': {
+                        'name': 'Stop_Name',
+                        'nullable': True,
+                    },
+                    'boards': {
+                        'name': 'Boards',
+                        'nullable': True,
+                    },
+                    'alights': {
+                        'name': 'Alights',
+                        'nullable': True,
+                    },
+                    'onboard': {
+                        'name': 'Onboard',
+                        'nullable': True,
+                    },
+                    'op_status': {
+                        'name': 'OperationalStatus',
+                        'nullable': True,
+                    },
+                    'latitude': {
+                        'name': 'Latitude',
+                        'nullable': True,
+                    },
+                    'longitude': {
+                        'name': 'Longitude',
+                        'nullable': True,
+                    }
                 },
-                'block_number': {
-                    'name': 'block',
-                    'view': 'v_vehicle_history',
-                    'nullable': True,
-                },
-                'trip_number': {
-                    'name': 'trip26',
-                    'view': 'v_vehicle_history',
-                    'nullable': True,
-                },
-                'bus': {
-                    'name': 'bus',
-                    'view': 'v_vehicle_history',
-                    'nullable': True,
-                },
-                'trigger_time': {
-                    'name': 'Time',
-                    'view': 'v_vehicle_history',
-                    'nullable': True,
-                },
-                'operator': {
-                    'name': 'Operator_Record_Id',
-                    'view': 'v_vehicle_history',
-                    'nullable': True,
-                },
-                'actual_time': {
-                    'name': 'Departure_Time',
-                    'view': 'v_vehicle_history',
-                    'nullable': True,
-                },
-                'route': {
-                    'name': 'Route',
-                    'view': 'v_vehicle_history',
-                    'nullable': True,
-                },
-                'direction': {
-                    'name': 'dir',
-                    'view': 'v_vehicle_history',
-                    'nullable': True,
-                },
-                'stop': {
-                    'name': 'Stop_Id',
-                    'view': 'v_vehicle_history',
-                    'nullable': True,
-                },
-                'name': {
-                    'name': 'Stop_Name',
-                    'view': 'v_vehicle_history',
-                    'nullable': True,
-                },
-                'boards': {
-                    'name': 'Boards',
-                    'view': 'v_vehicle_history',
-                    'nullable': True,
-                },
-                'alights': {
-                    'name': 'Alights',
-                    'view': 'v_vehicle_history',
-                    'nullable': True,
-                },
-                'onboard': {
-                    'name': 'Onboard',
-                    'view': 'v_vehicle_history',
-                    'nullable': True,
-                },
-                'op_status': {
-                    'name': 'OperationalStatus',
-                    'view': 'v_vehicle_history',
-                    'nullable': True,
-                },
-                'latitude': {
-                    'name': 'Latitude',
-                    'view': 'v_vehicle_history',
-                    'nullable': True,
-                },
-                'longitude': {
-                    'name': 'Longitude',
-                    'view': 'v_vehicle_history',
-                    'nullable': True,
+                'query': {
+                    'default': 'SELECT {date}, {block_number}, {trip_number}, {bus}, {trigger_time}, {operator}, '
+                               '{actual_time}, {route}, {direction}, {stop}, {name}, {boards}, {alights}, {onboard}, '
+                               '{op_status}, {latitude}, {longitude} FROM {table_name} WHERE {date}=? ORDER '
+                               'BY {date}, {bus}, {trigger_time} asc',
+                    'alternate': 'SELECT {date}, {block_number}, {trip_number}, {bus}, {trigger_time}, {operator}, '
+                                 '{actual_time}, {route}, {direction}, {stop}, {name}, {boards}, {alights}, {onboard}, '
+                                 '{op_status}, {latitude}, {longitude} FROM {table_name} WHERE {date}=? AND '
+                                 '{block_number}=? ORDER BY {date}, {bus}, {trigger_time} asc',
+                    'static': None,
+                    'table_name': 'v_vehicle_history',
+                    'database': 'TA_ITHACA_ACTUAL_HISTORY',
                 }
             },
             'scheduled': {
-                'date': {
-                    'name': 'Service_Date',
-                    'view': 'v_scheduled_stops',
-                    'nullable': True,
+                'fields': {
+                    'date': {
+                        'name': 'Service_Date',
+                        'nullable': True,
+                    },
+                    'block_number': {
+                        'name': 'block',
+                        'nullable': True,
+                    },
+                    'trip_number': {
+                        'name': 'trip26',
+                        'nullable': True,
+                    },
+                    'route': {
+                        'name': 'RouteNumber',
+                        'nullable': True,
+                    },
+                    'direction': {
+                        'name': 'Direction',
+                        'nullable': True,
+                    },
+                    'stop': {
+                        'name': 'stop_num',
+                        'nullable': True,
+                    },
+                    'next_stop': {
+                        'name': 'next_stop',
+                        'nullable': True,
+                    },
+                    'sched_time': {
+                        'name': 'departure_time',
+                        'nullable': True,
+                    }
                 },
-                'block_number': {
-                    'name': 'block',
-                    'view': 'v_scheduled_stops',
-                    'nullable': True,
-                },
-                'trip_number': {
-                    'name': 'trip26',
-                    'view': 'v_scheduled_stops',
-                    'nullable': True,
-                },
-                'route': {
-                    'name': 'RouteNumber',
-                    'view': 'v_scheduled_stops',
-                    'nullable': True,
-                },
-                'direction': {
-                    'name': 'Direction',
-                    'view': 'v_scheduled_stops',
-                    'nullable': True,
-                },
-                'stop': {
-                    'name': 'stop_num',
-                    'view': 'v_scheduled_stops',
-                    'nullable': True,
-                },
-                'next_stop': {
-                    'name': 'next_stop',
-                    'view': 'v_scheduled_stops',
-                    'nullable': True,
-                },
-                'sched_time': {
-                    'name': 'departure_time',
-                    'view': 'v_scheduled_stops',
-                    'nullable': True,
-                },
+                'query': {
+                    'default': 'SELECT {date}, {block_number}, {trip_number}, {route}, {direction}, {stop}, {next_stop}'
+                               ', {sched_time} FROM {table_name} WHERE {date}=? ORDER BY {date}, {block_number}, '
+                               '{trip_number}, {sched_time}',
+                    'alternate': 'SELECT {date}, {block_number}, {trip_number}, {route}, {direction}, {stop}, '
+                                 '{next_stop}, {sched_time} FROM {table_name} WHERE {date}=? AND {block_number}=? ORDER'
+                                 ' BY {date}, {block_number}, {trip_number}, {sched_time}',
+                    'static': None,
+                    'table_name': 'v_scheduled_stops',
+                    'database': 'TA_ITHACA_SCHEDULE_HISTORY',
+                }
             },
             'output': {
-                'date': {
-                    'name': 'service_date',
-                    'view': '',
-                    'nullable': False,
+                'fields': {
+                    'date': {
+                        'name': 'service_date',
+                        'nullable': False,
+                    },
+                    'bus': {
+                        'name': 'bus',
+                        'nullable': True,
+                    },
+                    'report_time': {
+                        'name': 'report_time',
+                        'nullable': True,
+                    },
+                    'dir': {
+                        'name': 'direction',
+                        'nullable': True,
+                    },
+                    'route': {
+                        'name': 'route',
+                        'nullable': True,
+                    },
+                    'block_number': {
+                        'name': 'block_number',
+                        'nullable': False,
+                    },
+                    'trip_number': {
+                        'name': 'trip_number',
+                        'nullable': False,
+                    },
+                    'operator': {
+                        'name': 'operator',
+                        'nullable': True,
+                    },
+                    'boards': {
+                        'name': 'boards',
+                        'nullable': True,
+                    },
+                    'alights': {
+                        'name': 'alights',
+                        'nullable': True,
+                    },
+                    'onboard': {
+                        'name': 'onboard',
+                        'nullable': True,
+                    },
+                    'stop': {
+                        'name': 'stop_id',
+                        'nullable': False,
+                    },
+                    'stop_name': {
+                        'name': 'stop_name',
+                        'nullable': True,
+                    },
+                    'sched_time': {
+                        'name': 'sched_time',
+                        'nullable': True,
+                    },
+                    'seen': {
+                        'name': 'seen',
+                        'nullable': True,
+                    },
+                    'confidence_score': {
+                        'name': 'confidence_score',
+                        'nullable': True,
+                    },
                 },
-                'bus': {
-                    'name': 'bus',
-                    'view': '',
-                    'nullable': True,
-                },
-                'report_time': {
-                    'name': 'report_time',
-                    'view': '',
-                    'nullable': True,
-                },
-                'dir': {
-                    'name': 'direction',
-                    'view': '',
-                    'nullable': True,
-                },
-                'route': {
-                    'name': 'route',
-                    'view': '',
-                    'nullable': True,
-                },
-                'block_number': {
-                    'name': 'block_number',
-                    'view': '',
-                    'nullable': False,
-                },
-                'trip_number': {
-                    'name': 'trip_number',
-                    'view': '',
-                    'nullable': False,
-                },
-                'operator': {
-                    'name': 'operator',
-                    'view': '',
-                    'nullable': True,
-                },
-                'boards': {
-                    'name': 'boards',
-                    'view': '',
-                    'nullable': True,
-                },
-                'alights': {
-                    'name': 'alights',
-                    'view': '',
-                    'nullable': True,
-                },
-                'onboard': {
-                    'name': 'onboard',
-                    'view': '',
-                    'nullable': True,
-                },
-                'stop': {
-                    'name': 'stop_id',
-                    'view': '',
-                    'nullable': False,
-                },
-                'stop_name': {
-                    'name': 'stop_name',
-                    'view': '',
-                    'nullable': True,
-                },
-                'sched_time': {
-                    'name': 'sched_time',
-                    'view': '',
-                    'nullable': True,
-                },
-                'seen': {
-                    'name': 'seen',
-                    'view': '',
-                    'nullable': True,
-                },
-                'confidence_score': {
-                    'name': 'confidence_score',
-                    'view': '',
-                    'nullable': True,
-                },
+                'query': {
+                    'default': 'INSERT INTO {table_name} ({date}, {bus}, {report_time}, {dir}, {route}, {block_number},'
+                               ' {trip_number}, {operator}, {boards}, {alights}, {onboard}, {stop}, {stop_name}, '
+                               '{sched_time}, {seen}, {confidence_score}) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
+                    'alternate': None,
+                    'static': None,
+                    'table_name': 'service_journal',
+                    'database': 'segments',
+                }
             },
             'stop_locations': {
-                'stop': {
-                    'name': 'stop_num',
-                    'view': 'stop_locations',
-                    'nullable': False,
+                'fields': {
+                    'stop': {
+                        'name': 'stop_num',
+                        'nullable': False,
+                    },
+                    'latitude': {
+                        'name': 'latitude',
+                        'nullable': False,
+                    },
+                    'longitude': {
+                        'name': 'longitude',
+                        'nullable': False,
+                    }
                 },
-                'latitude': {
-                    'name': 'latitude',
-                    'view': 'stop_locations',
-                    'nullable': False,
-                },
-                'longitude': {
-                    'name': 'longitude',
-                    'view': 'stop_locations',
-                    'nullable': False,
+                'query': {
+                    'default': 'SELECT {stop}, {latitude}, {longitude} FROM {table_name}',
+                    'alternate': None,
+                    'static': None,
+                    'table_name': 'stops',
+                    'database': 'Utilities',
                 }
             },
             'shapes': {
-                'from_stop': {
-                    'name': 'fr_stop_num',
-                    'view': 'shapes',
-                    'nullable': False
+                'fields': {
+                    'from_stop': {
+                        'name': 'fr_stop_num',
+                        'nullable': False
+                    },
+                    'to_stop': {
+                        'name': 'to_stop_num',
+                        'nullable': False
+                    },
+                    'date_created': {
+                        'name': 'ini_date',
+                        'nullable': False
+                    },
+                    'distance_feet': {
+                        'name': 'dist_ft',
+                        'nullable': False
+                    },
+                    'shape': {
+                        'name': 'seg_path',
+                        'nullable': False
+                    },
+                    'shape_str': {
+                        'name': 'seg_path_str',
+                        'nullable': False
+                    }
                 },
-                'to_stop': {
-                    'name': 'to_stop_num',
-                    'view': 'shapes',
-                    'nullable': False
-                },
-                'date_created': {
-                    'name': 'ini_date',
-                    'view': 'shapes',
-                    'nullable': False
-                },
-                'distance_feet': {
-                    'name': 'dist_ft',
-                    'view': 'shapes',
-                    'nullable': False
-                },
-                'shape': {
-                    'name': 'seg_path',
-                    'view': 'shapes',
-                    'nullable': False
-                },
-                'shape_str': {
-                    'name': 'seg_path_str',
-                    'view': 'shapes',
-                    'nullable': False
+                'query': {
+                    'default': 'SELECT {from_stop}, {to_stop}, {date_created}, {distance_feet}, CAST({shape} AS '
+                               'NVARCHAR(4000)) AS {shape_str} FROM {table_name} ORDER BY {date_created}',
+                    'alternate': None,
+                    'static': None,
+                    'table_name': 'segment_dist',
+                    'database': 'TA_ITHACA_SCHEDULE_HISTORY'
                 }
-            }
-        },
-        'queries': {
-            'actuals': {
-                'default': 'SELECT {date}, {block_number}, {trip_number}, {bus}, {trigger_time}, {operator}, '
-                           '{actual_time}, {route}, {direction}, {stop}, {name}, {boards}, {alights}, {onboard}, '
-                           '{op_status}, {latitude}, {longitude} FROM {table_name} WHERE {date}=? ORDER '
-                           'BY {date}, {bus}, {trigger_time} asc',
-                'alternate': 'SELECT {date}, {block_number}, {trip_number}, {bus}, {trigger_time}, {operator}, '
-                             '{actual_time}, {route}, {direction}, {stop}, {name}, {boards}, {alights}, {onboard}, '
-                             '{op_status}, {latitude}, {longitude} FROM {table_name} WHERE {date}=? AND {block_number}='
-                             '? ORDER BY {date}, {bus}, {trigger_time} asc',
-                'static': None,
-                'table_name': 'v_vehicle_history',
-                'database': 'TA_ITHACA_ACTUAL_HISTORY',
-            },
-            'scheduled': {
-                'default': 'SELECT {date}, {block_number}, {trip_number}, {route}, {direction}, {stop}, {next_stop}, '
-                           '{sched_time} FROM {table_name} WHERE {date}=? ORDER BY {date}, {block_number}, '
-                           '{trip_number}, {sched_time}',
-                'alternate': 'SELECT {date}, {block_number}, {trip_number}, {route}, {direction}, {stop}, {next_stop}, '
-                             '{sched_time} FROM {table_name} WHERE {date}=? AND {block_number}=? ORDER BY {date}, '
-                             '{block_number}, {trip_number}, {sched_time}',
-                'static': None,
-                'table_name': 'v_scheduled_stops',
-                'database': 'TA_ITHACA_SCHEDULE_HISTORY',
-            },
-            'output': {
-                'default': 'INSERT INTO {table_name} ({date}, {bus}, {report_time}, {dir}, {route}, {block_number}, '
-                           '{trip_number}, {operator}, {boards}, {alights}, {onboard}, {stop}, {stop_name}, '
-                           '{sched_time}, {seen}, {confidence_score}) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
-                'alternate': None,
-                'static': None,
-                'table_name': 'service_journal',
-                'database': 'segments',
-            },
-            'stop_locations': {
-                'default': 'SELECT {stop}, {latitude}, {longitude} FROM {table_name}',
-                'alternate': None,
-                'static': None,
-                'table_name': 'stops',
-                'database': 'Utilities',
-            },
-            'shapes': {
-                'default': 'SELECT {from_stop}, {to_stop}, {date_created}, {distance_feet}, CAST({shape} AS '
-                           'NVARCHAR(4000)) AS {shape_str} FROM {table_name} ORDER BY {date_created}',
-                'alternate': None,
-                'static': None,
-                'table_name': 'segment_dist',
-                'database': 'TA_ITHACA_SCHEDULE_HISTORY'
             }
         }
     }
@@ -343,10 +301,13 @@ def read_config(config_name_: str = DEFAULT_CONFIG_NAME):
         with open(config_name_, 'r') as f:
             return json.load(f)
     except FileNotFoundError:
-        init_config(DEFAULT_CONFIG)
-        print(f'Config initialized as {DEFAULT_CONFIG_NAME}. Please edit the config with the appropriate information '
-              f'and restart.')
-        sys.exit(1)
+        if os.environ.get('JOURNAL_USE_CONFIG_FILE', True):
+            init_config(DEFAULT_CONFIG)
+            print(f'Config initialized as {DEFAULT_CONFIG_NAME}. Please edit the {DEFAULT_CONFIG_NAME} with the '
+                  f'appropriate information and restart.')
+            sys.exit(1)
+        else:
+            return DEFAULT_CONFIG
 
 
 config_name, config, settings, username, password, driver, host, port, attr_sql_map = (None, None, None, None, None,

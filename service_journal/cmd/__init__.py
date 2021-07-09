@@ -1,12 +1,13 @@
 # import sys
 from typing import Tuple
 import argparse
-
-from service_journal.classifications.processors import MAIN_PRESET, DEFAULT_PROCESSOR_TYPES
-from service_journal.gen_utils.class_utils import interpret_date
-from service_journal.gen_utils.debug import get_default_logger
-from service_journal.classifications.dbt_classes import Journal
 from datetime import date
+
+from ..classifications.processors import MAIN_PRESET, DEFAULT_PROCESSOR_TYPES
+from ..utilities.utils import interpret_date
+from ..utilities.debug import get_default_logger
+from ..classifications.journal import Journal
+
 
 logger = get_default_logger(__name__)
 

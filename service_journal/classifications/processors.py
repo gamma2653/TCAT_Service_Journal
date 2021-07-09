@@ -1,11 +1,11 @@
 from typing import TYPE_CHECKING
 
-from service_journal.gen_utils.class_utils import get_shape_trip, get_distance_on_segment_from_report, \
+from ..utilities.utils import get_shape_trip, get_distance_on_segment_from_report, \
     get_trip_progress, replace_if_default
-from service_journal.gen_utils.debug import get_default_logger
+from ..utilities.debug import get_default_logger
 
 if TYPE_CHECKING:
-    from service_journal.classifications.dbt_classes import Journal
+    from .journal import Journal
 
 logger = get_default_logger(__name__)
 

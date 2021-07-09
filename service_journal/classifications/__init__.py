@@ -1,2 +1,3 @@
-from service_journal.classifications import dbt_classes, exceptions, processors, test
-__all__ = ['dbt_classes', 'exceptions', 'processors', 'test']
+from . import journal, exceptions, processors
+
+__all__ = ['journal', 'exceptions', 'processors']

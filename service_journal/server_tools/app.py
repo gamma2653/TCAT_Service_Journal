@@ -1,5 +1,5 @@
 from flask import Flask, request
-from service_journal.command_line_tools import run_days
+from ..cmd import run_days
 import service_journal as sj
 app = Flask(__name__)
 

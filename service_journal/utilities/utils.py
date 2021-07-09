@@ -10,7 +10,7 @@ import geopy.distance
 from geopy.distance import distance as geo_distance
 
 
-from service_journal.gen_utils.debug import get_default_logger
+from .debug import get_default_logger
 
 
 logger = get_default_logger(__name__)

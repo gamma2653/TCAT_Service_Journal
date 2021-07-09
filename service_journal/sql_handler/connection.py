@@ -9,8 +9,8 @@ from shapely.geometry import LineString
 from shapely.geometry.base import BaseGeometry
 from shapely.wkt import loads as wkt_loads
 
-from service_journal.gen_utils.debug import get_default_logger
-from service_journal.gen_utils.class_utils import pull_out_name, write_ordering, unpack, def_dict
+from ..utilities.debug import get_default_logger
+from ..utilities.utils import pull_out_name, write_ordering, unpack, def_dict
 
 logger = get_default_logger(__name__)
 DATE_FORMAT = '%Y-%m-%d'
@@ -256,11 +256,14 @@ class Connection:
         attr_sql_map = settings['attr_sql_map']
         # Invert attr_sql_map
         sql_attr_map: Mapping[str, Mapping[str, Mapping[str, Union[str, bool]]]] = {
-            table_name: {attr_data['name']: {
-                'name': attr_name, 'nullable': attr_data['nullable'], 'view': attr_data['view']
-            }
-                for attr_name, attr_data in table_data.items()
-            } for table_name, table_data in attr_sql_map.items()
+            view_name: {
+                'fields': {
+                    attr_data['name']: {
+                        'name': attr_name, 'nullable': attr_data['nullable']
+                    } for attr_name, attr_data in view_data['fields'].items()
+                },
+                'query': view_data['query']
+            } for view_name, view_data in attr_sql_map.items()
         }
 
         self.attr_sql_map = attr_sql_map
@@ -307,22 +310,22 @@ class Connection:
         self.is_open = False
         return errors
 
-    def _connect(self, table_config: str) -> pyodbc.Connection:
+    def _connect(self, view_config: str) -> pyodbc.Connection:
         """
         Opens a connection to the specified config path.
 
         PARAMETERS
         --------
-        table_config
+        view_config
             String representation of the table to read (from the config)
         RETURNS
         --------
         pyodbc.Connection
             A connection to the given table.
         """
-        database = self.config['settings']["queries"][table_config]["database"]
+        database = self.config['settings']['attr_sql_map'][view_config]['query']['database']
         logger.debug(f'Connecting to {database} on {self.host}:{self.port} using {self.driver} and the credentials user'
-                     f':{self.username} pass:****, and the table_config: {table_config}')
+                     f':{self.username} pass:****, and the table_config: {view_config}')
         # noinspection PyArgumentList
         return pyodbc.connect(driver=self.driver, server=self.host + ('' if self.port is None else f',{self.port}'),
                               database=database, uid=self.username, pwd=self.password)
@@ -344,12 +347,12 @@ class Connection:
         """
         logger.info('Executing query (%s:%s) on connection (%s).', query_name, type_, conn_name)
         params = [] if params is None else params
-        queries = self.config['settings']['queries']
+        query_config = self.config['settings']['attr_sql_map'][query_name]
         cursor = self.connections[conn_name].cursor()
-        attr_sql_map = pull_out_name(self.attr_sql_map[query_name])
-        sql_attr_map = pull_out_name(self.sql_attr_map[query_name])
+        attr_sql_map = pull_out_name(self.attr_sql_map[query_name]['fields'])
+        sql_attr_map = pull_out_name(self.sql_attr_map[query_name]['fields'])
         # attr_sql_map and queries are from config, and therefore trusted
-        query = queries[query_name][type_].format(**attr_sql_map, table_name=queries[query_name]['table_name'])
+        query = query_config[type_].format(**attr_sql_map, table_name=query_config['table_name'])
         try:
             cursor.execute(query, *params)
         except pyodbc.Error as exc:

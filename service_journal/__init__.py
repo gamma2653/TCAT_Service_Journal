@@ -1,3 +1,3 @@
-__all__ = ['classifications', 'sql_handler', 'command_line_tools', 'gen_utils', 'server_tools']
-from service_journal import gen_utils, classifications, sql_handler, command_line_tools
+__all__ = ['classifications', 'sql_handler', 'cmd', 'utilities', 'server_tools']
+from . import utilities, classifications, sql_handler, cmd
 

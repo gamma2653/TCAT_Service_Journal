@@ -2,11 +2,11 @@
 from datetime import date
 from typing import Iterable, Mapping, Optional, List
 
-from service_journal.classifications.exceptions import PreconditionError
-from service_journal.classifications.processors import get_deflt_processors
-from service_journal.sql_handler.connection import Connection
-from service_journal.gen_utils.debug import get_default_logger
-from service_journal.gen_utils.class_utils import date_range
+from .exceptions import PreconditionError
+from .processors import get_deflt_processors
+from ..sql_handler.connection import Connection
+from ..utilities.debug import get_default_logger
+from ..utilities.utils import date_range
 
 logger = get_default_logger(__name__)
 
