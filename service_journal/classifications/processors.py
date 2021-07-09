@@ -1,4 +1,7 @@
 from typing import TYPE_CHECKING
+
+from service_journal.gen_utils.class_utils import get_shape_trip, get_distance_on_segment_from_report, \
+    get_trip_progress, replace_if_default
 from service_journal.gen_utils.debug import get_default_logger
 
 if TYPE_CHECKING:
@@ -9,15 +12,6 @@ logger = get_default_logger(__name__)
 
 def build_trip_shapes(journal: 'Journal'):
     journal.trip_shapes = {}
-
-
-def post_segment_analysis(journal: 'Journal'):
-    """
-    Code to be run before the primary processing of data. This includes running the data through Jonathan's code so that
-     those results can be pulled from when compiling the final service journal.
-    """
-    # TODO: 1. Get shapes 2. Expand them 3. Convert actuals to Date-Block-Trip 4. Call track_intervals
-    pass
 
 
 def process_take1(journal: 'Journal'):
@@ -31,14 +25,31 @@ def process_take1(journal: 'Journal'):
         day_schedule = journal.schedule[date_]
 
         for bus, bus_data in day_actual.items():
+            # Is this going to be a problem when changing trips?
+            current_segment_progress = 0.0
             for time_, report in bus_data.items():
                 try:
                     scheduled_stops = day_schedule[report['block_number']][report['trip_number']]['stops']
                     if report['stop_id'] == 0:
-                        pass
-                        # Time to infer what happened! Magic time.
-                        # trip, lat, lon = report['trip_number'], report['lat'], report['lon']
-                        # trip = report['trip_number']
+                        # FIXME: Does this case capture last-stops? Probably not.
+                        # When stop is departing/past a stop
+                        stop2stops, merged_line, trip_line_strings = get_shape_trip(scheduled_stops, journal.shapes)
+                        current_segment_progress, distance_from_path = get_distance_on_segment_from_report(
+                            report, merged_line, current_segment_progress
+                        )
+                        current_segment = get_trip_progress(stop2stops, trip_line_strings, current_segment_progress)
+                        stop_id = current_segment[0]
+                        scheduled_stop = scheduled_stops[stop_id]
+                        if scheduled_stop['seen'] == 0:
+                            scheduled_stop['seen'] += 1
+                            segment_shape = journal.shapes[current_segment]
+                            scheduled_stop['confidence_factors'].append(int(segment_shape.length//distance_from_path))
+                        replace_if_default(scheduled_stop, 'trigger_time', time_)
+                        replace_if_default(scheduled_stop, 'operator', report['operator'])
+                        scheduled_stop['boards'] += report['boards']
+                        scheduled_stop['alights'] += report['alights']
+                        scheduled_stop['onboard'] = max(report['onboard'], scheduled_stop['onboard'])
+                        scheduled_stop['bus'] = bus
 
                     # We saw the stop, and know we got there via Avail
                     elif report['stop_id'] in scheduled_stops:
@@ -84,32 +95,10 @@ def calculate_confidence(journal: 'Journal'):
                         stop['confidence_score'] = 0
 
 
-def cross_ref_tracked_intervals(journal: 'Journal'):
-    return
-    # for date_, day_schedule in journal.schedule.items():
-    #     logger.info('Cross referencing %s.', date_)
-    #     intervals_not_seen_d = journal.intervals_not_visited.get(date_, {})
-    #     for block_number, block in day_schedule.items():
-    #         intervals_not_seen_db = intervals_not_seen_d[block_number]
-    #         for trip_number, trip in block.items():
-    #             stops = trip['stops']
-    #             intervals_not_seen_dbt = intervals_not_seen_db[trip_number]
-    #             for stop_id, stop in stops.items():
-    #                 tracked_was_visited = stop_id not in intervals_not_seen_dbt
-    #                 processed_was_visited = stop['seen'] > 0
-    #                 if tracked_was_visited and not processed_was_visited:
-    #                     logger.debug('stop_id: %s\nintervals_not_seen_dbt: %s\ntracked_was_visited: %s\n'
-    #                                  'processed_was_visited: %s', stop_id, intervals_not_seen_dbt, tracked_was_visited,
-    #                                  processed_was_visited)
-    #                     stop['seen'] += 1
-    #                     stop['confidence_factors'].append(50)
-
-
-# TODO: make Jonathan code just run in post.
 MAIN_PRESET = {
     'prep': [],
     'main': [process_take1],
-    'post': [post_segment_analysis, cross_ref_tracked_intervals, calculate_confidence]
+    'post': [calculate_confidence]
 }
 
 DEFAULT_PROCESSOR_TYPES = MAIN_PRESET.keys()
