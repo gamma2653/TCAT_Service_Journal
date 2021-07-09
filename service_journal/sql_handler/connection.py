@@ -2,7 +2,6 @@ from collections import OrderedDict
 from typing import Dict, Optional, Tuple, Mapping, Set, Union, Iterable, List, MutableMapping, Callable, DefaultDict
 from numbers import Number
 import pyodbc
-from enum import Enum
 from datetime import date
 
 from shapely.geometry import LineString
@@ -15,48 +14,9 @@ from ..utilities.utils import pull_out_name, write_ordering, unpack, def_dict
 logger = get_default_logger(__name__)
 DATE_FORMAT = '%Y-%m-%d'
 
+
 # TODO: Add a schema file that defines all the keys for each data source.
-
-
-def _package_rtbd(data: Mapping, acc: DefaultDict, to_date_format: str = DATE_FORMAT):
-    """
-    Packages single entry of actual data into route-trip-block data hierarchical format (acc).
-    PARAMETERS
-    --------
-    data
-        Single record mapping of data to insert into acc.
-    acc
-        The dictionary to insert data into.
-    to_date_format
-        The string pattern to format the date field to. See date.strftime() for more information. Default value is
-        defined above.
-    """
-
-    block = acc[data['route']][data['trip_number']][data['block_number']]
-    # Convert date format
-    date_key = data['date'].strftime(to_date_format)
-    if date_key not in block:
-        block[date_key] = []
-    stops = block[date_key]
-    stops.append({
-        'time': data['trigger_time'],
-        'lat': data['latitude'],
-        'lon': data['longitude'],
-        'dir': data['direction'],
-        'bus': data['bus'],
-        'operator': data['operator'],
-        'depart': data['actual_time'],
-        'boards': data['boards'],
-        'alights': data['alights'],
-        'onboard': data['onboard'],
-        'date_time': data['trigger_time'],
-        'stop_id': data['stop'],
-        # TODO: Currently no SQL record for 'day', ask Tom
-        'day': None
-    })
-
-
-def _package_dbt_schedule(data: Mapping, acc: DefaultDict, to_date_format: str = DATE_FORMAT):
+def _package_schedule(data: Mapping, acc: DefaultDict, to_date_format: str = DATE_FORMAT):
     """
     Packages single entry of schedule data into date-block-trip data hierarchical format (acc).
     PARAMETERS
@@ -100,7 +60,7 @@ def _package_dbt_schedule(data: Mapping, acc: DefaultDict, to_date_format: str =
         }
 
 
-def _package_dbt_actuals(data: Mapping, acc: DefaultDict, to_date_format: str = DATE_FORMAT):
+def _package_actuals(data: Mapping, acc: DefaultDict, to_date_format: str = DATE_FORMAT):
     """
     Packages single entry of actual data into date-block-bus data hierarchical format (acc).
     PARAMETERS
@@ -214,13 +174,6 @@ def process_cursor(cursor: pyodbc.Cursor, sql_attr_map: Mapping, packager: Calla
     if name:
         logger.info('Finished processing cursor for %s. Processed %s records.', name, record_count)
     return acc
-
-
-class DataFormat(Enum):
-    # Date-Block/Bus-Trip
-    DBT = 'DBT'
-    # Route-Trip-Block-DateKey
-    RTBD = 'RTBD'
 
 
 class Connection:
@@ -400,7 +353,7 @@ class Connection:
     def __exit__(self, exception_type, exception_value, traceback):
         self.close()
 
-    def read(self, date_: date, format_: DataFormat = DataFormat.DBT, type_: str = 'default',
+    def read(self, date_: date, type_: str = 'default',
              params: Optional[List] = None) -> Union[Tuple[Mapping, Mapping], Mapping]:
         """
         Read from the Connection the given date_ and store in the given format_.
@@ -409,8 +362,6 @@ class Connection:
         --------
         date_
             The date object that defines the date from which to pull the schedule and avl_data.
-        format_
-            The DataFormat which should be used to store the data pulled from the Connection.
         type_
             The type of query being done
         params
@@ -430,13 +381,8 @@ class Connection:
                                                                      type_=type_)
 
         # Format dictates dictionary structure to generate
-        if format_ is DataFormat.RTBD:
-            return process_cursor(a_cursor, a_sql_attr_map, _package_rtbd, 'avl_dict')
-        elif format_ is DataFormat.DBT:
-            return process_cursor(s_cursor, s_sql_attr_map, _package_dbt_schedule, 'scheduled'), process_cursor(
-                a_cursor, a_sql_attr_map, _package_dbt_actuals, 'actuals')
-        else:
-            raise NotImplementedError(f'The given format, {format_}, is not yet supported.')
+        return process_cursor(s_cursor, s_sql_attr_map, _package_schedule, 'scheduled'), process_cursor(
+                a_cursor, a_sql_attr_map, _package_actuals, 'actuals')
 
     def write(self, data_map: Mapping, autocommit: bool = False):
         """
