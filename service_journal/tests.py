@@ -1,8 +1,8 @@
 from unittest import TestCase, TestSuite
-from .sql_handler import connection, environ
+from .sql_handler import connection, config
 from datetime import date
 
-environ.setup()
+config.setup()
 
 DATE_2020_1_30 = {
 
@@ -15,7 +15,7 @@ TEST_DATES = {
 
 class ConnectionReadTestCase(TestCase):
     def setUp(self):
-        self.config = environ.config
+        self.config = config.config
 
     def test_read_day(self):
         results = {}

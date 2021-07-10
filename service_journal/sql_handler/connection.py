@@ -191,7 +191,7 @@ class Connection:
         if config is not None:
             self.config = config
         else:
-            from .environ import config
+            from .config import config
             self.config = config
         try:
             settings = self.settings = config['settings']

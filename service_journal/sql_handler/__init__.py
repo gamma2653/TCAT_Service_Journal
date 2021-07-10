@@ -1,1 +1,3 @@
-from . import connection, environ
+from . import connection, config
+
+__all__ = ['config', 'connection']
