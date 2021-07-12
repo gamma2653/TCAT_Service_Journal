@@ -8,6 +8,7 @@ from shapely.geometry import LineString
 from shapely.geometry.base import BaseGeometry
 from shapely.wkt import loads as wkt_loads
 
+from .query_builder import build_query
 from ..utilities.debug import get_default_logger
 from ..utilities.utils import pull_out_name, write_ordering, unpack, def_dict
 
@@ -283,7 +284,7 @@ class Connection:
         return pyodbc.connect(driver=self.driver, server=self.host + ('' if self.port is None else f',{self.port}'),
                               database=database, uid=self.username, pwd=self.password)
 
-    def _exc_query(self, conn_name, query_name, params=None, type_='default'):
+    def _exc_query(self, conn_name, query_name, params=None, which_query='default'):
         """
         Executes a single query defined in the config.
 
@@ -295,17 +296,22 @@ class Connection:
             The name of the query in the config.
         params
             The parameters to be passed to the SQL statement.
-        type_
+        which_query
             The type of query as defined in the config.
         """
-        logger.info('Executing query (%s:%s) on connection (%s).', query_name, type_, conn_name)
+        logger.info('Executing query (%s:%s) on connection (%s).', query_name, which_query, conn_name)
         params = [] if params is None else params
         query_config = self.config['settings']['attr_sql_map'][query_name]
         cursor = self.connections[conn_name].cursor()
         attr_sql_map = pull_out_name(self.attr_sql_map[query_name]['fields'])
         sql_attr_map = pull_out_name(self.sql_attr_map[query_name]['fields'])
         # attr_sql_map and queries are from config, and therefore trusted
-        query = query_config[type_].format(**attr_sql_map, table_name=query_config['table_name'])
+        query_type = query_config['query']['type'].upper()
+        fields = list(attr_sql_map.values())
+        table_name = query_config['query']['table_name']
+        filters = query_config['query']['filters'][which_query]
+        ordering = query_config['query']['order_by']
+        query = build_query(query_type, fields, table_name, filters, ordering)
         try:
             cursor.execute(query, *params)
         except pyodbc.Error as exc:
@@ -376,9 +382,9 @@ class Connection:
 
         # Execute queries
         (a_attr_sql_map, a_sql_attr_map), a_cursor = self._exc_query('actuals_conn', 'actuals', params=params,
-                                                                     type_=type_)
+                                                                     which_query=type_)
         (s_attr_sql_map, s_sql_attr_map), s_cursor = self._exc_query('scheduled_conn', 'scheduled', params=params,
-                                                                     type_=type_)
+                                                                     which_query=type_)
 
         # Format dictates dictionary structure to generate
         return process_cursor(s_cursor, s_sql_attr_map, _package_schedule, 'scheduled'), process_cursor(

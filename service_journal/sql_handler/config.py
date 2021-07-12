@@ -90,15 +90,19 @@ DEFAULT_CONFIG = {
                     }
                 },
                 'query': {
-                    'default': 'SELECT {date}, {block_number}, {trip_number}, {bus}, {trigger_time}, {operator}, '
-                               '{actual_time}, {route}, {direction}, {stop}, {name}, {boards}, {alights}, {onboard}, '
-                               '{op_status}, {latitude}, {longitude} FROM {table_name} WHERE {date}=? ORDER '
-                               'BY {date}, {bus}, {trigger_time} asc',
-                    'alternate': 'SELECT {date}, {block_number}, {trip_number}, {bus}, {trigger_time}, {operator}, '
-                                 '{actual_time}, {route}, {direction}, {stop}, {name}, {boards}, {alights}, {onboard}, '
-                                 '{op_status}, {latitude}, {longitude} FROM {table_name} WHERE {date}=? AND '
-                                 '{block_number}=? ORDER BY {date}, {bus}, {trigger_time} asc',
-                    'static': None,
+                    'type': 'SELECT',
+                    'filters': {
+                        'default': [
+                            'date'
+                        ],
+                        'alternate': [
+                            'date',
+                            'block_number'
+                        ]
+                    },
+                    'order_by': [
+                        'date', 'bus', 'trigger_time'
+                    ],
                     'table_name': 'v_vehicle_history',
                     'database': 'TA_ITHACA_ACTUAL_HISTORY',
                 }
@@ -139,13 +143,19 @@ DEFAULT_CONFIG = {
                     }
                 },
                 'query': {
-                    'default': 'SELECT {date}, {block_number}, {trip_number}, {route}, {direction}, {stop}, {next_stop}'
-                               ', {sched_time} FROM {table_name} WHERE {date}=? ORDER BY {date}, {block_number}, '
-                               '{trip_number}, {sched_time}',
-                    'alternate': 'SELECT {date}, {block_number}, {trip_number}, {route}, {direction}, {stop}, '
-                                 '{next_stop}, {sched_time} FROM {table_name} WHERE {date}=? AND {block_number}=? ORDER'
-                                 ' BY {date}, {block_number}, {trip_number}, {sched_time}',
-                    'static': None,
+                    'type': 'SELECT',
+                    'filters': {
+                        'default': [
+                            'date'
+                        ],
+                        'alternate': [
+                            'date',
+                            'block_number'
+                        ]
+                    },
+                    'order_by': [
+                        'date', 'block_number', 'trip_number', 'sched_time'
+                    ],
                     'table_name': 'v_scheduled_stops',
                     'database': 'TA_ITHACA_SCHEDULE_HISTORY',
                 }
