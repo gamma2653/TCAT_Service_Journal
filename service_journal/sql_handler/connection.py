@@ -81,6 +81,8 @@ def _package_actuals(data: Mapping, acc: DefaultDict, to_date_format: str = DATE
         # TODO: Idk if this is ok or not. Check with Tom later.
         trigger_time_v = bus[data['trigger_time']]
         trigger_time_v['route'].add(data['route'])
+        if data['trip_number'] not in trigger_time_v['trip_number']:
+            trigger_time_v['trip_number'].append(data['trip_number'])
         trigger_time_v['boards'] += data['boards']
         trigger_time_v['alights'] += data['alights']
         trigger_time_v['onboard'] = max(trigger_time_v['onboard'], data['onboard'])
@@ -360,7 +362,7 @@ class Connection:
         self.close()
 
     def read(self, date_: date, type_: str = 'default',
-             params: Optional[List] = None) -> Union[Tuple[Mapping, Mapping], Mapping]:
+             params: Optional[List] = None) -> Tuple[Mapping, Mapping]:
         """
         Read from the Connection the given date_ and store in the given format_.
 

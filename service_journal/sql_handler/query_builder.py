@@ -65,7 +65,7 @@ def build_query(query_type: Union[str, QueryTypes], fields: Sequence[str], table
             query_type = QueryTypes(query_type)
 
     if query_type is QueryTypes.SELECT:
-        return build_select(fields, table, filters, order_by=order_by)
+        return build_select(fields, table, filters, order_by)
     elif query_type is QueryTypes.INSERT:
         return build_insert(fields, table)
 

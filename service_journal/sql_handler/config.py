@@ -114,7 +114,7 @@ DEFAULT_CONFIG = {
                         'nullable': True,
                     },
                     'block_number': {
-                        'name': 'block',
+                        'name': 'BlockNumber',
                         'nullable': True,
                     },
                     'trip_number': {
@@ -122,7 +122,7 @@ DEFAULT_CONFIG = {
                         'nullable': True,
                     },
                     'route': {
-                        'name': 'RouteNumber',
+                        'name': 'route_number',
                         'nullable': True,
                     },
                     'direction': {
@@ -133,12 +133,8 @@ DEFAULT_CONFIG = {
                         'name': 'stop_num',
                         'nullable': True,
                     },
-                    'next_stop': {
-                        'name': 'next_stop',
-                        'nullable': True,
-                    },
                     'sched_time': {
-                        'name': 'departure_time',
+                        'name': 'departure',
                         'nullable': True,
                     }
                 },
@@ -157,7 +153,7 @@ DEFAULT_CONFIG = {
                         'date', 'block_number', 'trip_number', 'sched_time'
                     ],
                     'table_name': 'v_scheduled_stops',
-                    'database': 'TA_ITHACA_SCHEDULE_HISTORY',
+                    'database': 'schedule_history',
                 }
             },
             'output': {
@@ -313,8 +309,9 @@ def read_config(config_name_: str = DEFAULT_CONFIG_NAME):
     except FileNotFoundError:
         if os.environ.get('JOURNAL_USE_CONFIG_FILE', True):
             init_config(DEFAULT_CONFIG)
-            print(f'Config initialized as {DEFAULT_CONFIG_NAME}. Please edit the {DEFAULT_CONFIG_NAME} with the '
-                  f'appropriate information and restart.')
+            print(f'Config initialized as {DEFAULT_CONFIG_NAME}.')
+        if os.environ.get('JOURNAL_FORCE_USE_CONFIG_FILE', True):
+            print(f'Please edit the {DEFAULT_CONFIG_NAME} with the appropriate information and restart.')
             sys.exit(1)
         else:
             return DEFAULT_CONFIG
