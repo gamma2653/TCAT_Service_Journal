@@ -1,14 +1,13 @@
 from collections import OrderedDict
-from unittest import TestCase, TestSuite, mock
+from unittest import TestCase, mock, main
 from datetime import date, datetime
-from .sql_handler import connection, config
+from service_journal.sql_handler import config, connection
 import os
-from copy import deepcopy
 
 ENV_EDITS = {
     'JOURNAL_CONFIG_NAME': 'test_config.py',
-    'JOURNAL_USE_CONFIG_FILE': False,
-    'JOURNAL_FORCE_USE_CONFIG_FILE': False
+    'JOURNAL_USE_CONFIG_FILE': 'false',
+    'JOURNAL_FORCE_USE_CONFIG_FILE': 'false'
 }
 
 
@@ -610,3 +609,7 @@ class JournalProcessTest(TestCase):
 
     def test_multiprocessing(self):
         pass
+
+
+if __name__ == '__main__':
+    main()

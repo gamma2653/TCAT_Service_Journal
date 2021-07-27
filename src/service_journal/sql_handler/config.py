@@ -1,6 +1,7 @@
 import os
 import json
 import sys
+from ..utilities.utils import ENVIRONMENT_TRUTHY_VALUES
 
 
 DEFAULT_CONFIG_NAME = 'config.json'
@@ -302,19 +303,28 @@ def init_config(default_config_):
         json.dump(default_config_, f, indent=4)
 
 
-def read_config(config_name_: str = DEFAULT_CONFIG_NAME):
-    try:
-        with open(config_name_, 'r') as f:
-            return json.load(f)
-    except FileNotFoundError:
-        if os.environ.get('JOURNAL_USE_CONFIG_FILE', True):
+def read_config(config_name_: str = DEFAULT_CONFIG_NAME, use_config=True, f_use_config=True):
+    """
+    Environment variables take priority. (JOURNAL_USE_CONFIG_FILE/JOURNAL_FORCE_USE_CONFIG_FILE/JOURNAL_CONFIG_NAME)
+    """
+    use_config = os.environ.get('JOURNAL_USE_CONFIG_FILE', str(use_config)).lower() in ENVIRONMENT_TRUTHY_VALUES
+    f_use_config = \
+        os.environ.get('JOURNAL_FORCE_USE_CONFIG_FILE', str(f_use_config)).lower() in ENVIRONMENT_TRUTHY_VALUES
+    if f_use_config:
+        use_config = True
+    if use_config:
+        try:
+            with open(config_name_, 'r') as f:
+                return json.load(f)
+        except FileNotFoundError:
             init_config(DEFAULT_CONFIG)
             print(f'Config initialized as {DEFAULT_CONFIG_NAME}.')
-        if os.environ.get('JOURNAL_FORCE_USE_CONFIG_FILE', True):
-            print(f'Please edit the {DEFAULT_CONFIG_NAME} with the appropriate information and restart.')
-            sys.exit(1)
-        else:
-            return DEFAULT_CONFIG
+            if f_use_config:
+                print(f'Please edit the {DEFAULT_CONFIG_NAME} with the appropriate information and restart.')
+                sys.exit(1)
+            else:
+                return DEFAULT_CONFIG
+    return DEFAULT_CONFIG
 
 
 config_name, config, settings, username, password, driver, host, port, attr_sql_map = (None, None, None, None, None,

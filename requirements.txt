@@ -1,5 +1,1 @@
-pyodbc
-flask
-wheel
-shapely
-geopy
+-e .

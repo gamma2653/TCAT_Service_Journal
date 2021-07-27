@@ -153,11 +153,12 @@ def unpack(ordering_: Iterable[str], data_map_: Mapping[str, Any]) -> Iterable[A
     return (data_map_[i] for i in ordering_)
 
 
-DEFAULT_VALUES = {[], 0, None}
+ENVIRONMENT_TRUTHY_VALUES = ('true', '1', 't')
+DEFAULT_VALUES = ([], 0, None)
 
 
-def replace_if_default(map_: MutableMapping, key, value):
-    if key in map_ and map_[key] in DEFAULT_VALUES:
+def replace_if_default(map_: MutableMapping, key, value, default_values=DEFAULT_VALUES):
+    if key in map_ and map_[key] in default_values:
         map_[key] = value
 
 
