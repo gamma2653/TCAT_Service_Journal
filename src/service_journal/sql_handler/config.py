@@ -4,15 +4,40 @@ import sys
 from ..utilities.utils import ENVIRONMENT_TRUTHY_VALUES
 
 
+# ENVIRONMENT VARIABLES:
+# JOURNAL_USE_CONFIG_FILE
+#   Determines whether to use the config file or depends on defaults/environment variables. Default: true
+# JOURNAL_FORCE_USE_CONFIG_FILE
+#   Determines whether to force the usage of a config file. Overrides value of JOURNAL_USE_CONFIG_FILE. Default: true
+# JOURNAL_CONFIG_NAME
+#   The name of the config file to use. Default: DEFAULT_CONFIG_NAME (see below)
+# JOURNAL_SQL_USERNAME
+#   Overrides the config's SQL username
+# JOURNAL_SQL_PASSWORD
+#   Overrides the config's SQL password
+# JOURNAL_SQL_DRIVER
+#   Overrides the config's SQL driver
+# JOURNAL_SQL_HOST
+#   Overrides the config's SQL host server
+# JOURNAL_SQL_PORT
+#   Overrides the config's SQL port
+
+# FIXME: Currently if config file exists, it overrides all values of default value, while environment vars only replace
+# one value.
+# Priority of config values from highest to lowest priority:
+# 1. Environment vars
+# 2. Config file value
+# 3. Default value
+
+
 DEFAULT_CONFIG_NAME = 'config.json'
 
-
-# TODO: Restructure config, combining queries and attr_sql_map.
+# TODO: Restructure config, turning it into a ChainMap.
 
 DEFAULT_CONFIG = {
     'settings': {
         # The host driver, as list of these can be found on the pyodbc library readme on github
-        'driver': '{ODBC Driver 11 for SQL Server}',
+        'driver': '{SQL SERVER}',
         'host': 'AVAILDEV',
         'username': '',
         'password': '',
@@ -90,23 +115,21 @@ DEFAULT_CONFIG = {
                         'nullable': True,
                     }
                 },
-                'query': {
-                    'type': 'SELECT',
-                    'filters': {
-                        'default': [
-                            'date'
-                        ],
-                        'alternate': [
-                            'date',
-                            'block_number'
-                        ]
-                    },
-                    'order_by': [
-                        'date', 'bus', 'trigger_time'
+                'type': 'SELECT',
+                'filters': {
+                    'default': [
+                        'date'
                     ],
-                    'table_name': 'v_vehicle_history',
-                    'database': 'TA_ITHACA_ACTUAL_HISTORY',
-                }
+                    'alternate': [
+                        'date',
+                        'block_number'
+                    ]
+                },
+                'order_by': [
+                    'date', 'bus', 'trigger_time'
+                ],
+                'table_name': 'v_vehicle_history',
+                'database': 'TA_ITHACA_ACTUAL_HISTORY',
             },
             'scheduled': {
                 'fields': {
@@ -139,23 +162,21 @@ DEFAULT_CONFIG = {
                         'nullable': True,
                     }
                 },
-                'query': {
-                    'type': 'SELECT',
-                    'filters': {
-                        'default': [
-                            'date'
-                        ],
-                        'alternate': [
-                            'date',
-                            'block_number'
-                        ]
-                    },
-                    'order_by': [
-                        'date', 'block_number', 'trip_number', 'sched_time'
+                'type': 'SELECT',
+                'filters': {
+                    'default': [
+                        'date'
                     ],
-                    'table_name': 'v_scheduled_stops',
-                    'database': 'schedule_history',
-                }
+                    'alternate': [
+                        'date',
+                        'block_number'
+                    ]
+                },
+                'order_by': [
+                    'date', 'block_number', 'trip_number', 'sched_time'
+                ],
+                'table_name': 'v_schedule_stops',
+                'database': 'schedule_history',
             },
             'output': {
                 'fields': {
@@ -224,15 +245,13 @@ DEFAULT_CONFIG = {
                         'nullable': True,
                     },
                 },
-                'query': {
-                    'default': 'INSERT INTO {table_name} ({date}, {bus}, {report_time}, {dir}, {route}, {block_number},'
-                               ' {trip_number}, {operator}, {boards}, {alights}, {onboard}, {stop}, {stop_name}, '
-                               '{sched_time}, {seen}, {confidence_score}) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
-                    'alternate': None,
-                    'static': None,
-                    'table_name': 'service_journal',
-                    'database': 'segments',
-                }
+                'default': 'INSERT INTO {table_name} ({date}, {bus}, {report_time}, {dir}, {route}, {block_number},'
+                           ' {trip_number}, {operator}, {boards}, {alights}, {onboard}, {stop}, {stop_name}, '
+                           '{sched_time}, {seen}, {confidence_score}) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
+                'alternate': None,
+                'static': None,
+                'table_name': 'service_journal',
+                'database': 'segments',
             },
             'stop_locations': {
                 'fields': {
@@ -249,13 +268,11 @@ DEFAULT_CONFIG = {
                         'nullable': False,
                     }
                 },
-                'query': {
-                    'default': 'SELECT {stop}, {latitude}, {longitude} FROM {table_name}',
-                    'alternate': None,
-                    'static': None,
-                    'table_name': 'stops',
-                    'database': 'Utilities',
-                }
+                'default': 'SELECT {stop}, {latitude}, {longitude} FROM {table_name}',
+                'alternate': None,
+                'static': None,
+                'table_name': 'stops',
+                'database': 'Utilities',
             },
             'shapes': {
                 'fields': {
@@ -284,14 +301,13 @@ DEFAULT_CONFIG = {
                         'nullable': False
                     }
                 },
-                'query': {
-                    'default': 'SELECT {from_stop}, {to_stop}, {date_created}, {distance_feet}, CAST({shape} AS '
-                               'NVARCHAR(4000)) AS {shape_str} FROM {table_name} ORDER BY {date_created}',
-                    'alternate': None,
-                    'static': None,
-                    'table_name': 'segment_dist',
-                    'database': 'TA_ITHACA_SCHEDULE_HISTORY'
-                }
+                'default': 'SELECT {from_stop}, {to_stop}, {date_created}, {distance_feet}, CAST({shape} AS '
+                           'NVARCHAR(4000)) AS {shape_str} FROM {table_name} ORDER BY {date_created}',
+                'alternate': None,
+                'static': None,
+                'table_name': 'segment_dist',
+                'database': 'TA_ITHACA_SCHEDULE_HISTORY'
+
             }
         }
     }
@@ -303,7 +319,7 @@ def init_config(default_config_):
         json.dump(default_config_, f, indent=4)
 
 
-def read_config(config_name_: str = DEFAULT_CONFIG_NAME, use_config=True, f_use_config=True):
+def read_config(config_name_: str = DEFAULT_CONFIG_NAME, use_config:bool = True, f_use_config: bool = True):
     """
     Environment variables take priority. (JOURNAL_USE_CONFIG_FILE/JOURNAL_FORCE_USE_CONFIG_FILE/JOURNAL_CONFIG_NAME)
     """
@@ -327,24 +343,36 @@ def read_config(config_name_: str = DEFAULT_CONFIG_NAME, use_config=True, f_use_
     return DEFAULT_CONFIG
 
 
-config_name, config, settings, username, password, driver, host, port, attr_sql_map = (None, None, None, None, None,
-                                                                                       None, None, None, None)
+config_name, config, settings, username, password, driver, host, port, attr_sql_map, is_setup = (None, None, None, None,
+                                                                                                 None, None, None, None,
+                                                                                                 None, False)
 
 
-def setup():
-    global config_name, config, settings, username, password, driver, host, port, attr_sql_map
-    config_name = os.environ.get('JOURNAL_CONFIG_NAME', DEFAULT_CONFIG_NAME)
-    config = read_config(config_name)
-    settings = config['settings']
+def setup(force: bool = False):
+    """
+    If this module is not already setup, sets up global variables using environment variables and the filesystem
+    accordingly.
 
-    # Set global var and config values to either the config value, or the environment variable if it exists.
-    username = settings['username'] = os.environ.get('JOURNAL_SQL_USERNAME', settings['username'])
-    password = settings['password'] = os.environ.get('JOURNAL_SQL_PASSWORD', settings['password'])
-    driver = settings['driver'] = os.environ.get('JOURNAL_SQL_DRIVER', settings['driver'])
-    host = settings['host'] = os.environ.get('JOURNAL_SQL_HOST', settings['host'])
-    port = settings['port'] = os.environ.get('JOURNAL_SQL_PORT', settings['port'])
+    PARAMETERS
+    --------
+    force
+        Redoes setup even if setup has been called before.
+    """
+    global config_name, config, settings, username, password, driver, host, port, attr_sql_map, is_setup
+    if force or not is_setup:
+        config_name = os.environ.get('JOURNAL_CONFIG_NAME', DEFAULT_CONFIG_NAME)
+        config = read_config(config_name)
+        settings = config['settings']
 
-    attr_sql_map = settings['attr_sql_map']
+        # Set global var and config values to either the config value, or the environment variable if it exists.
+        username = settings['username'] = os.environ.get('JOURNAL_SQL_USERNAME', settings['username'])
+        password = settings['password'] = os.environ.get('JOURNAL_SQL_PASSWORD', settings['password'])
+        driver = settings['driver'] = os.environ.get('JOURNAL_SQL_DRIVER', settings['driver'])
+        host = settings['host'] = os.environ.get('JOURNAL_SQL_HOST', settings['host'])
+        port = settings['port'] = os.environ.get('JOURNAL_SQL_PORT', settings['port'])
+
+        attr_sql_map = settings['attr_sql_map']
+        is_setup = True
 
 
 if __name__ == '__main__':

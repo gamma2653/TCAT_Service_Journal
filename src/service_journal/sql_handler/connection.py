@@ -11,6 +11,7 @@ from shapely.wkt import loads as wkt_loads
 from .query_builder import build_query
 from ..utilities.debug import get_default_logger
 from ..utilities.utils import pull_out_name, write_ordering, unpack, def_dict
+from . import config as config_module
 
 logger = get_default_logger(__name__)
 DATE_FORMAT = '%Y-%m-%d'
@@ -30,7 +31,13 @@ def _package_schedule(data: Mapping, acc: DefaultDict, to_date_format: str = DAT
         The string pattern to format the date field to. See date.strftime() for more information. Default value is
         defined above.
     """
-    date_key = data['date'].strftime(to_date_format)
+    try:
+        date_key = data['date'].strftime(to_date_format)
+    except AttributeError:
+        if isinstance(data['date'], str):
+            date_key = data['date']
+        else:
+            raise
     block = acc[date_key][data['block_number']]
     if data['trip_number'] not in block:
         block[data['trip_number']] = {
@@ -74,7 +81,13 @@ def _package_actuals(data: Mapping, acc: DefaultDict, to_date_format: str = DATE
         The string pattern to format the date field to. See date.strftime() for more information. Default value is
         defined above.
     """
-    date_key = data['date'].strftime(to_date_format)
+    try:
+        date_key = data['date'].strftime(to_date_format)
+    except AttributeError:
+        if isinstance(data['date'], str):
+            date_key = data['date']
+        else:
+            raise
     bus = acc[date_key][data['bus']]
     if data['trigger_time'] in bus:
         # Mid-swapping routes
@@ -194,8 +207,8 @@ class Connection:
         if config is not None:
             self.config = config
         else:
-            from .config import config
-            self.config = config
+            config_module.setup()
+            self.config = config_module.config
         try:
             settings = self.settings = config['settings']
             self.driver = settings['driver']
@@ -209,16 +222,14 @@ class Connection:
                   'running this, please setup your config and re-run it.')
             raise e
 
-        attr_sql_map = settings['attr_sql_map']
+        # Scope to fields for each view
+        attr_sql_map = {view_name: view_data['fields'] for view_name, view_data in settings['attr_sql_map'].items()}
         # Invert attr_sql_map
         sql_attr_map: Mapping[str, Mapping[str, Mapping[str, Union[str, bool]]]] = {
             view_name: {
-                'fields': {
-                    attr_data['name']: {
+                attr_data['name']: {
                         'name': attr_name, 'nullable': attr_data['nullable']
-                    } for attr_name, attr_data in view_data['fields'].items()
-                },
-                'query': view_data['query']
+                } for attr_name, attr_data in view_data.items()
             } for view_name, view_data in attr_sql_map.items()
         }
 
@@ -279,7 +290,7 @@ class Connection:
         pyodbc.Connection
             A connection to the given table.
         """
-        database = self.config['settings']['attr_sql_map'][view_config]['query']['database']
+        database = self.config['settings']['attr_sql_map'][view_config]['database']
         logger.debug(f'Connecting to {database} on {self.host}:{self.port} using {self.driver} and the credentials user'
                      f':{self.username} pass:****, and the table_config: {view_config}')
         # noinspection PyArgumentList
@@ -305,14 +316,20 @@ class Connection:
         params = [] if params is None else params
         query_config = self.config['settings']['attr_sql_map'][query_name]
         cursor = self.connections[conn_name].cursor()
-        attr_sql_map = pull_out_name(self.attr_sql_map[query_name]['fields'])
-        sql_attr_map = pull_out_name(self.sql_attr_map[query_name]['fields'])
+        attr_sql_map = pull_out_name(self.attr_sql_map[query_name])
+        sql_attr_map = pull_out_name(self.sql_attr_map[query_name])
         # attr_sql_map and queries are from config, and therefore trusted
-        query_type = query_config['query']['type'].upper()
+        try:
+            query_type = query_config['type'].upper()
+        except KeyError:
+            logger.error('While executing query %s, could not identify the query type in query config (%s)', query_name,
+                         query_config)
+            raise
         fields = list(attr_sql_map.values())
-        table_name = query_config['query']['table_name']
-        filters = query_config['query']['filters'][which_query]
-        ordering = query_config['query']['order_by']
+        table_name = query_config['table_name']
+        # Get SQL name for each attr in filters and order_by
+        filters = list(map(lambda x: attr_sql_map[x], query_config['filters'][which_query]))
+        ordering = list(map(lambda x: attr_sql_map[x], query_config['order_by']))
         query = build_query(query_type, fields, table_name, filters, ordering)
         try:
             cursor.execute(query, *params)

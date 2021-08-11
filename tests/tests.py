@@ -1,17 +1,17 @@
 from collections import OrderedDict
+import os
 from unittest import TestCase, mock, main
 from datetime import date, datetime
 from service_journal.sql_handler import config, connection
-import os
 
 ENV_EDITS = {
-    'JOURNAL_CONFIG_NAME': 'test_config.py',
     'JOURNAL_USE_CONFIG_FILE': 'false',
     'JOURNAL_FORCE_USE_CONFIG_FILE': 'false'
 }
 
 
 with mock.patch.dict(os.environ, ENV_EDITS):
+    print(f'JOURNAL_USE_CONFIG={os.environ.get("JOURNAL_USE_CONFIG_FILE")}')
     config.setup()
 
 
@@ -28,6 +28,20 @@ TEST_DATES = {
                             'stops': OrderedDict({
                                 10005: {
                                     'sched_time': datetime(2020, 1, 30, 4, 30),
+                                    'direction': 'D',
+                                    'seen': 0,
+                                    'bus': None,
+                                    'confidence_score': 0,
+                                    'confidence_factors': [],
+                                    'operator': None,
+                                    'trigger_time': None,
+                                    'boards': 0,
+                                    'alights': 0,
+                                    'onboard': 0,
+                                    'name': None
+                                },
+                                1353: {
+                                    'sched_time': datetime(2020, 1, 30, 4, 40),
                                     'direction': 'D',
                                     'seen': 0,
                                     'bus': None,
@@ -158,7 +172,7 @@ TEST_DATES = {
                                     'onboard': 0,
                                     'name': None
                                 },
-                                1776: {
+                                1716: {
                                     'sched_time': datetime(2020, 1, 30, 4, 48),
                                     'direction': 'SB',
                                     'seen': 0,
@@ -543,21 +557,33 @@ TEST_DATES = {
 }
 
 
-def check_scheduled_equivalence(schedule, expected):
+def check_scheduled_equivalence(schedule, expected, print_inequality=True):
     for date_, blocks in expected.items():
         for block, trips in blocks.items():
             for trip, trip_data in trips.items():
                 sched_trip = schedule[date_][block][trip]
                 if sched_trip['seq_tracker'] != trip_data['seq_tracker'] or sched_trip['route'] != trip_data['route']:
+                    if print_inequality:
+                        print(f'Inequality occurred on: {date_}-{block}-{trip}')
+                        print(f'Expected: {trip_data}\n\n')
+                        print(f'Got: {sched_trip}\n\n')
                     return False
                 # Check stop order
                 expected_stops = list(trip_data['stops'].keys())
                 scheduled_stops = list(sched_trip['stops'].keys())
                 if expected_stops != scheduled_stops:
+                    if print_inequality:
+                        print(f'Inequality occurred on: {date_}-{block}-{trip}')
+                        print(f'Expected stops: {expected_stops}\n\n')
+                        print(f'Got stops: {scheduled_stops}\n\n')
                     return False
                 for stop_num, stop_data in trip_data['stops'].items():
-                    for stop_datum_name, stop_datum_value in stop_data:
+                    for stop_datum_name, stop_datum_value in stop_data.items():
                         if stop_datum_value != sched_trip['stops'][stop_num][stop_datum_name]:
+                            if print_inequality:
+                                print(f'Inequality occurred on: {date_}-{block}-{trip}-stop:{stop_num}')
+                                print(f'Expected: {stop_datum_value}\n\n')
+                                print(f'Got: {sched_trip["stops"][stop_num][stop_datum_name]}\n\n')
                             return False
     return True
 
@@ -578,15 +604,16 @@ class ConnectionReadTestCase(TestCase):
 
     def test_read_day(self):
         fun_name = 'test_read_day'
+        print(self.config['settings']['driver'])
         results = ({}, {})
         with connection.Connection(self.config) as conn:
-            for date_, expected_results in TEST_DATES:
+            for date_, expected_results in TEST_DATES.items():
                 self.assertTrue(date_ not in results, f'{date} was added before we started date. Check queries for '
                                                       f'potential spillover of dates.')
                 read_ = conn.read(date_)
                 results[0].update(read_[0])
                 results[1].update(read_[1])
-            for date_, date_results in TEST_DATES:
+            for date_, date_results in TEST_DATES.items():
                 self.assertTrue(
                     check_scheduled_equivalence(results[0], date_results[fun_name][0])
                 )
