@@ -245,11 +245,7 @@ DEFAULT_CONFIG = {
                         'nullable': True,
                     },
                 },
-                'default': 'INSERT INTO {table_name} ({date}, {bus}, {report_time}, {dir}, {route}, {block_number},'
-                           ' {trip_number}, {operator}, {boards}, {alights}, {onboard}, {stop}, {stop_name}, '
-                           '{sched_time}, {seen}, {confidence_score}) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
-                'alternate': None,
-                'static': None,
+                'type': 'INSERT',
                 'table_name': 'service_journal',
                 'database': 'segments',
             },
@@ -268,9 +264,7 @@ DEFAULT_CONFIG = {
                         'nullable': False,
                     }
                 },
-                'default': 'SELECT {stop}, {latitude}, {longitude} FROM {table_name}',
-                'alternate': None,
-                'static': None,
+                'type': 'SELECT',
                 'table_name': 'stops',
                 'database': 'Utilities',
             },
@@ -298,13 +292,17 @@ DEFAULT_CONFIG = {
                     },
                     'shape_str': {
                         'name': 'seg_path_str',
-                        'nullable': False
+                        'nullable': False,
+                        'do_not_include': True
                     }
                 },
-                'default': 'SELECT {from_stop}, {to_stop}, {date_created}, {distance_feet}, CAST({shape} AS '
-                           'NVARCHAR(4000)) AS {shape_str} FROM {table_name} ORDER BY {date_created}',
-                'alternate': None,
-                'static': None,
+                'special_fields': {
+                    'seg_path_str': 'CAST(seg_path AS NVARCHAR(4000)) AS seg_path_str'
+                },
+                'type': 'SELECT',
+                'order_by': [
+                    'date_created'
+                ],
                 'table_name': 'segment_dist',
                 'database': 'TA_ITHACA_SCHEDULE_HISTORY'
 
@@ -314,15 +312,23 @@ DEFAULT_CONFIG = {
 }
 
 
-def init_config(default_config_):
-    with open(DEFAULT_CONFIG_NAME, 'w') as f:
+def init_config(default_config_, config_name_: str = None):
+    global config_name
+    if config_name_ is None:
+        config_name_ = config_name
+
+    with open(config_name_, 'w') as f:
         json.dump(default_config_, f, indent=4)
 
 
-def read_config(config_name_: str = DEFAULT_CONFIG_NAME, use_config:bool = True, f_use_config: bool = True):
+def read_config(config_name_: str = None, use_config: bool = True, f_use_config: bool = True):
     """
     Environment variables take priority. (JOURNAL_USE_CONFIG_FILE/JOURNAL_FORCE_USE_CONFIG_FILE/JOURNAL_CONFIG_NAME)
     """
+    global config_name
+    if config_name_ is None:
+        config_name_ = config_name
+
     use_config = os.environ.get('JOURNAL_USE_CONFIG_FILE', str(use_config)).lower() in ENVIRONMENT_TRUTHY_VALUES
     f_use_config = \
         os.environ.get('JOURNAL_FORCE_USE_CONFIG_FILE', str(f_use_config)).lower() in ENVIRONMENT_TRUTHY_VALUES
@@ -334,18 +340,19 @@ def read_config(config_name_: str = DEFAULT_CONFIG_NAME, use_config:bool = True,
                 return json.load(f)
         except FileNotFoundError:
             init_config(DEFAULT_CONFIG)
-            print(f'Config initialized as {DEFAULT_CONFIG_NAME}.')
+            print(f'Config initialized as {config_name_}.')
             if f_use_config:
-                print(f'Please edit the {DEFAULT_CONFIG_NAME} with the appropriate information and restart.')
+                print(f'Please edit {config_name_} with the appropriate information and restart.')
                 sys.exit(1)
             else:
                 return DEFAULT_CONFIG
     return DEFAULT_CONFIG
 
 
-config_name, config, settings, username, password, driver, host, port, attr_sql_map, is_setup = (None, None, None, None,
+config_name, config, settings, username, password, driver, host, port, attr_sql_map, is_setup = (DEFAULT_CONFIG_NAME,
                                                                                                  None, None, None, None,
-                                                                                                 None, False)
+                                                                                                 None, None, None, None,
+                                                                                                 False)
 
 
 def setup(force: bool = False):

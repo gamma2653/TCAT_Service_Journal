@@ -210,7 +210,7 @@ class Connection:
             config_module.setup()
             self.config = config_module.config
         try:
-            settings = self.settings = config['settings']
+            settings = self.settings = self.config['settings']
             self.driver = settings['driver']
             self.username = settings['username']
             self.password = settings['password']
@@ -290,12 +290,27 @@ class Connection:
         pyodbc.Connection
             A connection to the given table.
         """
-        database = self.config['settings']['attr_sql_map'][view_config]['database']
+        conn_config = self.config['settings']['attr_sql_map'][view_config]
+        database = conn_config['database']
+
+        # Get and remove Nones from additional args. @see pyodbc.connect for additional parameters
+        additional_args = {'Trusted_connection': conn_config.get('trusted_connection')}
+        for key, value in additional_args.items():
+            if value is None:
+                additional_args.pop(key)
+
         logger.debug(f'Connecting to {database} on {self.host}:{self.port} using {self.driver} and the credentials user'
                      f':{self.username} pass:****, and the table_config: {view_config}')
+
+        try:
         # noinspection PyArgumentList
-        return pyodbc.connect(driver=self.driver, server=self.host + ('' if self.port is None else f',{self.port}'),
-                              database=database, uid=self.username, pwd=self.password)
+            return pyodbc.connect(driver=self.driver, server=self.host + ('' if self.port is None else f',{self.port}'),
+                                  database=database, uid=self.username, pwd=self.password, **additional_args)
+        except pyodbc.InterfaceError:
+            logger.error(f'Failed to run query. These are the arguments:\ndriver:{self.driver},server:{self.host},'
+                         f'port:{self.port},database:{database},user:{self.username},pwd:{self.password},'
+                         f'{", ".join(map(str, additional_args.items()))}')
+            raise
 
     def _exc_query(self, conn_name, query_name, params=None, which_query='default'):
         """
@@ -325,17 +340,25 @@ class Connection:
             logger.error('While executing query %s, could not identify the query type in query config (%s)', query_name,
                          query_config)
             raise
-        fields = list(attr_sql_map.values())
+        # Cast as set to remove duplicates, and for difference function
+        fields = set(attr_sql_map.values())
         table_name = query_config['table_name']
-        # Get SQL name for each attr in filters and order_by
-        filters = list(map(lambda x: attr_sql_map[x], query_config['filters'][which_query]))
-        ordering = list(map(lambda x: attr_sql_map[x], query_config['order_by']))
-        query = build_query(query_type, fields, table_name, filters, ordering)
+        # Get SQL name for each attr in filters and order_by. Cast to list (order matters)
+        filters = list(map(lambda x: attr_sql_map[x], query_config['filters'][which_query])) if 'filters' in \
+                                                                                                query_config else None
+        ordering = list(map(lambda x: attr_sql_map[x], query_config['order_by'])) if 'order_by' in \
+                                                                                     query_config else None
+        # Remove any fields to not be included in query
+        not_included = filter(lambda x: query_config['fields'][x].get('do_not_include'), set(attr_sql_map.keys()))
+        fields = list(fields.difference(not_included))
+
+        special_fields = query_config.get('special_fields')
+        query = build_query(query_type, fields, table_name, filters, ordering, special_fields)
         try:
             cursor.execute(query, *params)
-        except pyodbc.Error as exc:
+        except pyodbc.Error:
             logger.error('Pyodbc error, see raised exception. Query being run:\n%s\nParams: %s', query, params)
-            raise exc
+            raise
         logger.info('Finished executing query (%s) on connection (%s).', query_name, conn_name)
         return (attr_sql_map, sql_attr_map), cursor
 

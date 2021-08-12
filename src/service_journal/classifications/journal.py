@@ -20,10 +20,9 @@ class Journal:
     TODO: Fix this problem, or figure out if I was making a silly mistake when
     adding a new day.
     """
-    def __init__(self, schedule: Optional[Mapping] = None, avl_dict: Optional[Mapping] = None,
+    def __init__(self, config: Mapping = None, schedule: Optional[Mapping] = None, avl_dict: Optional[Mapping] = None,
                  stop_locations: Optional[Mapping] = None, shapes: Optional[Mapping] = None,
-                 connection: Optional[Connection] = None, config: Mapping = None,
-                 processors: Optional[Mapping[str, List]] = None):
+                 connection: Optional[Connection] = None, processors: Optional[Mapping[str, List]] = None):
         self.schedule = {} if schedule is None else schedule
         self.avl_dict = {} if avl_dict is None else avl_dict
         self.stop_locations = {} if stop_locations is None else stop_locations

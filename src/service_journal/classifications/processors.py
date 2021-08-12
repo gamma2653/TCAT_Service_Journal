@@ -29,7 +29,13 @@ def process_take1(journal: 'Journal'):
             current_segment_progress = 0.0
             for time_, report in bus_data.items():
                 try:
-                    scheduled_stops = day_schedule[report['block_number']][report['trip_number']]['stops']
+                    block_number = report['block_number']
+                    trip_numbers = report['trip_number']
+                    if not trip_numbers:
+                        raise ValueError('No trip numbers, not possible!')
+                    # FIXME: Handle multiple trips (check last index when adding trip numbers, etc)
+                    trip_number = trip_numbers[0]
+                    scheduled_stops = day_schedule[block_number][trip_number]['stops']
                     if report['stop_id'] == 0:
                         # FIXME: Does this case capture last-stops? Probably not.
                         # When stop is departing/past a stop
