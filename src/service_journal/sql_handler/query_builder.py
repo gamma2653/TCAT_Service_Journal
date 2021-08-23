@@ -11,15 +11,16 @@ def _append_fields(query: str, fields: Sequence[str]):
     return f'{query} {", ".join(fields)}'
 
 
-def _append_filters(query: str, filters: Sequence[str]):
-    return f'{query} WHERE {" AND ".join(map(lambda s: f"{s}=?", filters))}'
+def _append_filters(query: str, filters: Mapping[str, str]):
+    query = f'{query} WHERE {" AND ".join(map(lambda k: f"{k}=?", filters.keys()))}'
+    # Sanitize SQL statement
 
 
 def _append_order_by(query: str, order_by: Sequence[str]):
     return f'{query} ORDER BY {", ".join(order_by)}'
 
 
-def build_select(fields: Sequence[str], table: str = None, filters: Optional[Sequence[str]] = None,
+def build_select(fields: Sequence[str], table: str = None, filters: Optional[Mapping[str, str]] = None,
                  order_by: Optional[Sequence[str]] = None, special_fields: Optional[Mapping[str, str]] = None):
     """
     build_select is to ONLY be used with trusted values. Either hardcoded values or trusted configuration values should
@@ -37,12 +38,16 @@ def build_select(fields: Sequence[str], table: str = None, filters: Optional[Seq
                 exc.args += (f'Field {field} is in special_fields but not in fields. Please check your configuration.',
                              f'Extra info:\nfields:{fields}\nspecial_fields:{special_fields}')
                 raise
-    query = _append_fields('SELECT ', fields)
+    query = _append_fields('SELECT', fields)
+    print(query)
     query = f'{query} FROM {table}'
+    print(query)
     if filters:
         query = _append_filters(query, filters=filters)
+    print(query)
     if order_by:
         query = _append_order_by(query, order_by=order_by)
+    print(query)
     return query
 
 
@@ -71,7 +76,7 @@ def build_query(query_type: Union[str, QueryTypes], fields: Sequence[str], table
     """
     # Assert query_type is of type QueryTypes
     try:
-        query_type = QueryTypes[query_type]
+        query_type = QueryTypes[str(query_type).upper()]
     except KeyError:
         query_type = QueryTypes(query_type)
 
