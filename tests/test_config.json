@@ -1,0 +1,284 @@
+{
+    "settings": {
+        "driver": "SQLite3 ODBC Driver",
+        "host": "localhost",
+        "username": "",
+        "password": "",
+        "port": null,
+        "_comment": "Warning: Stored passwords are unencrypted. For testing purposes only",
+        "attr_sql_map": {
+            "actuals": {
+                "fields": {
+                    "date": {
+                        "name": "service_day",
+                        "nullable": true
+                    },
+                    "block_number": {
+                        "name": "block",
+                        "nullable": true
+                    },
+                    "trip_number": {
+                        "name": "trip26",
+                        "nullable": true
+                    },
+                    "bus": {
+                        "name": "bus",
+                        "nullable": true
+                    },
+                    "trigger_time": {
+                        "name": "Time",
+                        "nullable": true
+                    },
+                    "operator": {
+                        "name": "Operator_Record_Id",
+                        "nullable": true
+                    },
+                    "actual_time": {
+                        "name": "Departure_Time",
+                        "nullable": true
+                    },
+                    "route": {
+                        "name": "Route",
+                        "nullable": true
+                    },
+                    "direction": {
+                        "name": "dir",
+                        "nullable": true
+                    },
+                    "stop": {
+                        "name": "Stop_Id",
+                        "nullable": true
+                    },
+                    "name": {
+                        "name": "Stop_Name",
+                        "nullable": true
+                    },
+                    "boards": {
+                        "name": "Boards",
+                        "nullable": true
+                    },
+                    "alights": {
+                        "name": "Alights",
+                        "nullable": true
+                    },
+                    "onboard": {
+                        "name": "Onboard",
+                        "nullable": true
+                    },
+                    "op_status": {
+                        "name": "OperationalStatus",
+                        "nullable": true
+                    },
+                    "latitude": {
+                        "name": "Latitude",
+                        "nullable": true
+                    },
+                    "longitude": {
+                        "name": "Longitude",
+                        "nullable": true
+                    }
+                },
+                "type": "SELECT",
+                "filters": {
+                    "default": [
+                        "date"
+                    ],
+                    "alternate": [
+                        "date",
+                        "block_number"
+                    ]
+                },
+                "order_by": [
+                    "date",
+                    "bus",
+                    "trigger_time"
+                ],
+                "table_name": "v_vehicle_history",
+                "database": "dbs/actual_history.db",
+                "trusted_connection": "yes"
+            },
+            "scheduled": {
+                "fields": {
+                    "date": {
+                        "name": "Service_Date",
+                        "nullable": true
+                    },
+                    "block_number": {
+                        "name": "BlockNumber",
+                        "nullable": true
+                    },
+                    "trip_number": {
+                        "name": "trip26",
+                        "nullable": true
+                    },
+                    "route": {
+                        "name": "route_number",
+                        "nullable": true
+                    },
+                    "direction": {
+                        "name": "Direction",
+                        "nullable": true
+                    },
+                    "stop": {
+                        "name": "stop_num",
+                        "nullable": true
+                    },
+                    "sched_time": {
+                        "name": "departure",
+                        "nullable": true
+                    }
+                },
+                "type": "SELECT",
+                "filters": {
+                    "default": [
+                        "date"
+                    ],
+                    "alternate": [
+                        "date",
+                        "block_number"
+                    ]
+                },
+                "order_by": [
+                    "date",
+                    "block_number",
+                    "trip_number",
+                    "sched_time"
+                ],
+                "table_name": "v_schedule_stops",
+                "database": "dbs/schedule_history.db",
+                "trusted_connection": "yes"
+            },
+            "output": {
+                "fields": {
+                    "date": {
+                        "name": "service_date",
+                        "nullable": false
+                    },
+                    "bus": {
+                        "name": "bus",
+                        "nullable": true
+                    },
+                    "report_time": {
+                        "name": "report_time",
+                        "nullable": true
+                    },
+                    "dir": {
+                        "name": "direction",
+                        "nullable": true
+                    },
+                    "route": {
+                        "name": "route",
+                        "nullable": true
+                    },
+                    "block_number": {
+                        "name": "block_number",
+                        "nullable": false
+                    },
+                    "trip_number": {
+                        "name": "trip_number",
+                        "nullable": false
+                    },
+                    "operator": {
+                        "name": "operator",
+                        "nullable": true
+                    },
+                    "boards": {
+                        "name": "boards",
+                        "nullable": true
+                    },
+                    "alights": {
+                        "name": "alights",
+                        "nullable": true
+                    },
+                    "onboard": {
+                        "name": "onboard",
+                        "nullable": true
+                    },
+                    "stop": {
+                        "name": "stop_id",
+                        "nullable": false
+                    },
+                    "stop_name": {
+                        "name": "stop_name",
+                        "nullable": true
+                    },
+                    "sched_time": {
+                        "name": "sched_time",
+                        "nullable": true
+                    },
+                    "seen": {
+                        "name": "seen",
+                        "nullable": true
+                    },
+                    "confidence_score": {
+                        "name": "confidence_score",
+                        "nullable": true
+                    }
+                },
+                "type": "INSERT",
+                "table_name": "service_journal",
+                "database": "dbs/output.db",
+                "trusted_connection": "yes"
+            },
+            "stop_locations": {
+                "fields": {
+                    "stop": {
+                        "name": "stop_num",
+                        "nullable": false
+                    },
+                    "latitude": {
+                        "name": "latitude",
+                        "nullable": false
+                    },
+                    "longitude": {
+                        "name": "longitude",
+                        "nullable": false
+                    }
+                },
+                "type": "SELECT",
+                "table_name": "stops",
+                "database": "dbs/stop_locations.db",
+                "trusted_connection": "yes"
+            },
+            "shapes": {
+                "fields": {
+                    "from_stop": {
+                        "name": "fr_stop_num",
+                        "nullable": false
+                    },
+                    "to_stop": {
+                        "name": "to_stop_num",
+                        "nullable": false
+                    },
+                    "date_created": {
+                        "name": "ini_date",
+                        "nullable": false
+                    },
+                    "distance_feet": {
+                        "name": "dist_ft",
+                        "nullable": false
+                    },
+                    "shape": {
+                        "name": "seg_path",
+                        "nullable": false
+                    },
+                    "shape_str": {
+                        "name": "seg_path_str",
+                        "nullable": false,
+                        "do_not_include": true
+                    }
+                },
+                "special_fields": {
+                    "seg_path_str": "CAST(seg_path AS NVARCHAR(4000)) AS seg_path_str"
+                },
+                "type": "SELECT",
+                "order_by": [
+                    "date_created"
+                ],
+                "table_name": "segment_dist",
+                "database": "dbs/shapes.db",
+                "trusted_connection": "yes"
+            }
+        }
+    }
+}

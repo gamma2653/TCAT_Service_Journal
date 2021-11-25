@@ -2,7 +2,7 @@ import os
 from unittest import TestCase, mock, main
 from datetime import date
 from service_journal.sql_handler import config
-from service_journal.sql_handler.query_builder import build_query, QueryTypes
+from service_journal import build_query, QueryTypes
 
 ENV_EDITS = {
     'JOURNAL_USE_CONFIG_FILE': 'true',
@@ -16,7 +16,6 @@ from_date, to_date = date(2020, 1, 30), date(2020, 1, 31)
 
 with mock.patch.dict(os.environ, ENV_EDITS):
     config.setup()
-    print(config.config)
 
 
 def normalize_time(datetime_obj):
@@ -83,10 +82,10 @@ class QueryBuilderTests(TestCase):
         self.assertEqual(query2, expected_query, f'Query2 ({query2}) is not what was expected. ({expected_query})')
 
     def test_select_filter(self):
-        expected_query = 'SELECT one, two, three FROM my_table WHERE one=1'
+        expected_query = 'SELECT one, two, three FROM my_table WHERE one=?'
         fields = ['one', 'two', 'three']
         table = 'my_table'
-        filters = ['one=1']
+        filters = ['one']
         query1 = build_query('select', fields, table, filters)
         query2 = build_query(QueryTypes.SELECT, fields, table, filters)
         self.assertEqual(query1, expected_query, f'Query1 ({query1}) is not what was expected. ({expected_query})')
@@ -115,10 +114,10 @@ class QueryBuilderTests(TestCase):
     # 'SELECT one, TWO_MANY(lol), What, for free? FROM my_table'
 
     def test_select_filter_order_by(self):
-        expected_query = 'SELECT one, TWO_MANY(lol), What, for free? FROM my_table WHERE one=1 ORDER BY two, three'
+        expected_query = 'SELECT one, two, three FROM my_table WHERE one=? ORDER BY two, three'
         fields = ['one', 'two', 'three']
         table = 'my_table'
-        filters = ['one=1']
+        filters = ['one']
         order_by = ['two', 'three']
         query1 = build_query('select', fields, table, filters, order_by)
         query2 = build_query(QueryTypes.SELECT, fields, table, filters, order_by)

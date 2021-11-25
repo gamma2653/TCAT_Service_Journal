@@ -137,4 +137,8 @@ dmypy.json
 # Cython debug symbols
 cython_debug/
 
+# Custom
 config.json
+tests/dbs/
+# Prefer not to include PyCharm
+.idea/

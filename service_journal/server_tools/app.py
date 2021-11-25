@@ -1,6 +1,6 @@
 from flask import Flask, request
 from ..cmd import run_days
-from src import service_journal as sj
+import service_journal as sj
 
 app = Flask(__name__)
 

@@ -49,8 +49,8 @@ def input_(use_argparse: bool = False) -> Tuple[date, date, int]:
             return args.start_day, args.end_day, args.block
     start_date_str = input('Please input the start date in a typical format.\n')
     end_date_str = input('Please input the end date in a typical format.\n')
-
-    block = int(input('Please enter the block to process, or press enter to process the entire day.\n'))
+    block = input('Please enter the block to process, or press enter to process the entire day.\n')
+    block = int(block) if block else None
     return interpret_date(start_date_str), interpret_date(end_date_str), block
 
 

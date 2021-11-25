@@ -1,2 +1,6 @@
+include AUTHORS
+include PACKAGES
 include VERSION
-include README.md
+include README.rst
+include requirements.txt
+include c1c0_scheduler/*

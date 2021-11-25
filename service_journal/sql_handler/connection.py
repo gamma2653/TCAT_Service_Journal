@@ -155,7 +155,12 @@ def _package_shapes(data: Mapping, acc: MutableMapping[Tuple[int, int], Tuple[fl
         logger.warning('Overriding (%s, %s)\'s shape file.')
     distance = data['distance_feet']
     if shape_str:
-        path = wkt_loads(data['shape_str'])
+        try:
+            path = wkt_loads(data['shape_str'])
+        except TypeError:
+            print(f'shape_str = {data["shape_str"]}')
+            print(f'[fr: {data["from_stop"]}] [to: {data["to_stop"]}] [shape: {data.get("shape")}]')
+            raise
     else:
         path = data.get('shape', LineString())
     acc[key] = distance, path
@@ -294,10 +299,11 @@ class Connection:
         database = conn_config['database']
 
         # Get and remove Nones from additional args. @see pyodbc.connect for additional parameters
-        additional_args = {'Trusted_connection': conn_config.get('trusted_connection')}
-        for key, value in additional_args.items():
-            if value is None:
-                additional_args.pop(key)
+        additional_args_ = {'Trusted_connection': conn_config.get('trusted_connection')}
+        additional_args = {}
+        for key, value in additional_args_.items():
+            if value is not None:
+                additional_args[key] = value
 
         logger.debug(f'Connecting to {database} on {self.host}:{self.port} using {self.driver} and the credentials user'
                      f':{self.username} pass:****, and the table_config: {view_config}')
@@ -354,6 +360,7 @@ class Connection:
 
         special_fields = query_config.get('special_fields')
         query = build_query(query_type, fields, table_name, filters, ordering, special_fields)
+        logger.info('Executing query:\n%s', query)
         try:
             cursor.execute(query, *params)
         except pyodbc.Error:
