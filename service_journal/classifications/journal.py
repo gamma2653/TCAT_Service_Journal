@@ -20,7 +20,7 @@ class Journal:
     TODO: Fix this problem, or figure out if I was making a silly mistake when
     adding a new day.
     """
-    def __init__(self, config: Mapping = None, schedule: Optional[Mapping] = None, avl_dict: Optional[Mapping] = None,
+    def __init__(self, config: Optional[Mapping] = None, schedule: Optional[Mapping] = None, avl_dict: Optional[Mapping] = None,
                  stop_locations: Optional[Mapping] = None, shapes: Optional[Mapping] = None,
                  connection: Optional[Connection] = None, processors: Optional[Mapping[str, List]] = None):
         self.schedule = {} if schedule is None else schedule
@@ -65,9 +65,9 @@ class Journal:
             self.shapes.clear()
 
     def open(self, config: Mapping = None):
-        config = config if config is not None else self.config
+        self.config = config if config is not None else self.config
         self.close()
-        self.connection = Connection(config)
+        self.connection = Connection(self.config)
         self.connection.open()
 
     def close(self):
