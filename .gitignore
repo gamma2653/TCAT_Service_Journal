@@ -140,5 +140,6 @@ cython_debug/
 # Custom
 config.json
 tests/dbs/
-# Prefer not to include PyCharm
+# Prefer not to include PyCharm or vscode
 .idea/
+.vscode/
