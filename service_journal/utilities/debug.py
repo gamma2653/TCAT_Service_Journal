@@ -18,9 +18,8 @@ def read_level_from_args():
         raise ValueError(f'Invalid log level: {log_level}')
     return numeric_level
 
-
 default_log_level = read_level_from_args()
-print(f'Default log level set to: {default_log_level}')
+print(f'Default log level set to: {logging.getLevelName(default_log_level)}')
 
 
 def get_default_logger(name, format__=format_, filepath='./output.log', truncate_name: bool = True):

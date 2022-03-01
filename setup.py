@@ -12,7 +12,7 @@ name = 'TCAT_Service_Journal'
 dirs = {
     'backup_packages': 'PACKAGES',
     'readme': 'README.rst',
-    'version': 'VERSION',
+    'version': 'service_journal/__init__.py',
     'authors': 'AUTHORS',
 }
 
@@ -71,9 +71,17 @@ def get_short_description(_readme: str):
 
 
 def get_version():
-    with open(dirs['version'], 'r') as f:
-        return f.read().strip()
-
+    # Inspired by https://stackoverflow.com/questions/458550/standard-way-to-embed-version-into-python-package
+    import re
+    VERSIONFILE=dirs['version']
+    verstrline = open(VERSIONFILE, "rt").read()
+    VSRE = r"^__version__ = \((\d+), (\d+), (\d+)\)"
+    mo = re.search(VSRE, verstrline, re.M)
+    if mo:
+        vertup = mo.group(1)
+    else:
+        raise RuntimeError("Unable to find version string in %s." % (VERSIONFILE,))
+    verstr = ".".join(vertup)
 
 def _setup():
     print('name=', name)

@@ -38,13 +38,6 @@ def date_range(start_date: date, end_date: date) -> Iterable[date]:
         yield start_date + timedelta(n)
 
 
-def def_dict():
-    """
-    Creates a default dictionary with default dictionaries as values
-    """
-    return defaultdict(def_dict)
-
-
 def interpret_date(str_: str, formats_: Iterable[str] = ('%m/%d/%Y', '%Y-%m-%d', '%m-%d-%Y')) -> date:
     """
     Interprets the passed in string as a date object. Cycles through all possible formats and returns first valid one.

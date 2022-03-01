@@ -1,5 +1,5 @@
-from collections import OrderedDict
-from typing import Dict, Optional, Tuple, Mapping, Set, Union, Iterable, List, MutableMapping, Callable, DefaultDict
+from collections import OrderedDict, defaultdict
+from typing import Dict, Optional, Tuple, Mapping, Set, Union, Iterable, List, MutableMapping, Callable, DefaultDict, Any
 from numbers import Number
 import pyodbc
 from datetime import date
@@ -10,7 +10,7 @@ from shapely.wkt import loads as wkt_loads
 
 from .query_builder import build_query
 from ..utilities.debug import get_default_logger
-from ..utilities.utils import pull_out_name, write_ordering, unpack, def_dict
+from ..utilities.utils import pull_out_name, write_ordering, unpack
 from . import config as config_module
 
 logger = get_default_logger(__name__)
@@ -166,7 +166,7 @@ def _package_shapes(data: Mapping, acc: MutableMapping[Tuple[int, int], Tuple[fl
     acc[key] = distance, path
 
 
-def process_cursor(cursor: pyodbc.Cursor, sql_attr_map: Mapping, packager: Callable, name=None, **kwargs):
+def process_cursor(cursor: pyodbc.Cursor, sql_attr_map: Mapping, packager: Callable, name=None, **kwargs) -> DefaultDict[str, Any]:
     """
     Uses the cursor and packager to load the data and returns it.
     PARAMETERS
@@ -183,7 +183,7 @@ def process_cursor(cursor: pyodbc.Cursor, sql_attr_map: Mapping, packager: Calla
     """
     if name:
         logger.info('Processing cursor for %s.', name)
-    acc = def_dict()
+    acc = defaultdict(defaultdict)
     row = cursor.fetchone()
     attr_col_names = [sql_attr_map[col[0]] for col in cursor.description]
     record_count = 0
