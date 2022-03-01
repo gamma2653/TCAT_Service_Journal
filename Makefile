@@ -10,7 +10,7 @@ GUNICORN_PROD = $(GUNICORN) --workers 4 --bind 0.0.0.0:8000
 WAITRESS = $(VENV_BIN)/waitress-serve
 WAITRESS_PROD = $(WAITRESS) --listen=0.0.0.0:8000
 WAITRESS_DEV = $(WAITRESS) --listen=*:8080
-# NOTE: Flask development server is not intended for development
+# NOTE: Flask development server is not intended for production use
 FLASK_APP = service_journal.server_tools.app:create_app
 FLASK = $(VENV_BIN)/flask run
 FLASK_ENV = development
