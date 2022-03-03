@@ -1,3 +1,6 @@
+"""
+This is the autoupdater feature of the TCAT Service Journal.
+"""
 from flask.blueprints import Blueprint
 
 try:

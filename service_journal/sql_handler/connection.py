@@ -10,7 +10,7 @@ from shapely.wkt import loads as wkt_loads
 
 from .query_builder import build_query
 from ..utilities.debug import get_default_logger
-from ..utilities.utils import pull_out_name, write_ordering, unpack
+from ..utilities.utils import pull_out_name, write_ordering, unpack, deflt_dict
 from . import config as config_module
 
 logger = get_default_logger(__name__)
@@ -183,7 +183,7 @@ def process_cursor(cursor: pyodbc.Cursor, sql_attr_map: Mapping, packager: Calla
     """
     if name:
         logger.info('Processing cursor for %s.', name)
-    acc = defaultdict(defaultdict)
+    acc = deflt_dict()
     row = cursor.fetchone()
     attr_col_names = [sql_attr_map[col[0]] for col in cursor.description]
     record_count = 0

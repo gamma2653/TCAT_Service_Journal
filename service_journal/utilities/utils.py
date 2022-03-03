@@ -315,3 +315,7 @@ def get_distance_on_segment_from_report(report: Mapping[str, Any], trip_shape: L
         last index that was observed
     """
     return get_current_distance_on_trip(Point(report['lon'], report['lat']), trip_shape, prev_shape_progress)
+
+
+def deflt_dict():
+    return defaultdict(deflt_dict)

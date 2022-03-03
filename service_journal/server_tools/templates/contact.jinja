@@ -1,0 +1,25 @@
+{% include 'header.jinja' %}
+    <nav class="navbar navbar-light navbar-expand-md navigation-clean-button" style="background-color:rgb(255,255,255);">
+        <div class="container"><a class="navbar-brand" href="#" style="color:rgb(0,0,0);">Service Journal</a><button class="navbar-toggler" data-toggle="collapse" data-target="#navcol-1"><span class="sr-only">Toggle navigation</span><span class="navbar-toggler-icon"></span></button>
+            <div class="collapse navbar-collapse"
+                id="navcol-1">
+                <ul class="nav navbar-nav mr-auto">
+                    <li class="nav-item" role="presentation"><a class="nav-link" href="{{url_for('index')}}" style="color:rgb(0,0,0);">Home</a></li>
+                    <li class="nav-item" role="presentation"><a class="nav-link" href="about.html" style="color:rgb(0,0,0);">About</a></li>
+                    <li class="nav-item" role="presentation"><a class="nav-link" href="services.html" style="color:rgb(0,0,0);">Services</a></li>
+                    <li class="nav-item" role="presentation"><a class="nav-link" href="contact.html" style="color:rgb(0,0,0);">Contact</a></li>
+                </ul>
+                <span class="navbar-text actions"> <a class="login" href="login.html" style="color:rgb(0,0,0);">Log In</a></span>
+        </div>
+        </div>
+    </nav>
+    <div class="contact-clean" style="background-color:rgb(255,255,255);">
+        <form method="post">
+            <h2 class="text-center">Contact Us</h2>
+            <div class="form-group"><input class="form-control" type="text" name="name" placeholder="Name"></div>
+            <div class="form-group"><input class="form-control" type="email" name="email" placeholder="Email"></div>
+            <div class="form-group"><textarea class="form-control" name="message" placeholder="Message"></textarea></div>
+            <div class="form-group"><button class="btn btn-primary" type="submit">Send</button></div>
+        </form>
+    </div>
+{% include 'footer.jinja' %}
