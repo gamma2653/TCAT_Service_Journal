@@ -5,3 +5,4 @@ shapely~=1.8
 wheel~=0.36.2
 # gunicorn~=20.1 # gunicorn is not supported on Windows
 waitress~=2.0
+gamlogger>=0.9.0

@@ -7,9 +7,9 @@ from datetime import date
 from shapely.geometry import LineString
 from shapely.geometry.base import BaseGeometry
 from shapely.wkt import loads as wkt_loads
+from gamlogger import get_default_logger
 
 from .query_builder import build_query
-from ..utilities.debug import get_default_logger
 from ..utilities.utils import pull_out_name, write_ordering, unpack, deflt_dict
 from . import config as config_module
 

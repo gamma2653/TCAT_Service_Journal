@@ -3,16 +3,16 @@ from typing import Tuple
 import argparse
 from datetime import date
 
+from gamlogger import get_default_logger
+
 # Dynamic local imports
 try:
     from ..classifications.processors import MAIN_PRESET, DEFAULT_PROCESSOR_TYPES
     from ..utilities.utils import interpret_date
-    from ..utilities.debug import get_default_logger
     from ..classifications.journal import Journal
 except ImportError:
     from service_journal.classifications.processors import MAIN_PRESET, DEFAULT_PROCESSOR_TYPES
     from service_journal.utilities.utils import interpret_date
-    from service_journal.utilities.debug import get_default_logger
     from service_journal.classifications.journal import Journal
 
 logger = get_default_logger(__name__)

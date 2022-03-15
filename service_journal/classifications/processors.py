@@ -1,14 +1,14 @@
 from typing import TYPE_CHECKING
 
+from gamlogger import get_default_logger
+
 # Dynamic local imports
 try:
     from ..utilities.utils import get_shape_trip, get_distance_on_segment_from_report, \
         get_trip_progress, replace_if_default
-    from ..utilities.debug import get_default_logger
 except ImportError:
     from service_journal.utilities.utils import get_shape_trip, get_distance_on_segment_from_report, \
         get_trip_progress, replace_if_default
-    from service_journal.utilities.debug import get_default_logger
 
 
 if TYPE_CHECKING:

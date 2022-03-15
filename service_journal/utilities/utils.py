@@ -8,10 +8,7 @@ from shapely.geometry.base import BaseGeometry
 from shapely.ops import split as shapely_split, nearest_points, linemerge
 import geopy.distance
 from geopy.distance import distance as geo_distance
-
-
-from .debug import get_default_logger
-
+from gamlogger import get_default_logger
 
 logger = get_default_logger(__name__)
 

@@ -1,14 +1,14 @@
 from flask import Flask, request, url_for, escape
 
+from gamlogger import get_default_logger
+
 try:
     from ... import service_journal as sj
     from .views.updater import updater_bp
     from .views.journal import journal_bp
-    from ..utilities.debug import get_default_logger
 except ImportError:
     from service_journal.server_tools.views.updater import updater_bp
     from service_journal.server_tools.views.journal import journal_bp
-    from service_journal.utilities.debug import get_default_logger
     import service_journal as sj
 
 logger = get_default_logger(__name__)

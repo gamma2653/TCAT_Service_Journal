@@ -143,3 +143,6 @@ tests/dbs/
 # Prefer not to include PyCharm or vscode
 .idea/
 .vscode/
+
+# .ssh directory
+.ssh/
