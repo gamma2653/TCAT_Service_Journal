@@ -142,7 +142,7 @@ DEFAULT_CONFIG = {
                         'nullable': True,
                     },
                     'block_number': {
-                        'name': 'BlockNumber',
+                        'name': 'block',
                         'nullable': True,
                     },
                     'trip_number': {
@@ -150,7 +150,7 @@ DEFAULT_CONFIG = {
                         'nullable': True,
                     },
                     'route': {
-                        'name': 'route_number',
+                        'name': 'RouteNumber',
                         'nullable': True,
                     },
                     'direction': {
@@ -162,7 +162,7 @@ DEFAULT_CONFIG = {
                         'nullable': True,
                     },
                     'sched_time': {
-                        'name': 'departure',
+                        'name': 'departure_time',
                         'nullable': True,
                     }
                 },

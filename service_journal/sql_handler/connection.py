@@ -9,12 +9,17 @@ from shapely.geometry.base import BaseGeometry
 from shapely.wkt import loads as wkt_loads
 from gamlogger import get_default_logger
 
-from .query_builder import build_query
-from ..utilities.utils import pull_out_name, write_ordering, unpack, deflt_dict
-from . import config as config_module
+try:
+    from .query_builder import build_query
+    from ..utilities.utils import pull_out_name, write_ordering, unpack, deflt_dict
+    from . import config as config_module
+except ImportError:
+    from service_journal.sql_handler.query_builder import build_query
+    from service_journal.utilities.utils import pull_out_name, write_ordering, unpack, deflt_dict
+    import config as config_module
 
-logger = get_default_logger(__name__)
 DATE_FORMAT = '%Y-%m-%d'
+logger = get_default_logger(__name__)
 
 
 # TODO: Add a schema file that defines all the keys for each data source.
@@ -158,9 +163,8 @@ def _package_shapes(data: Mapping, acc: MutableMapping[Tuple[int, int], Tuple[fl
         try:
             path = wkt_loads(data['shape_str'])
         except TypeError:
-            print(f'shape_str = {data["shape_str"]}')
-            print(f'[fr: {data["from_stop"]}] [to: {data["to_stop"]}] [shape: {data.get("shape")}]')
-            raise
+            logger.error(f'Could not load shape_str for stopid ({data["from_stop"]} to {data["to_stop"]}). Got ({data["shape_str"]}). Distance: {distance}')
+            path = None
     else:
         path = data.get('shape', LineString())
     acc[key] = distance, path
