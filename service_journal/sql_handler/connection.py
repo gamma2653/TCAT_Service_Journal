@@ -380,7 +380,7 @@ class Connection:
         try:
             cursor.execute(query, *params)
         except pyodbc.Error:
-            cursor.execute(f'SELECT * FROM {table_name}')
+            cursor.execute(f'SELECT TOP 1 FROM {table_name}')
             column_names = [column[0] for column in cursor.description]
             logger.error('Pyodbc error, see raised exception. Query being run:\n%s\nParams: %s, columns: %s', query, list(params), column_names)
             raise
