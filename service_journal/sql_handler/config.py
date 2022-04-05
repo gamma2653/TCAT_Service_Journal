@@ -47,270 +47,295 @@ DEFAULT_CONFIG = {
         'password': '',
         'port': None,
         '_comment': 'Warning: Stored passwords are unencrypted. For testing purposes only',
+        'types_map': {
+            'inputs': 'SELECT',
+            'outputs': 'INSERT',
+        },
         'attr_sql_map': {
-            'actuals': {
-                'fields': {
-                    'date': {
-                        'name': 'service_day',
-                        'nullable': True,
+            'inputs': {
+                'actuals': {
+                    'fields': {
+                        'date': {
+                            'name': 'service_day',
+                            'nullable': True,
+                        },
+                        'block_number': {
+                            'name': 'block',
+                            'nullable': True,
+                        },
+                        'trip_number': {
+                            'name': 'trip26',
+                            'nullable': True,
+                        },
+                        'bus': {
+                            'name': 'bus',
+                            'nullable': True,
+                        },
+                        'trigger_time': {
+                            'name': 'Time',
+                            'nullable': True,
+                        },
+                        'operator': {
+                            'name': 'Operator_Record_Id',
+                            'nullable': True,
+                        },
+                        'actual_time': {
+                            'name': 'Departure_Time',
+                            'nullable': True,
+                        },
+                        'route': {
+                            'name': 'Route',
+                            'nullable': True,
+                        },
+                        'direction': {
+                            'name': 'dir',
+                            'nullable': True,
+                        },
+                        'stop': {
+                            'name': 'Stop_Id',
+                            'nullable': True,
+                        },
+                        'name': {
+                            'name': 'Stop_Name',
+                            'nullable': True,
+                        },
+                        'boards': {
+                            'name': 'Boards',
+                            'nullable': True,
+                        },
+                        'alights': {
+                            'name': 'Alights',
+                            'nullable': True,
+                        },
+                        'onboard': {
+                            'name': 'Onboard',
+                            'nullable': True,
+                        },
+                        'op_status': {
+                            'name': 'OperationalStatus',
+                            'nullable': True,
+                        },
+                        'latitude': {
+                            'name': 'Latitude',
+                            'nullable': True,
+                        },
+                        'longitude': {
+                            'name': 'Longitude',
+                            'nullable': True,
+                        }
                     },
-                    'block_number': {
-                        'name': 'block',
-                        'nullable': True,
+                    'filters': {
+                        'default': [
+                            'date'
+                        ],
+                        'alternate': [
+                            'date',
+                            'block_number'
+                        ]
                     },
-                    'trip_number': {
-                        'name': 'trip26',
-                        'nullable': True,
-                    },
-                    'bus': {
-                        'name': 'bus',
-                        'nullable': True,
-                    },
-                    'trigger_time': {
-                        'name': 'Time',
-                        'nullable': True,
-                    },
-                    'operator': {
-                        'name': 'Operator_Record_Id',
-                        'nullable': True,
-                    },
-                    'actual_time': {
-                        'name': 'Departure_Time',
-                        'nullable': True,
-                    },
-                    'route': {
-                        'name': 'Route',
-                        'nullable': True,
-                    },
-                    'direction': {
-                        'name': 'dir',
-                        'nullable': True,
-                    },
-                    'stop': {
-                        'name': 'Stop_Id',
-                        'nullable': True,
-                    },
-                    'name': {
-                        'name': 'Stop_Name',
-                        'nullable': True,
-                    },
-                    'boards': {
-                        'name': 'Boards',
-                        'nullable': True,
-                    },
-                    'alights': {
-                        'name': 'Alights',
-                        'nullable': True,
-                    },
-                    'onboard': {
-                        'name': 'Onboard',
-                        'nullable': True,
-                    },
-                    'op_status': {
-                        'name': 'OperationalStatus',
-                        'nullable': True,
-                    },
-                    'latitude': {
-                        'name': 'Latitude',
-                        'nullable': True,
-                    },
-                    'longitude': {
-                        'name': 'Longitude',
-                        'nullable': True,
-                    }
-                },
-                'type': 'SELECT',
-                'filters': {
-                    'default': [
-                        'date'
+                    'order_by': [
+                        'date', 'bus', 'trigger_time'
                     ],
-                    'alternate': [
-                        'date',
-                        'block_number'
-                    ]
+                    'table_name': 'v_vehicle_history',
+                    'database': 'TA_ITHACA_ACTUAL_HISTORY',
                 },
-                'order_by': [
-                    'date', 'bus', 'trigger_time'
-                ],
-                'table_name': 'v_vehicle_history',
-                'database': 'TA_ITHACA_ACTUAL_HISTORY',
-            },
-            'scheduled': {
-                'fields': {
-                    'date': {
-                        'name': 'Service_Date',
-                        'nullable': True,
+                'scheduled': {
+                    'fields': {
+                        'date': {
+                            'name': 'Service_Date',
+                            'nullable': True,
+                        },
+                        'block_number': {
+                            'name': 'block',
+                            'nullable': True,
+                        },
+                        'trip_number': {
+                            'name': 'trip26',
+                            'nullable': True,
+                        },
+                        'route': {
+                            'name': 'RouteNumber',
+                            'nullable': True,
+                        },
+                        'direction': {
+                            'name': 'Direction',
+                            'nullable': True,
+                        },
+                        'stop': {
+                            'name': 'stop_num',
+                            'nullable': True,
+                        },
+                        'sched_time': {
+                            'name': 'departure_time',
+                            'nullable': True,
+                        }
                     },
-                    'block_number': {
-                        'name': 'block',
-                        'nullable': True,
+                        'filters': {
+                        'default': [
+                            'date'
+                        ],
+                        'alternate': [
+                            'date',
+                            'block_number'
+                        ]
                     },
-                    'trip_number': {
-                        'name': 'trip26',
-                        'nullable': True,
-                    },
-                    'route': {
-                        'name': 'RouteNumber',
-                        'nullable': True,
-                    },
-                    'direction': {
-                        'name': 'Direction',
-                        'nullable': True,
-                    },
-                    'stop': {
-                        'name': 'stop_num',
-                        'nullable': True,
-                    },
-                    'sched_time': {
-                        'name': 'departure_time',
-                        'nullable': True,
-                    }
-                },
-                'type': 'SELECT',
-                'filters': {
-                    'default': [
-                        'date'
+                    'order_by': [
+                        'date', 'block_number', 'trip_number', 'sched_time'
                     ],
-                    'alternate': [
-                        'date',
-                        'block_number'
-                    ]
+                    'table_name': 'v_scheduled_stops',
+                    'database': 'TA_ITHACA_SCHEDULE_HISTORY',
                 },
-                'order_by': [
-                    'date', 'block_number', 'trip_number', 'sched_time'
-                ],
-                'table_name': 'v_scheduled_stops',
-                'database': 'TA_ITHACA_SCHEDULE_HISTORY',
+                'stop_locations': {
+                    'fields': {
+                        'stop': {
+                            'name': 'stop_num',
+                            'nullable': False,
+                        },
+                        'latitude': {
+                            'name': 'latitude',
+                            'nullable': False,
+                        },
+                        'longitude': {
+                            'name': 'longitude',
+                            'nullable': False,
+                        }
+                    },
+                    'table_name': 'stops',
+                    'database': 'Utilities',
+                },
+                'shapes': {
+                    'fields': {
+                        'from_stop': {
+                            'name': 'fr_stop_num',
+                            'nullable': False
+                        },
+                        'to_stop': {
+                            'name': 'to_stop_num',
+                            'nullable': False
+                        },
+                        'date_created': {
+                            'name': 'ini_date',
+                            'nullable': False
+                        },
+                        'distance_feet': {
+                            'name': 'dist_ft',
+                            'nullable': False
+                        },
+                        'shape': {
+                            'name': 'seg_path',
+                            'nullable': False
+                        },
+                        'shape_str': {
+                            'name': 'seg_path_str',
+                            'nullable': False,
+                            'do_not_include': True
+                        }
+                    },
+                    'special_fields': {
+                        'seg_path_str': 'CAST(seg_path AS NVARCHAR(4000)) AS seg_path_str'
+                    },
+                    'order_by': [
+                        'date_created'
+                    ],
+                    'table_name': 'segment_dist',
+                    'database': 'TA_ITHACA_SCHEDULE_HISTORY'
+                }
             },
-            'output': {
-                'fields': {
-                    'date': {
-                        'name': 'service_date',
-                        'nullable': False,
+            'outputs': {
+                'segments': {
+                    'fields': {
+                        'date': {
+                            'name': 'service_date',
+                            'nullable': False,
+                        },
+                        'bus': {
+                            'name': 'bus',
+                            'nullable': True,
+                        },
+                        'report_time': {
+                            'name': 'report_time',
+                            'nullable': True,
+                        },
+                        'dir': {
+                            'name': 'direction',
+                            'nullable': True,
+                        },
+                        'route': {
+                            'name': 'route',
+                            'nullable': True,
+                        },
+                        'block_number': {
+                            'name': 'block_number',
+                            'nullable': False,
+                        },
+                        'trip_number': {
+                            'name': 'trip_number',
+                            'nullable': False,
+                        },
+                        'operator': {
+                            'name': 'operator',
+                            'nullable': True,
+                        },
+                        'boards': {
+                            'name': 'boards',
+                            'nullable': True,
+                        },
+                        'alights': {
+                            'name': 'alights',
+                            'nullable': True,
+                        },
+                        'onboard': {
+                            'name': 'onboard',
+                            'nullable': True,
+                        },
+                        'stop': {
+                            'name': 'stop_id',
+                            'nullable': False,
+                        },
+                        'stop_name': {
+                            'name': 'stop_name',
+                            'nullable': True,
+                        },
+                        'sched_time': {
+                            'name': 'sched_time',
+                            'nullable': True,
+                        },
+                        'seen': {
+                            'name': 'seen',
+                            'nullable': True,
+                        },
+                        'confidence_score': {
+                            'name': 'confidence_score',
+                            'nullable': True,
+                        },
                     },
-                    'bus': {
-                        'name': 'bus',
-                        'nullable': True,
-                    },
-                    'report_time': {
-                        'name': 'report_time',
-                        'nullable': True,
-                    },
-                    'dir': {
-                        'name': 'direction',
-                        'nullable': True,
-                    },
-                    'route': {
-                        'name': 'route',
-                        'nullable': True,
-                    },
-                    'block_number': {
-                        'name': 'block_number',
-                        'nullable': False,
-                    },
-                    'trip_number': {
-                        'name': 'trip_number',
-                        'nullable': False,
-                    },
-                    'operator': {
-                        'name': 'operator',
-                        'nullable': True,
-                    },
-                    'boards': {
-                        'name': 'boards',
-                        'nullable': True,
-                    },
-                    'alights': {
-                        'name': 'alights',
-                        'nullable': True,
-                    },
-                    'onboard': {
-                        'name': 'onboard',
-                        'nullable': True,
-                    },
-                    'stop': {
-                        'name': 'stop_id',
-                        'nullable': False,
-                    },
-                    'stop_name': {
-                        'name': 'stop_name',
-                        'nullable': True,
-                    },
-                    'sched_time': {
-                        'name': 'sched_time',
-                        'nullable': True,
-                    },
-                    'seen': {
-                        'name': 'seen',
-                        'nullable': True,
-                    },
-                    'confidence_score': {
-                        'name': 'confidence_score',
-                        'nullable': True,
-                    },
+                    'table_name': 'segments',
+                    'database': 'journal',
                 },
-                'type': 'INSERT',
-                'table_name': 'service_journal',
-                'database': 'segments',
-            },
-            'stop_locations': {
-                'fields': {
-                    'stop': {
-                        'name': 'stop_num',
-                        'nullable': False,
-                    },
-                    'latitude': {
-                        'name': 'latitude',
-                        'nullable': False,
-                    },
-                    'longitude': {
-                        'name': 'longitude',
-                        'nullable': False,
-                    }
-                },
-                'type': 'SELECT',
-                'table_name': 'stops',
-                'database': 'Utilities',
-            },
-            'shapes': {
-                'fields': {
-                    'from_stop': {
-                        'name': 'fr_stop_num',
-                        'nullable': False
-                    },
-                    'to_stop': {
-                        'name': 'to_stop_num',
-                        'nullable': False
-                    },
-                    'date_created': {
-                        'name': 'ini_date',
-                        'nullable': False
-                    },
-                    'distance_feet': {
-                        'name': 'dist_ft',
-                        'nullable': False
-                    },
-                    'shape': {
-                        'name': 'seg_path',
-                        'nullable': False
-                    },
-                    'shape_str': {
-                        'name': 'seg_path_str',
-                        'nullable': False,
-                        'do_not_include': True
-                    }
-                },
-                'special_fields': {
-                    'seg_path_str': 'CAST(seg_path AS NVARCHAR(4000)) AS seg_path_str'
-                },
-                'type': 'SELECT',
-                'order_by': [
-                    'date_created'
-                ],
-                'table_name': 'segment_dist',
-                'database': 'TA_ITHACA_SCHEDULE_HISTORY'
+                'vehicle_history': {
+                    'fields': {
+                        'date': {
+                            'name': 'service_date',
+                            'nullable': False,
+                        },
+                        'bus': {
+                            'name': 'bus',
+                            'nullable': False,
+                        },
+                        'trip_number': {
+                            'name': 'trip_number',
+                            'nullable': False,
+                        },
+                        'distance_traveled': {
+                            'name': 'distance_traveled',
+                            'nullable': True,
+                        },
 
-            }
+                    },
+                    'table_name': 'vehicle_history',
+                    'database': 'journal'
+                }
+            },
         }
     }
 }

@@ -235,26 +235,33 @@ class Connection:
             raise e
 
         # Scope to fields for each view
-        attr_sql_map = {view_name: view_data['fields'] for view_name, view_data in settings['attr_sql_map'].items()}
+        attr_sql_map = {
+            type_: {
+                view_name: view_data['fields'] for view_name, view_data in type_settings.items()
+            } for type_, type_settings in self.config['attr_sql_map'].items()
+        }
+
         # Invert attr_sql_map
         sql_attr_map: Mapping[str, Mapping[str, Mapping[str, Union[str, bool]]]] = {
-            view_name: {
-                attr_data['name']: {
-                        'name': attr_name, 'nullable': attr_data['nullable']
-                } for attr_name, attr_data in view_data.items()
-            } for view_name, view_data in attr_sql_map.items()
+            type_: {
+                view_name: {
+                    attr_data['name']: {
+                            'name': attr_name, 'nullable': attr_data['nullable']
+                    } for attr_name, attr_data in view_data.items()
+                } for view_name, view_data in type_settings.items()
+            } for type_, type_settings in attr_sql_map.items()
+        }
+
+        # Construct the connection lookup mappings
+        self.connections = {
+            type_: {
+                view_name: None for view_name in type_settings.keys()
+            } for type_, type_settings in attr_sql_map.items()
         }
 
         self.attr_sql_map = attr_sql_map
         self.sql_attr_map = sql_attr_map
 
-        self.connections = {
-            'actuals_conn': None,
-            'scheduled_conn': None,
-            'output_conn': None,
-            'stop_locations_conn': None,
-            'shapes_conn': None,
-        }
         if open_:
             self.open()
 
@@ -325,7 +332,7 @@ class Connection:
                          f'{", ".join(map(str, additional_args.items()))}')
             raise
 
-    def _exc_query(self, conn_name, query_name, params=None, which_query='default'):
+    def _exc_query(self, query_name, params=None, type_: str = 'inputs', which_query='default'):
         """
         Executes a single query defined in the config.
 
@@ -340,10 +347,11 @@ class Connection:
         which_query
             The type of query as defined in the config.
         """
-        logger.debug('Executing query (%s:%s) on connection (%s).', query_name, which_query, conn_name)
+        logger.debug('Executing query (%s:%s) on connection (%s).', query_name, which_query)
         params = [] if params is None else params
-        query_config = self.config['settings']['attr_sql_map'][query_name]
-        cursor = self.connections[conn_name].cursor()
+        query_type = self.settings['types_map'][type_]
+        query_config = self.config['settings']['attr_sql_map'][type_][query_name]
+        cursor = self.connections[type_][query_name].cursor()
         attr_sql_map = pull_out_name(self.attr_sql_map[query_name])
         sql_attr_map = pull_out_name(self.sql_attr_map[query_name])
         # attr_sql_map and queries are from config, and therefore trusted
@@ -376,7 +384,7 @@ class Connection:
             column_names = [column[0] for column in cursor.description]
             logger.error('Pyodbc error, see raised exception. Query being run:\n%s\nParams: %s, columns: %s', query, list(params), column_names)
             raise
-        logger.debug('Finished executing query (%s) on connection (%s).', query_name, conn_name)
+        logger.debug('Finished executing query (%s) on connection (%s).', query_name)
         return (attr_sql_map, sql_attr_map), cursor
 
     def open(self):
@@ -449,7 +457,7 @@ class Connection:
         return process_cursor(s_cursor, s_sql_attr_map, _package_schedule, 'scheduled'), process_cursor(
                 a_cursor, a_sql_attr_map, _package_actuals, 'actuals')
 
-    def write(self, data_map: Mapping, autocommit: bool = False):
+    def write(self, data_map: Mapping, autocommit: bool = False, check_exists: bool = False):
         """
         Writes the data from data_map to the table.
 
@@ -460,13 +468,14 @@ class Connection:
         autocommit
             Tells the function whether to commit changes after completing execution.
         """
+        
         final_params = list(unpack(data_map.keys(), data_map))
         logger.debug('Writing to connections. Params: %s.\nExpected Ordering: %s', list(final_params), data_map.keys())
         self._exc_query('output_conn', 'output', params=final_params)
         if autocommit:
             self.commit()
 
-    def write_many(self, data_maps: Iterable[Mapping], autocommit: bool = True):
+    def write_many(self, data_maps: Iterable[Mapping], autocommit: bool = True, check_exists: bool = False):
         """
         Writes a list of record mappings to the table.
 
