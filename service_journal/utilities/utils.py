@@ -1,7 +1,7 @@
 from datetime import datetime, date, timedelta
 from enum import Enum
 from collections import defaultdict
-from typing import Mapping, Iterable, Any, Callable, Tuple, List, Set, Sequence, MutableMapping
+from typing import Mapping, Iterable, Any, Callable, Tuple, List, Set, Sequence, MutableMapping, Optional, Sequence
 
 from shapely.geometry import Point, LineString
 from shapely.geometry.base import BaseGeometry
@@ -124,7 +124,7 @@ def pull_out_name(d: Mapping[str, Mapping]) -> Mapping[str, str]:
     return {k: v['name'] for k, v in d.items()}
 
 
-def unpack(ordering_: Iterable[str], data_map_: Mapping[str, Any]) -> Iterable[Any]:
+def unpack(ordering_: Sequence[str], data_map_: Mapping[str, Any]) -> Iterable[Any]:
     """
     Returns the values of the dictionary in the order of the passed in list.
 
@@ -140,7 +140,7 @@ def unpack(ordering_: Iterable[str], data_map_: Mapping[str, Any]) -> Iterable[A
     Iterable[Any]
         An Iterable generator of values that are ordered according to ordering_
     """
-    return (data_map_[i] for i in ordering_)
+    return (data_map_[i] for i in ordering_ if i in data_map_)
 
 
 ENVIRONMENT_TRUTHY_VALUES = ('true', '1', 't')
@@ -238,9 +238,14 @@ reorganize_map: Mapping[OrganizeOrder, Mapping[OrganizeOrder, Callable[[Mapping]
 
 
 # Default ordering for the output data.
-write_ordering = ['date', 'bus', 'report_time', 'dir', 'route', 'block_number', 'trip_number', 'operator', 'boards',
+WRITE_ORDERING = ['date', 'bus', 'report_time', 'dir', 'route', 'block_number', 'trip_number', 'operator', 'boards',
                   'alights', 'onboard', 'stop', 'stop_name', 'sched_time', 'seen', 'confidence_score']
 
+def reorganize_write_fields(fields: Iterable[str], mapping: Mapping[str, str], write_ordering=WRITE_ORDERING) -> List[str]:
+    """
+    Reorganize the fields in the output data.
+    """
+    return [field for field in write_ordering if mapping.get(field) in fields]
 
 def get_shape_trip(stops: Sequence[int], shapes: Mapping[Tuple[int, int], BaseGeometry]) -> \
         Tuple[Sequence[Tuple[int, int]], LineString, Sequence[BaseGeometry]]:
@@ -264,6 +269,9 @@ def get_shape_trip(stops: Sequence[int], shapes: Mapping[Tuple[int, int], BaseGe
             trip_line_strings.append(shapes[stop2stop_key])
         except IndexError:
             continue
+    if(len(trip_line_strings) == 0):
+        logger.warning('No shapes found for stops: %s', stops)
+        return stop2stops, LineString(), trip_line_strings
     merged_line = linemerge(trip_line_strings)
     # Check orientation of merged line, and if backwards flip
     if merged_line.coords[0] != trip_line_strings[0].coords[0]:
@@ -272,11 +280,17 @@ def get_shape_trip(stops: Sequence[int], shapes: Mapping[Tuple[int, int], BaseGe
 
 
 def get_current_distance_on_trip(point: Point, line: LineString, current_shape_progress: float) -> \
-        Tuple[float, geopy.distance.distance]:
-    _, remaining_line = shapely_split(line, line.interpolate(current_shape_progress))
+        Optional[Tuple[LineString, float, geopy.distance.distance]]:
+    """
+    Gives distance from a point to a line.
+    """
+    if(line.is_empty):
+        logger.warning('Line is empty, cannot get distance along line.')
+        return None
+    _, remaining_line = shapely_split(line, line.interpolate(current_shape_progress)) # Need to confirm this is correct
     _, point_on_line = nearest_points(point, remaining_line)
     completed, _ = shapely_split(line, point_on_line)
-    return completed.length, geo_distance(point.coords, point_on_line.coords)
+    return completed, completed.length, geo_distance(point.coords, point_on_line.coords)
 
 
 def get_segment_length(line: LineString) -> geopy.distance.distance:
@@ -298,7 +312,7 @@ def get_trip_progress(stop2stops: Sequence[Tuple[int, int]], trip_line_strings, 
 
 
 def get_distance_on_segment_from_report(report: Mapping[str, Any], trip_shape: LineString,
-                                        prev_shape_progress: float = 0.0) -> Tuple[float, geopy.distance.distance]:
+                                        prev_shape_progress: float = 0.0) -> Optional[Tuple[LineString, float, geopy.distance.distance]]:
     """
     Returns where we currently are on the LineString of the trip, based on the prev_index.
 

@@ -8,7 +8,7 @@ class QueryTypes(Enum):
 
 
 def _append_fields(query: str, fields: Sequence[str]):
-    return f'{query} {", ".join(fields)}'
+    return f'{query}{", ".join(fields)}'
 
 
 def _append_filters(query: str, filters: Sequence[str]) -> str:
@@ -37,7 +37,7 @@ def build_select(fields: Sequence[str], table: str = None, filters: Optional[Map
                 exc.args += (f'Field {field} is in special_fields but not in fields. Please check your configuration.',
                              f'Extra info:\nfields:{fields}\nspecial_fields:{special_fields}')
                 raise
-    query = _append_fields('SELECT', fields)
+    query = _append_fields('SELECT ', fields)
     query = f'{query} FROM {table}'
     if filters:
         query = _append_filters(query, filters)
@@ -47,7 +47,7 @@ def build_select(fields: Sequence[str], table: str = None, filters: Optional[Map
 
 
 def _append_value_fill_ins(query, count):
-    return f'{query} {", ".join("?"*count)}'
+    return f'{query}VALUES({", ".join(["?"]*count)})'
 
 
 def build_insert(fields: Sequence[str], table: str) -> str:
@@ -57,9 +57,9 @@ def build_insert(fields: Sequence[str], table: str) -> str:
     """
     if not fields:
         raise ValueError('No fields were passed into build_insert.')
-    query = _append_fields(f'INSERT INTO {table} (', fields)
-    query = _append_value_fill_ins(f'{query})', len(fields))
-    return f'{query})'
+    query = _append_fields(f'INSERT INTO {table} (', fields)+')'
+    query = _append_value_fill_ins(f'{query} ', len(fields))
+    return query
 
 
 def build_query(query_type: Union[str, QueryTypes], fields: Sequence[str], table: str,

@@ -179,8 +179,8 @@ DEFAULT_CONFIG = {
                 'order_by': [
                     'date', 'block_number', 'trip_number', 'sched_time'
                 ],
-                'table_name': 'v_schedule_stops',
-                'database': 'schedule_history',
+                'table_name': 'v_scheduled_stops',
+                'database': 'TA_ITHACA_SCHEDULE_HISTORY',
             },
             'output': {
                 'fields': {

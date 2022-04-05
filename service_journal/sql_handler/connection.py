@@ -11,14 +11,16 @@ from gamlogger import get_default_logger
 
 try:
     from .query_builder import build_query
-    from ..utilities.utils import pull_out_name, write_ordering, unpack, deflt_dict
+    from ..utilities.utils import pull_out_name, WRITE_ORDERING, unpack, deflt_dict, reorganize_write_fields
     from . import config as config_module
 except ImportError:
     from service_journal.sql_handler.query_builder import build_query
-    from service_journal.utilities.utils import pull_out_name, write_ordering, unpack, deflt_dict
+    from service_journal.utilities.utils import pull_out_name, WRITE_ORDERING, unpack, deflt_dict
     import config as config_module
 
 DATE_FORMAT = '%Y-%m-%d'
+TIME_FORMAT = '%H:%M:%S'
+DATE_TIME_FORMAT = f'{DATE_FORMAT}_{TIME_FORMAT}'
 logger = get_default_logger(__name__)
 
 
@@ -73,7 +75,7 @@ def _package_schedule(data: Mapping, acc: DefaultDict, to_date_format: str = DAT
         }
 
 
-def _package_actuals(data: Mapping, acc: DefaultDict, to_date_format: str = DATE_FORMAT):
+def _package_actuals(data: Mapping, acc: DefaultDict, to_date_format: str = DATE_FORMAT, to_time_format: str = DATE_TIME_FORMAT):
     """
     Packages single entry of actual data into date-block-bus data hierarchical format (acc).
     PARAMETERS
@@ -94,7 +96,8 @@ def _package_actuals(data: Mapping, acc: DefaultDict, to_date_format: str = DATE
         else:
             raise
     bus = acc[date_key][data['bus']]
-    if data['trigger_time'] in bus:
+    if data['trigger_time'] in [times.strftime(to_time_format) for times in  bus.keys()]:
+        logger.debug('Wait this happened? (two reports, same trigger_time) %s in %s', data['trigger_time'], bus.keys())
         # Mid-swapping routes
         # TODO: Idk if this is ok or not. Check with Tom later.
         trigger_time_v = bus[data['trigger_time']]
@@ -163,7 +166,7 @@ def _package_shapes(data: Mapping, acc: MutableMapping[Tuple[int, int], Tuple[fl
         try:
             path = wkt_loads(data['shape_str'])
         except TypeError:
-            logger.error(f'Could not load shape_str for stopid ({data["from_stop"]} to {data["to_stop"]}). Got ({data["shape_str"]}). Distance: {distance}')
+            logger.error('Could not load shape_str for stopid (%s to %s). Got (%s). Distance: %s', data['from_stop'], data['to_stop'], data['shape_str'], distance)
             path = None
     else:
         path = data.get('shape', LineString())
@@ -337,7 +340,7 @@ class Connection:
         which_query
             The type of query as defined in the config.
         """
-        logger.info('Executing query (%s:%s) on connection (%s).', query_name, which_query, conn_name)
+        logger.debug('Executing query (%s:%s) on connection (%s).', query_name, which_query, conn_name)
         params = [] if params is None else params
         query_config = self.config['settings']['attr_sql_map'][query_name]
         cursor = self.connections[conn_name].cursor()
@@ -350,27 +353,30 @@ class Connection:
             logger.error('While executing query %s, could not identify the query type in query config (%s)', query_name,
                          query_config)
             raise
-        # Cast as set to remove duplicates, and for difference function
-        fields = set(attr_sql_map.values())
         table_name = query_config['table_name']
+        # Remove any fields to not be included in query
+        not_included = filter(lambda x: query_config['fields'][x].get('do_not_include'), set(attr_sql_map.keys()))
         # Get SQL name for each attr in filters and order_by. Cast to list (order matters)
         filters = list(map(lambda x: attr_sql_map[x], query_config['filters'][which_query])) if 'filters' in \
                                                                                                 query_config else None
         ordering = list(map(lambda x: attr_sql_map[x], query_config['order_by'])) if 'order_by' in \
                                                                                      query_config else None
-        # Remove any fields to not be included in query
-        not_included = filter(lambda x: query_config['fields'][x].get('do_not_include'), set(attr_sql_map.keys()))
-        fields = list(fields.difference(not_included))
-
         special_fields = query_config.get('special_fields')
+        # Cast as set to remove duplicates, and for difference function
+        fields = attr_sql_map.keys()
+        logger.debug('Intermediary fields: %s', fields)
+        fields = list(unpack(list(fields), attr_sql_map))
+        logger.debug('Unpacked fields: %s', fields)
         query = build_query(query_type, fields, table_name, filters, ordering, special_fields)
-        logger.info('Executing query:\n%s', query)
+        logger.debug('Executing query:\n%s', query)
         try:
             cursor.execute(query, *params)
         except pyodbc.Error:
-            logger.error('Pyodbc error, see raised exception. Query being run:\n%s\nParams: %s', query, params)
+            cursor.execute(f'SELECT * FROM {table_name}')
+            column_names = [column[0] for column in cursor.description]
+            logger.error('Pyodbc error, see raised exception. Query being run:\n%s\nParams: %s, columns: %s', query, list(params), column_names)
             raise
-        logger.info('Finished executing query (%s) on connection (%s).', query_name, conn_name)
+        logger.debug('Finished executing query (%s) on connection (%s).', query_name, conn_name)
         return (attr_sql_map, sql_attr_map), cursor
 
     def open(self):
@@ -454,7 +460,8 @@ class Connection:
         autocommit
             Tells the function whether to commit changes after completing execution.
         """
-        final_params = unpack(write_ordering, data_map)
+        final_params = list(unpack(data_map.keys(), data_map))
+        logger.debug('Writing to connections. Params: %s.\nExpected Ordering: %s', list(final_params), data_map.keys())
         self._exc_query('output_conn', 'output', params=final_params)
         if autocommit:
             self.commit()

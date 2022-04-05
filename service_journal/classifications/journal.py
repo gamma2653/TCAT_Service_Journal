@@ -8,7 +8,7 @@ from gamlogger import get_default_logger
 try:
     from .exceptions import PreconditionError
     from .processors import get_deflt_processors
-    from ..sql_handler.connection import Connection
+    from ..sql_handler.connection import Connection, DATE_FORMAT
     from ..utilities.utils import date_range
 except ImportError:
     from service_journal.classifications.exceptions import PreconditionError
@@ -187,11 +187,15 @@ class Journal:
         self._raise_if_not_open()
         # TODO: Use "packager" system in this writing
         logger.info('Beginning to write data.')
+        records_written = 0
         for date_, day_schedule in self.schedule.items():
             for block_number, block in day_schedule.items():
                 for trip_number, trip in block.items():
                     stops = trip['stops']
                     for stop_id, stop in stops.items():
+                        logger.debug('Record being written: %s: [%s]', stop_id, stop)
+                        records_written += 1
+                        logger.info('Writing record: %s', records_written)
                         self.connection.write({
                             'date': date_,
                             'bus': stop['bus'],
@@ -206,7 +210,7 @@ class Journal:
                             'onboard': stop['onboard'],
                             'stop': stop_id,
                             'stop_name': stop['name'],
-                            'sched_time': stop['sched_time'],
+                            'sched_time': stop['sched_time'].strftime(DATE_FORMAT),
                             'seen': stop['seen'],
                             'confidence_score': stop['confidence_score']
                         }, autocommit=False)
