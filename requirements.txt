@@ -1,8 +1,13 @@
+gamlogger>=0.9.0
 pyodbc~=4.0.31
-flask~=2.0.1
 geopy~=2.2.0
 shapely~=1.8
 wheel~=0.36.2
-# gunicorn~=20.1 # gunicorn is not supported on Windows
-waitress~=2.0
-gamlogger>=0.9.0
+
+# Exported to separate repo as per PEP
+# # For web funcitonality
+# flask~=2.0.1
+# # gunicorn~=20.1 # gunicorn is not supported on Windows
+# waitress~=2.0
+# sqlalchemy
+# flask-sqlalchemy

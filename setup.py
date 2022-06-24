@@ -10,21 +10,16 @@ These values are used to test against potential environment variable values
 that default to being true.
 """
 name = 'service_journal'
-
 meta = {
     'name': name,
-    'backup_packages': {
-        {
-            'packages': [
-                'service_journal',
-                'service_journal.utilities',
-                'service_journal.sql_handler',
-                'service_journal.classifications',
-                'service_journal.cmd',
-                'service_journal.server_tools',
-            ]
-        }
-    },  # used to find packages iff find_packages fails/is unavailable
+    'backup_packages': [
+        'service_journal',
+        'service_journal.utilities',
+        'service_journal.sql_handler',
+        'service_journal.classifications',
+        'service_journal.cmd',
+        'service_journal.server_tools',
+    ],  # used to find packages iff find_packages fails/is unavailable
     'readme': 'README.rst',
     'version': f'{name}/__init__.py',
     'authors': 'AUTHORS',
@@ -32,7 +27,9 @@ meta = {
     'setup_requires': [
         'wheel',
     ],
+    'license': 'UNLICENSE',
     'license_files': ('LICENSE',),
+    'long_description_content_type': 'text/x-rst',
 }
 """
 Various meta values used in the configuration.
@@ -186,8 +183,10 @@ def _setup(meta_):
         long_description=long_description,
         packages=_packages,
         setup_requires=meta_['setup_requires'],
+        license=meta_['license'],
+        license_files=meta_['license_files'],
+        long_description_content_type=meta_['long_description_content_type'],
     )
-
 
 if __name__ == '__main__':
     _setup(meta)
