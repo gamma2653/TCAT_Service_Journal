@@ -3,29 +3,27 @@ from typing import Dict, Optional, Tuple, Mapping, Set, Union, Iterable, List, M
 from numbers import Number
 import pyodbc
 from datetime import date
+import logging
 
 from shapely.geometry import LineString
 from shapely.geometry.base import BaseGeometry
 from shapely.wkt import loads as wkt_loads
-from gamlogger import get_default_logger
 
-try:
-    from .query_builder import build_query
-    from ..utilities.utils import pull_out_name, WRITE_ORDERING, unpack, deflt_dict, reorganize_write_fields
-    from . import config as config_module
-except ImportError:
-    from service_journal.sql_handler.query_builder import build_query
-    from service_journal.utilities.utils import pull_out_name, WRITE_ORDERING, unpack, deflt_dict
-    import config as config_module
+
+from .query_builder import build_query
+from ..utilities.utils import pull_out_name, WRITE_ORDERING, unpack, deflt_dict, reorganize_write_fields
+from . import config as config_module
 
 DATE_FORMAT = '%Y-%m-%d'
 TIME_FORMAT = '%H:%M:%S'
 DATE_TIME_FORMAT = f'{DATE_FORMAT}_{TIME_FORMAT}'
-logger = get_default_logger(__name__)
 
+logger = logging.getLogger(__name__)
+
+# TODO: Integrate 
 
 # TODO: Add a schema file that defines all the keys for each data source.
-def _package_schedule(data: Mapping, acc: DefaultDict, to_date_format: str = DATE_FORMAT):
+def _package_scheduled(data: Mapping, acc: DefaultDict, to_date_format: str = DATE_FORMAT):
     """
     Packages single entry of schedule data into date-block-trip data hierarchical format (acc).
     PARAMETERS
@@ -214,8 +212,10 @@ class Connection:
     attr_sql_map: Mapping
     sql_attr_map: Mapping
     connections: Dict[str, Optional[pyodbc.Connection]]
+    packagers: Mapping[str, Callable]
 
-    def __init__(self, config: Mapping = None, open_: bool = False):
+    def __init__(self, config: Mapping = None, open_: bool = False, packagers: Mapping[str, Callable] = None):
+        self.is_open = False
         if config is not None:
             self.config = config
         else:
@@ -228,12 +228,19 @@ class Connection:
             self.password = settings['password']
             self.host = settings['host']
             self.port = settings['port']
-            self.is_open = False
         except KeyError as e:
             print(f'Error: Key ({e.args[0]}) not found in config.json. If this is your first time '
                   'running this, please setup your config and re-run it.')
             raise e
-
+        self.packagers = packagers if packagers is not None else {
+            'stop_locations': _package_stop_locations,
+            'shapes': _package_shapes,
+            'actuals': _package_actuals,
+            'scheduled': _package_scheduled,
+        }
+        self.connections = {}
+        if open_:
+            self.open()
         # Scope to fields for each view
         attr_sql_map = {
             type_: {
@@ -332,7 +339,7 @@ class Connection:
                          f'{", ".join(map(str, additional_args.items()))}')
             raise
 
-    def _exc_query(self, query_name, params=None, type_: str = 'inputs', which_query='default'):
+    def _exc_query(self, query_name, params=None, type_: str = 'inputs', which_query='default') -> Tuple[Tuple[Mapping[str, str], Mapping[str, str]], pyodbc.Cursor]:
         """
         Executes a single query defined in the config.
 
@@ -347,7 +354,7 @@ class Connection:
         which_query
             The type of query as defined in the config.
         """
-        logger.debug('Executing query (%s:%s) on connection (%s).', query_name, which_query)
+        logger.debug('Executing query (%s:%s) on connection (%s).', type_, query_name)
         params = [] if params is None else params
         query_type = self.settings['types_map'][type_]
         query_config = self.config['settings']['attr_sql_map'][type_][query_name]
@@ -393,31 +400,25 @@ class Connection:
         """
         # views_tables = self.attr_sql_map['views_tables']
         logger.info('Opening connections.')
-        self.connections = {
-            'actuals_conn': self._connect('actuals'),
-            'scheduled_conn': self._connect('scheduled'),
-            'output_conn': self._connect('output'),
-            'stop_locations_conn': self._connect('stop_locations'),
-            'shapes_conn': self._connect('shapes')
-        }
+        for type_, views in self.connections.items():
+            for view in views.keys():
+                self.connections[type_][view] = self._connect(view)
         self.is_open = True
         logger.info('Connections opened.')
 
-    def load_stop_loc(self) -> Mapping[str, Tuple[Number, Number]]:
+    def load_source(self, source) -> DefaultDict[str, Any]:
         """
-        Load stop locations from database. These are the geo-cords.
-        """
-        (stop_attr_sql_map, stop_sql_attr_map), cursor = self._exc_query('stop_locations_conn', 'stop_locations')
-        return process_cursor(cursor, stop_sql_attr_map, _package_stop_locations)
+        Loads the source data into the database.
 
-    def load_shapes(self) -> Mapping[Tuple[int, int], Tuple]:
+        PARAMETERS
+        --------
+        source
+            The source data to be loaded.
         """
-        Load shapes from database. These are the coordinated of every vertices on the path between every stop.
-        """
-        # Execute query
-        (attr_sql_map, sql_attr_map), cursor = self._exc_query('shapes_conn', 'shapes')
+        logger.info('Loading source data.')
+        (_, stop_sql_attr_map), cursor = self._exc_query(f'{source}_conn', source)
+        return process_cursor(cursor, stop_sql_attr_map, self.packagers[source])
 
-        return process_cursor(cursor, sql_attr_map, _package_shapes)
 
     def __enter__(self):
         self.open()
@@ -425,6 +426,31 @@ class Connection:
 
     def __exit__(self, exception_type, exception_value, traceback):
         self.close()
+
+    def read(self, query_name: str, params: Optional[List] = None, which_query: str = 'default') -> Tuple[Mapping, Mapping]:
+        """
+        Read from the Connection the given date_ and store in the given format_.
+
+        PARAMETERS
+        --------
+        date_
+            The date object that defines the date from which to pull the schedule and avl_data.
+        type_
+            The type of query being done
+        params
+            Parameters to pass to executed query.
+        """
+        # a_xxx refers to "actuals xxx" and s_xxx refers to "scheduled xxx"
+        logger.info('Reading from connections.')
+        # Init params
+        if params is None:
+            params = []
+        (_, sql_attr_map), a_cursor = self._exc_query(query_name, params=params, type_ = 'inputs', which_query=which_query)
+        try:
+            return self.packagers[query_name](a_cursor, sql_attr_map)
+        except KeyError as exc:
+            logger.error('While reading from connection (%s), could not find packager for query (%s).', query_name, query_name)
+            raise PreconditionError('') from exc
 
     def read(self, date_: date, type_: str = 'default',
              params: Optional[List] = None) -> Tuple[Mapping, Mapping]:
@@ -448,13 +474,13 @@ class Connection:
         params.insert(0, date_.strftime(DATE_FORMAT))
 
         # Execute queries
-        (a_attr_sql_map, a_sql_attr_map), a_cursor = self._exc_query('actuals_conn', 'actuals', params=params,
+        (_, a_sql_attr_map), a_cursor = self._exc_query('actuals_conn', 'actuals', params=params,
                                                                      which_query=type_)
-        (s_attr_sql_map, s_sql_attr_map), s_cursor = self._exc_query('scheduled_conn', 'scheduled', params=params,
+        (_, s_sql_attr_map), s_cursor = self._exc_query('scheduled_conn', 'scheduled', params=params,
                                                                      which_query=type_)
 
         # Format dictates dictionary structure to generate
-        return process_cursor(s_cursor, s_sql_attr_map, _package_schedule, 'scheduled'), process_cursor(
+        return process_cursor(s_cursor, s_sql_attr_map, _package_scheduled, 'scheduled'), process_cursor(
                 a_cursor, a_sql_attr_map, _package_actuals, 'actuals')
 
     def write(self, data_map: Mapping, autocommit: bool = False, check_exists: bool = False):
@@ -471,7 +497,7 @@ class Connection:
         
         final_params = list(unpack(data_map.keys(), data_map))
         logger.debug('Writing to connections. Params: %s.\nExpected Ordering: %s', list(final_params), data_map.keys())
-        self._exc_query('output_conn', 'output', params=final_params)
+        [self._exc_query(conn, 'outputs', params=final_params) for conn in self.settings['attr_sql_map']['outputs']]
         if autocommit:
             self.commit()
 
@@ -500,3 +526,14 @@ class Connection:
         logger.debug('Committing written changes.')
         self.connections['output_conn'].commit()
         logger.debug('Changes committed.')
+
+    def get_deflt_loaders(self) -> Mapping[str, Callable]:
+        """
+        Returns a dictionary of default loaders.
+        """
+        return {
+            'actuals': self.load_actuals,
+            'scheduled': self.load_scheduled,
+            'stop_locations': self.load_stop_locations,
+            'shapes': self.load_shapes
+        }

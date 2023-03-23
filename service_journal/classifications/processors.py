@@ -2,13 +2,8 @@ from typing import TYPE_CHECKING
 
 from gamlogger import get_default_logger
 
-# Dynamic local imports
-try:
-    from ..utilities.utils import get_shape_trip, get_distance_on_segment_from_report, \
-        get_trip_progress, replace_if_default, get_segment_length
-except ImportError:
-    from service_journal.utilities.utils import get_shape_trip, get_distance_on_segment_from_report, \
-        get_trip_progress, replace_if_default, get_segment_length
+from ..utilities.utils import get_shape_trip, get_distance_on_segment_from_report, \
+    get_trip_progress, replace_if_default, get_segment_length
 
 
 if TYPE_CHECKING:
@@ -126,5 +121,12 @@ MAIN_PRESET = {
 DEFAULT_PROCESSOR_TYPES = MAIN_PRESET.keys()
 
 
-def get_deflt_processors():
+def get_deflt_processors_types():
     return {k: [] for k in DEFAULT_PROCESSOR_TYPES}
+
+def get_deflt_processors():
+    """
+    Create a two layer deep copy of the Main Preset.
+    """
+    return {k: v.copy() for k, v in MAIN_PRESET.items()}
+

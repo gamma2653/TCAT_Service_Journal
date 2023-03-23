@@ -5,7 +5,7 @@ import sys
 try:
     from ..utilities.utils import ENVIRONMENT_TRUTHY_VALUES
 except ImportError:
-    from service_journal.utilities.utils import ENVIRONMENT_TRUTHY_VALUES
+    from utilities.utils import ENVIRONMENT_TRUTHY_VALUES
 
 
 # ENVIRONMENT VARIABLES:
@@ -43,10 +43,7 @@ DEFAULT_CONFIG = {
         # The host driver, as list of these can be found on the pyodbc library readme on github
         'driver': '{SQL SERVER}',
         'host': 'AVAILDEV',
-        'username': '',
-        'password': '',
         'port': None,
-        '_comment': 'Warning: Stored passwords are unencrypted. For testing purposes only',
         'types_map': {
             'inputs': 'SELECT',
             'outputs': 'INSERT',

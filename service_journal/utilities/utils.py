@@ -113,7 +113,7 @@ def pull_out_name(d: Mapping[str, Mapping]) -> Mapping[str, str]:
 
     PARAMETERS
     --------
-    d
+    
         Mapping where the values are dictionaries with the key "name."
 
     RETURNS

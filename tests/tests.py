@@ -3,6 +3,7 @@ from unittest import TestCase, mock, main
 from datetime import date
 from service_journal.sql_handler import config
 from service_journal import build_query, QueryTypes
+from service_journal.classifications.journal import Journal
 
 ENV_EDITS = {
     'JOURNAL_USE_CONFIG_FILE': 'true',
@@ -125,15 +126,14 @@ class QueryBuilderTests(TestCase):
         self.assertEqual(query2, expected_query, f'Query2 ({query2}) is not what was expected. ({expected_query})')
 
 
-#
-# class JournalProcessTest(TestCase):
-#
-#     def test_one_process(self):
-#         test_name = 'JournalProcessTest.test_one_process'
-#         with Journal(config.config) as journal:
-#             journal.install_processor_preset(MAIN_PRESET)
-#             journal.process_dates_batch(from_date, to_date)
-#             # TODO: Read output and determine if it matches expected output
+class JournalTestCases(TestCase):
+
+    def setUp(self):
+        super().setUp()
+        pass
+    
+    def test_journal_query(self):
+        journal = Journal
 
 
 if __name__ == '__main__':
