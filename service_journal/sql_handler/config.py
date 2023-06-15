@@ -2,11 +2,7 @@ import os
 import json
 import sys
 
-try:
-    from ..utilities.utils import ENVIRONMENT_TRUTHY_VALUES
-except ImportError:
-    from utilities.utils import ENVIRONMENT_TRUTHY_VALUES
-
+from service_journal.utilities import ENVIRONMENT_TRUTHY_VALUES
 
 # ENVIRONMENT VARIABLES:
 # JOURNAL_USE_CONFIG_FILE

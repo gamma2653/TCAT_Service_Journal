@@ -1,4 +1,4 @@
-from collections import OrderedDict, defaultdict
+from collections import OrderedDict
 from typing import Dict, Optional, Tuple, Mapping, Set, Union, Iterable, List, MutableMapping, Callable, DefaultDict, Any
 from numbers import Number
 import pyodbc
@@ -9,10 +9,9 @@ from shapely.geometry import LineString
 from shapely.geometry.base import BaseGeometry
 from shapely.wkt import loads as wkt_loads
 
-
-from .query_builder import build_query
-from ..utilities.utils import pull_out_name, WRITE_ORDERING, unpack, deflt_dict, reorganize_write_fields
-from . import config as config_module
+from service_journal.sql_handler.query_builder import build_query
+from service_journal.utilities import pull_out_name, WRITE_ORDERING, unpack, deflt_dict, reorganize_write_fields
+from service_journal.sql_handler import config as config_module
 
 DATE_FORMAT = '%Y-%m-%d'
 TIME_FORMAT = '%H:%M:%S'

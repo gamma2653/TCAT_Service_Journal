@@ -2,15 +2,15 @@ from datetime import datetime, date, timedelta
 from enum import Enum
 from collections import defaultdict
 from typing import Mapping, Iterable, Any, Callable, Tuple, List, Set, Sequence, MutableMapping, Optional, Sequence
+import logging
 
 from shapely.geometry import Point, LineString
 from shapely.geometry.base import BaseGeometry
 from shapely.ops import split as shapely_split, nearest_points, linemerge
 import geopy.distance
 from geopy.distance import distance as geo_distance
-from gamlogger import get_default_logger
 
-logger = get_default_logger(__name__)
+logger = logging.Logger(__name__)
 
 
 def date_range(start_date: date, end_date: date) -> Iterable[date]:

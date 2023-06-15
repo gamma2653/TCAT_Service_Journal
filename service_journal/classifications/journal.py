@@ -4,11 +4,10 @@ from typing import Iterable, Mapping, Optional, List, Callable
 
 from gamlogger import get_default_logger
 
-# Dynamic local imports
-from .exceptions import PreconditionError
-from .processors import get_deflt_processors_types, get_deflt_processors
-from ..sql_handler.connection import Connection, DATE_FORMAT
-from ..utilities.utils import date_range
+from service_journal.classifications.exceptions import PreconditionError
+from service_journal.classifications.processors import get_deflt_processors_types, get_deflt_processors
+from service_journal.sql_handler.connection import Connection, DATE_FORMAT
+from service_journal.utilities import date_range
 
 
 logger = get_default_logger(__name__)

@@ -28,6 +28,8 @@ $(VENV_BIN)/activate: requirements.txt
 setup: requirements.txt
 	$(PIP) install -r requirements.txt
 
+# build: 
+
 clean:
 	rd /s /q $(VENV)
 	rd /s /q __pycache__

@@ -2,11 +2,12 @@ from typing import TYPE_CHECKING
 
 from gamlogger import get_default_logger
 
-from ..utilities.utils import get_shape_trip, get_distance_on_segment_from_report, \
+from service_journal.utilities import get_shape_trip, get_distance_on_segment_from_report, \
     get_trip_progress, replace_if_default, get_segment_length
 
 
 if TYPE_CHECKING:
+    from service_journal.classifications.journal import Journal
     try:
         from .journal import Journal
     except ImportError:
