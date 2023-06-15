@@ -1,7 +1,7 @@
 from datetime import datetime, date, timedelta
 from enum import Enum
 from collections import defaultdict
-from typing import Mapping, Iterable, Any, Callable, Tuple, List, Set, Sequence, MutableMapping, Optional, Sequence
+from typing import TYPE_CHECKING
 import logging
 
 from shapely.geometry import Point, LineString
@@ -10,7 +10,14 @@ from shapely.ops import split as shapely_split, nearest_points, linemerge
 import geopy.distance
 from geopy.distance import distance as geo_distance
 
-logger = logging.Logger(__name__)
+if TYPE_CHECKING:
+    from typing import (
+        Mapping, Iterable, Any, Callable, Tuple, List, Set, Sequence,
+        MutableMapping, Optional, Sequence
+    )
+
+
+logger = None
 
 
 def date_range(start_date: date, end_date: date) -> Iterable[date]:
@@ -330,3 +337,27 @@ def get_distance_on_segment_from_report(report: Mapping[str, Any], trip_shape: L
 
 def deflt_dict():
     return defaultdict(deflt_dict)
+
+LOG_MSG_FORMAT = '[%(asctime)s] [%(name)s]: [%(levelname)s] %(message)s'
+LOG_FILE_PATH = './output.log'
+LOG_DATE_FORMAT = '%m-%d-%Y %H:%M:%S'
+
+def get_default_logger(name, ch: logging.StreamHandler = None, fh: logging.FileHandler = None,
+                       formatter: logging.Formatter = None):
+    
+    logger = logging.Logger(name)
+    formatter = logging.Formatter(LOG_MSG_FORMAT, LOG_DATE_FORMAT) if formatter is None else formatter
+    
+    # Create (if they don't exist) and add handlers
+    if ch is None:
+        ch = logging.StreamHandler()
+        ch.setFormatter(formatter)
+    if fh is None:
+        fh = logging.FileHandler()
+        fh.setFormatter(formatter)
+    logger.addHandler(ch)
+    logger.addHandler(fh)
+
+    return logger
+
+logger = get_default_logger(__name__)
